@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""
+End-to-end pipeline demonstration.
+
+Runs both upstream stages (Composite-LP sweep + LogGOPSim replay) on
+the small 16-rank, 1 MiB ring-AllReduce GOAL trace shipped under
+``data/traces/`` and prints a summary. This exercise is what the paper
+applies at production scale (Llama 70B, Grok 314B, vLLM 8B) — the
+Composite-LP sweep produces the sensitivity CSVs consumed by the
+figure scripts, and LGS produces the validation runtimes overlaid on
+those figures.
+
+The demo typically completes in under 30 seconds.
+"""
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+DEFAULT_GOAL = ROOT / "data" / "traces" / "demo_allreduce_16r_1MiB.goal"
+DEFAULT_OUT = ROOT / "data" / "demo_output"
+
+
+def run(cmd):
+    print(">>>", " ".join(str(c) for c in cmd))
+    r = subprocess.run(cmd)
+    if r.returncode != 0:
+        raise SystemExit(r.returncode)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--goal", type=Path, default=DEFAULT_GOAL,
+                    help=f"GOAL trace (default: {DEFAULT_GOAL.relative_to(ROOT)})")
+    ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
+    ap.add_argument("--with-lp", action="store_true",
+                    help="Also run the Composite-LP stage. Requires Gurobi "
+                         "and an NCCL-generated GOAL with a matching "
+                         "comm_dep metadata file (ship-your-own from $A_2$). "
+                         "The default demo GOAL is a Schedgen synthetic ring "
+                         "AllReduce that does not carry NCCL comm_dep "
+                         "metadata, so the LP stage is off by default.")
+    args = ap.parse_args()
+
+    if not args.goal.exists():
+        print(f"error: {args.goal} not found", file=sys.stderr)
+        return 2
+
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+
+    print("\n=== LogGOPSim replay (builds and runs LogGOPSim on the demo GOAL) ===")
+    for L in (0, 1_000, 10_000, 100_000):
+        run([
+            sys.executable, str(HERE / "run_lgs.py"),
+            "--goal", str(args.goal),
+            "--L", str(L),
+        ])
+
+    if args.with_lp:
+        print("\n=== Composite-LP sweep ===")
+        run([
+            sys.executable, str(HERE / "run_composite_lp.py"),
+            "--goal", str(args.goal),
+            "--out", str(args.out_dir / "composed_runtime.csv"),
+            "--l-min", "0", "--l-max", "1000000", "--step", "100000",
+        ])
+
+    print(f"\nDemo complete. Outputs in {args.out_dir.relative_to(ROOT)}/")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

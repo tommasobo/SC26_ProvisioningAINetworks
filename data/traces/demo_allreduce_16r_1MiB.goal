@@ -1,0 +1,1473 @@
+num_ranks 16
+
+rank 0 {
+l1: send 1048576b to 1 tag 0000010000
+l2: recv 1048576b from 15 tag 0150000000
+l3: send 1048576b to 1 tag 0000010001
+l3 requires l2
+l4: recv 1048576b from 15 tag 0150000001
+l5: send 1048576b to 1 tag 0000010002
+l5 requires l4
+l6: recv 1048576b from 15 tag 0150000002
+l7: send 1048576b to 1 tag 0000010003
+l7 requires l6
+l8: recv 1048576b from 15 tag 0150000003
+l9: send 1048576b to 1 tag 0000010004
+l9 requires l8
+l10: recv 1048576b from 15 tag 0150000004
+l11: send 1048576b to 1 tag 0000010005
+l11 requires l10
+l12: recv 1048576b from 15 tag 0150000005
+l13: send 1048576b to 1 tag 0000010006
+l13 requires l12
+l14: recv 1048576b from 15 tag 0150000006
+l15: send 1048576b to 1 tag 0000010007
+l15 requires l14
+l16: recv 1048576b from 15 tag 0150000007
+l17: send 1048576b to 1 tag 0000010008
+l17 requires l16
+l18: recv 1048576b from 15 tag 0150000008
+l19: send 1048576b to 1 tag 0000010009
+l19 requires l18
+l20: recv 1048576b from 15 tag 0150000009
+l21: send 1048576b to 1 tag 0000010010
+l21 requires l20
+l22: recv 1048576b from 15 tag 0150000010
+l23: send 1048576b to 1 tag 0000010011
+l23 requires l22
+l24: recv 1048576b from 15 tag 0150000011
+l25: send 1048576b to 1 tag 0000010012
+l25 requires l24
+l26: recv 1048576b from 15 tag 0150000012
+l27: send 1048576b to 1 tag 0000010013
+l27 requires l26
+l28: recv 1048576b from 15 tag 0150000013
+l29: send 1048576b to 1 tag 0000010014
+l29 requires l28
+l30: recv 1048576b from 15 tag 0150000014
+l31: send 1048576b to 1 tag 0000010015
+l31 requires l30
+l32: recv 1048576b from 15 tag 0150000015
+l33: send 1048576b to 1 tag 0000010016
+l33 requires l32
+l34: recv 1048576b from 15 tag 0150000016
+l35: send 1048576b to 1 tag 0000010017
+l35 requires l34
+l36: recv 1048576b from 15 tag 0150000017
+l37: send 1048576b to 1 tag 0000010018
+l37 requires l36
+l38: recv 1048576b from 15 tag 0150000018
+l39: send 1048576b to 1 tag 0000010019
+l39 requires l38
+l40: recv 1048576b from 15 tag 0150000019
+l41: send 1048576b to 1 tag 0000010020
+l41 requires l40
+l42: recv 1048576b from 15 tag 0150000020
+l43: send 1048576b to 1 tag 0000010021
+l43 requires l42
+l44: recv 1048576b from 15 tag 0150000021
+l45: send 1048576b to 1 tag 0000010022
+l45 requires l44
+l46: recv 1048576b from 15 tag 0150000022
+l47: send 1048576b to 1 tag 0000010023
+l47 requires l46
+l48: recv 1048576b from 15 tag 0150000023
+l49: send 1048576b to 1 tag 0000010024
+l49 requires l48
+l50: recv 1048576b from 15 tag 0150000024
+l51: send 1048576b to 1 tag 0000010025
+l51 requires l50
+l52: recv 1048576b from 15 tag 0150000025
+l53: send 1048576b to 1 tag 0000010026
+l53 requires l52
+l54: recv 1048576b from 15 tag 0150000026
+l55: send 1048576b to 1 tag 0000010027
+l55 requires l54
+l56: recv 1048576b from 15 tag 0150000027
+l57: send 1048576b to 1 tag 0000010028
+l57 requires l56
+l58: recv 1048576b from 15 tag 0150000028
+l59: send 1048576b to 1 tag 0000010029
+l59 requires l58
+l60: recv 1048576b from 15 tag 0150000029
+}
+
+rank 1 {
+l1: send 1048576b to 2 tag 0010020000
+l2: recv 1048576b from 0 tag 0000010000
+l3: send 1048576b to 2 tag 0010020001
+l3 requires l2
+l4: recv 1048576b from 0 tag 0000010001
+l5: send 1048576b to 2 tag 0010020002
+l5 requires l4
+l6: recv 1048576b from 0 tag 0000010002
+l7: send 1048576b to 2 tag 0010020003
+l7 requires l6
+l8: recv 1048576b from 0 tag 0000010003
+l9: send 1048576b to 2 tag 0010020004
+l9 requires l8
+l10: recv 1048576b from 0 tag 0000010004
+l11: send 1048576b to 2 tag 0010020005
+l11 requires l10
+l12: recv 1048576b from 0 tag 0000010005
+l13: send 1048576b to 2 tag 0010020006
+l13 requires l12
+l14: recv 1048576b from 0 tag 0000010006
+l15: send 1048576b to 2 tag 0010020007
+l15 requires l14
+l16: recv 1048576b from 0 tag 0000010007
+l17: send 1048576b to 2 tag 0010020008
+l17 requires l16
+l18: recv 1048576b from 0 tag 0000010008
+l19: send 1048576b to 2 tag 0010020009
+l19 requires l18
+l20: recv 1048576b from 0 tag 0000010009
+l21: send 1048576b to 2 tag 0010020010
+l21 requires l20
+l22: recv 1048576b from 0 tag 0000010010
+l23: send 1048576b to 2 tag 0010020011
+l23 requires l22
+l24: recv 1048576b from 0 tag 0000010011
+l25: send 1048576b to 2 tag 0010020012
+l25 requires l24
+l26: recv 1048576b from 0 tag 0000010012
+l27: send 1048576b to 2 tag 0010020013
+l27 requires l26
+l28: recv 1048576b from 0 tag 0000010013
+l29: send 1048576b to 2 tag 0010020014
+l29 requires l28
+l30: recv 1048576b from 0 tag 0000010014
+l31: send 1048576b to 2 tag 0010020015
+l31 requires l30
+l32: recv 1048576b from 0 tag 0000010015
+l33: send 1048576b to 2 tag 0010020016
+l33 requires l32
+l34: recv 1048576b from 0 tag 0000010016
+l35: send 1048576b to 2 tag 0010020017
+l35 requires l34
+l36: recv 1048576b from 0 tag 0000010017
+l37: send 1048576b to 2 tag 0010020018
+l37 requires l36
+l38: recv 1048576b from 0 tag 0000010018
+l39: send 1048576b to 2 tag 0010020019
+l39 requires l38
+l40: recv 1048576b from 0 tag 0000010019
+l41: send 1048576b to 2 tag 0010020020
+l41 requires l40
+l42: recv 1048576b from 0 tag 0000010020
+l43: send 1048576b to 2 tag 0010020021
+l43 requires l42
+l44: recv 1048576b from 0 tag 0000010021
+l45: send 1048576b to 2 tag 0010020022
+l45 requires l44
+l46: recv 1048576b from 0 tag 0000010022
+l47: send 1048576b to 2 tag 0010020023
+l47 requires l46
+l48: recv 1048576b from 0 tag 0000010023
+l49: send 1048576b to 2 tag 0010020024
+l49 requires l48
+l50: recv 1048576b from 0 tag 0000010024
+l51: send 1048576b to 2 tag 0010020025
+l51 requires l50
+l52: recv 1048576b from 0 tag 0000010025
+l53: send 1048576b to 2 tag 0010020026
+l53 requires l52
+l54: recv 1048576b from 0 tag 0000010026
+l55: send 1048576b to 2 tag 0010020027
+l55 requires l54
+l56: recv 1048576b from 0 tag 0000010027
+l57: send 1048576b to 2 tag 0010020028
+l57 requires l56
+l58: recv 1048576b from 0 tag 0000010028
+l59: send 1048576b to 2 tag 0010020029
+l59 requires l58
+l60: recv 1048576b from 0 tag 0000010029
+}
+
+rank 2 {
+l1: send 1048576b to 3 tag 0020030000
+l2: recv 1048576b from 1 tag 0010020000
+l3: send 1048576b to 3 tag 0020030001
+l3 requires l2
+l4: recv 1048576b from 1 tag 0010020001
+l5: send 1048576b to 3 tag 0020030002
+l5 requires l4
+l6: recv 1048576b from 1 tag 0010020002
+l7: send 1048576b to 3 tag 0020030003
+l7 requires l6
+l8: recv 1048576b from 1 tag 0010020003
+l9: send 1048576b to 3 tag 0020030004
+l9 requires l8
+l10: recv 1048576b from 1 tag 0010020004
+l11: send 1048576b to 3 tag 0020030005
+l11 requires l10
+l12: recv 1048576b from 1 tag 0010020005
+l13: send 1048576b to 3 tag 0020030006
+l13 requires l12
+l14: recv 1048576b from 1 tag 0010020006
+l15: send 1048576b to 3 tag 0020030007
+l15 requires l14
+l16: recv 1048576b from 1 tag 0010020007
+l17: send 1048576b to 3 tag 0020030008
+l17 requires l16
+l18: recv 1048576b from 1 tag 0010020008
+l19: send 1048576b to 3 tag 0020030009
+l19 requires l18
+l20: recv 1048576b from 1 tag 0010020009
+l21: send 1048576b to 3 tag 0020030010
+l21 requires l20
+l22: recv 1048576b from 1 tag 0010020010
+l23: send 1048576b to 3 tag 0020030011
+l23 requires l22
+l24: recv 1048576b from 1 tag 0010020011
+l25: send 1048576b to 3 tag 0020030012
+l25 requires l24
+l26: recv 1048576b from 1 tag 0010020012
+l27: send 1048576b to 3 tag 0020030013
+l27 requires l26
+l28: recv 1048576b from 1 tag 0010020013
+l29: send 1048576b to 3 tag 0020030014
+l29 requires l28
+l30: recv 1048576b from 1 tag 0010020014
+l31: send 1048576b to 3 tag 0020030015
+l31 requires l30
+l32: recv 1048576b from 1 tag 0010020015
+l33: send 1048576b to 3 tag 0020030016
+l33 requires l32
+l34: recv 1048576b from 1 tag 0010020016
+l35: send 1048576b to 3 tag 0020030017
+l35 requires l34
+l36: recv 1048576b from 1 tag 0010020017
+l37: send 1048576b to 3 tag 0020030018
+l37 requires l36
+l38: recv 1048576b from 1 tag 0010020018
+l39: send 1048576b to 3 tag 0020030019
+l39 requires l38
+l40: recv 1048576b from 1 tag 0010020019
+l41: send 1048576b to 3 tag 0020030020
+l41 requires l40
+l42: recv 1048576b from 1 tag 0010020020
+l43: send 1048576b to 3 tag 0020030021
+l43 requires l42
+l44: recv 1048576b from 1 tag 0010020021
+l45: send 1048576b to 3 tag 0020030022
+l45 requires l44
+l46: recv 1048576b from 1 tag 0010020022
+l47: send 1048576b to 3 tag 0020030023
+l47 requires l46
+l48: recv 1048576b from 1 tag 0010020023
+l49: send 1048576b to 3 tag 0020030024
+l49 requires l48
+l50: recv 1048576b from 1 tag 0010020024
+l51: send 1048576b to 3 tag 0020030025
+l51 requires l50
+l52: recv 1048576b from 1 tag 0010020025
+l53: send 1048576b to 3 tag 0020030026
+l53 requires l52
+l54: recv 1048576b from 1 tag 0010020026
+l55: send 1048576b to 3 tag 0020030027
+l55 requires l54
+l56: recv 1048576b from 1 tag 0010020027
+l57: send 1048576b to 3 tag 0020030028
+l57 requires l56
+l58: recv 1048576b from 1 tag 0010020028
+l59: send 1048576b to 3 tag 0020030029
+l59 requires l58
+l60: recv 1048576b from 1 tag 0010020029
+}
+
+rank 3 {
+l1: send 1048576b to 4 tag 0030040000
+l2: recv 1048576b from 2 tag 0020030000
+l3: send 1048576b to 4 tag 0030040001
+l3 requires l2
+l4: recv 1048576b from 2 tag 0020030001
+l5: send 1048576b to 4 tag 0030040002
+l5 requires l4
+l6: recv 1048576b from 2 tag 0020030002
+l7: send 1048576b to 4 tag 0030040003
+l7 requires l6
+l8: recv 1048576b from 2 tag 0020030003
+l9: send 1048576b to 4 tag 0030040004
+l9 requires l8
+l10: recv 1048576b from 2 tag 0020030004
+l11: send 1048576b to 4 tag 0030040005
+l11 requires l10
+l12: recv 1048576b from 2 tag 0020030005
+l13: send 1048576b to 4 tag 0030040006
+l13 requires l12
+l14: recv 1048576b from 2 tag 0020030006
+l15: send 1048576b to 4 tag 0030040007
+l15 requires l14
+l16: recv 1048576b from 2 tag 0020030007
+l17: send 1048576b to 4 tag 0030040008
+l17 requires l16
+l18: recv 1048576b from 2 tag 0020030008
+l19: send 1048576b to 4 tag 0030040009
+l19 requires l18
+l20: recv 1048576b from 2 tag 0020030009
+l21: send 1048576b to 4 tag 0030040010
+l21 requires l20
+l22: recv 1048576b from 2 tag 0020030010
+l23: send 1048576b to 4 tag 0030040011
+l23 requires l22
+l24: recv 1048576b from 2 tag 0020030011
+l25: send 1048576b to 4 tag 0030040012
+l25 requires l24
+l26: recv 1048576b from 2 tag 0020030012
+l27: send 1048576b to 4 tag 0030040013
+l27 requires l26
+l28: recv 1048576b from 2 tag 0020030013
+l29: send 1048576b to 4 tag 0030040014
+l29 requires l28
+l30: recv 1048576b from 2 tag 0020030014
+l31: send 1048576b to 4 tag 0030040015
+l31 requires l30
+l32: recv 1048576b from 2 tag 0020030015
+l33: send 1048576b to 4 tag 0030040016
+l33 requires l32
+l34: recv 1048576b from 2 tag 0020030016
+l35: send 1048576b to 4 tag 0030040017
+l35 requires l34
+l36: recv 1048576b from 2 tag 0020030017
+l37: send 1048576b to 4 tag 0030040018
+l37 requires l36
+l38: recv 1048576b from 2 tag 0020030018
+l39: send 1048576b to 4 tag 0030040019
+l39 requires l38
+l40: recv 1048576b from 2 tag 0020030019
+l41: send 1048576b to 4 tag 0030040020
+l41 requires l40
+l42: recv 1048576b from 2 tag 0020030020
+l43: send 1048576b to 4 tag 0030040021
+l43 requires l42
+l44: recv 1048576b from 2 tag 0020030021
+l45: send 1048576b to 4 tag 0030040022
+l45 requires l44
+l46: recv 1048576b from 2 tag 0020030022
+l47: send 1048576b to 4 tag 0030040023
+l47 requires l46
+l48: recv 1048576b from 2 tag 0020030023
+l49: send 1048576b to 4 tag 0030040024
+l49 requires l48
+l50: recv 1048576b from 2 tag 0020030024
+l51: send 1048576b to 4 tag 0030040025
+l51 requires l50
+l52: recv 1048576b from 2 tag 0020030025
+l53: send 1048576b to 4 tag 0030040026
+l53 requires l52
+l54: recv 1048576b from 2 tag 0020030026
+l55: send 1048576b to 4 tag 0030040027
+l55 requires l54
+l56: recv 1048576b from 2 tag 0020030027
+l57: send 1048576b to 4 tag 0030040028
+l57 requires l56
+l58: recv 1048576b from 2 tag 0020030028
+l59: send 1048576b to 4 tag 0030040029
+l59 requires l58
+l60: recv 1048576b from 2 tag 0020030029
+}
+
+rank 4 {
+l1: send 1048576b to 5 tag 0040050000
+l2: recv 1048576b from 3 tag 0030040000
+l3: send 1048576b to 5 tag 0040050001
+l3 requires l2
+l4: recv 1048576b from 3 tag 0030040001
+l5: send 1048576b to 5 tag 0040050002
+l5 requires l4
+l6: recv 1048576b from 3 tag 0030040002
+l7: send 1048576b to 5 tag 0040050003
+l7 requires l6
+l8: recv 1048576b from 3 tag 0030040003
+l9: send 1048576b to 5 tag 0040050004
+l9 requires l8
+l10: recv 1048576b from 3 tag 0030040004
+l11: send 1048576b to 5 tag 0040050005
+l11 requires l10
+l12: recv 1048576b from 3 tag 0030040005
+l13: send 1048576b to 5 tag 0040050006
+l13 requires l12
+l14: recv 1048576b from 3 tag 0030040006
+l15: send 1048576b to 5 tag 0040050007
+l15 requires l14
+l16: recv 1048576b from 3 tag 0030040007
+l17: send 1048576b to 5 tag 0040050008
+l17 requires l16
+l18: recv 1048576b from 3 tag 0030040008
+l19: send 1048576b to 5 tag 0040050009
+l19 requires l18
+l20: recv 1048576b from 3 tag 0030040009
+l21: send 1048576b to 5 tag 0040050010
+l21 requires l20
+l22: recv 1048576b from 3 tag 0030040010
+l23: send 1048576b to 5 tag 0040050011
+l23 requires l22
+l24: recv 1048576b from 3 tag 0030040011
+l25: send 1048576b to 5 tag 0040050012
+l25 requires l24
+l26: recv 1048576b from 3 tag 0030040012
+l27: send 1048576b to 5 tag 0040050013
+l27 requires l26
+l28: recv 1048576b from 3 tag 0030040013
+l29: send 1048576b to 5 tag 0040050014
+l29 requires l28
+l30: recv 1048576b from 3 tag 0030040014
+l31: send 1048576b to 5 tag 0040050015
+l31 requires l30
+l32: recv 1048576b from 3 tag 0030040015
+l33: send 1048576b to 5 tag 0040050016
+l33 requires l32
+l34: recv 1048576b from 3 tag 0030040016
+l35: send 1048576b to 5 tag 0040050017
+l35 requires l34
+l36: recv 1048576b from 3 tag 0030040017
+l37: send 1048576b to 5 tag 0040050018
+l37 requires l36
+l38: recv 1048576b from 3 tag 0030040018
+l39: send 1048576b to 5 tag 0040050019
+l39 requires l38
+l40: recv 1048576b from 3 tag 0030040019
+l41: send 1048576b to 5 tag 0040050020
+l41 requires l40
+l42: recv 1048576b from 3 tag 0030040020
+l43: send 1048576b to 5 tag 0040050021
+l43 requires l42
+l44: recv 1048576b from 3 tag 0030040021
+l45: send 1048576b to 5 tag 0040050022
+l45 requires l44
+l46: recv 1048576b from 3 tag 0030040022
+l47: send 1048576b to 5 tag 0040050023
+l47 requires l46
+l48: recv 1048576b from 3 tag 0030040023
+l49: send 1048576b to 5 tag 0040050024
+l49 requires l48
+l50: recv 1048576b from 3 tag 0030040024
+l51: send 1048576b to 5 tag 0040050025
+l51 requires l50
+l52: recv 1048576b from 3 tag 0030040025
+l53: send 1048576b to 5 tag 0040050026
+l53 requires l52
+l54: recv 1048576b from 3 tag 0030040026
+l55: send 1048576b to 5 tag 0040050027
+l55 requires l54
+l56: recv 1048576b from 3 tag 0030040027
+l57: send 1048576b to 5 tag 0040050028
+l57 requires l56
+l58: recv 1048576b from 3 tag 0030040028
+l59: send 1048576b to 5 tag 0040050029
+l59 requires l58
+l60: recv 1048576b from 3 tag 0030040029
+}
+
+rank 5 {
+l1: send 1048576b to 6 tag 0050060000
+l2: recv 1048576b from 4 tag 0040050000
+l3: send 1048576b to 6 tag 0050060001
+l3 requires l2
+l4: recv 1048576b from 4 tag 0040050001
+l5: send 1048576b to 6 tag 0050060002
+l5 requires l4
+l6: recv 1048576b from 4 tag 0040050002
+l7: send 1048576b to 6 tag 0050060003
+l7 requires l6
+l8: recv 1048576b from 4 tag 0040050003
+l9: send 1048576b to 6 tag 0050060004
+l9 requires l8
+l10: recv 1048576b from 4 tag 0040050004
+l11: send 1048576b to 6 tag 0050060005
+l11 requires l10
+l12: recv 1048576b from 4 tag 0040050005
+l13: send 1048576b to 6 tag 0050060006
+l13 requires l12
+l14: recv 1048576b from 4 tag 0040050006
+l15: send 1048576b to 6 tag 0050060007
+l15 requires l14
+l16: recv 1048576b from 4 tag 0040050007
+l17: send 1048576b to 6 tag 0050060008
+l17 requires l16
+l18: recv 1048576b from 4 tag 0040050008
+l19: send 1048576b to 6 tag 0050060009
+l19 requires l18
+l20: recv 1048576b from 4 tag 0040050009
+l21: send 1048576b to 6 tag 0050060010
+l21 requires l20
+l22: recv 1048576b from 4 tag 0040050010
+l23: send 1048576b to 6 tag 0050060011
+l23 requires l22
+l24: recv 1048576b from 4 tag 0040050011
+l25: send 1048576b to 6 tag 0050060012
+l25 requires l24
+l26: recv 1048576b from 4 tag 0040050012
+l27: send 1048576b to 6 tag 0050060013
+l27 requires l26
+l28: recv 1048576b from 4 tag 0040050013
+l29: send 1048576b to 6 tag 0050060014
+l29 requires l28
+l30: recv 1048576b from 4 tag 0040050014
+l31: send 1048576b to 6 tag 0050060015
+l31 requires l30
+l32: recv 1048576b from 4 tag 0040050015
+l33: send 1048576b to 6 tag 0050060016
+l33 requires l32
+l34: recv 1048576b from 4 tag 0040050016
+l35: send 1048576b to 6 tag 0050060017
+l35 requires l34
+l36: recv 1048576b from 4 tag 0040050017
+l37: send 1048576b to 6 tag 0050060018
+l37 requires l36
+l38: recv 1048576b from 4 tag 0040050018
+l39: send 1048576b to 6 tag 0050060019
+l39 requires l38
+l40: recv 1048576b from 4 tag 0040050019
+l41: send 1048576b to 6 tag 0050060020
+l41 requires l40
+l42: recv 1048576b from 4 tag 0040050020
+l43: send 1048576b to 6 tag 0050060021
+l43 requires l42
+l44: recv 1048576b from 4 tag 0040050021
+l45: send 1048576b to 6 tag 0050060022
+l45 requires l44
+l46: recv 1048576b from 4 tag 0040050022
+l47: send 1048576b to 6 tag 0050060023
+l47 requires l46
+l48: recv 1048576b from 4 tag 0040050023
+l49: send 1048576b to 6 tag 0050060024
+l49 requires l48
+l50: recv 1048576b from 4 tag 0040050024
+l51: send 1048576b to 6 tag 0050060025
+l51 requires l50
+l52: recv 1048576b from 4 tag 0040050025
+l53: send 1048576b to 6 tag 0050060026
+l53 requires l52
+l54: recv 1048576b from 4 tag 0040050026
+l55: send 1048576b to 6 tag 0050060027
+l55 requires l54
+l56: recv 1048576b from 4 tag 0040050027
+l57: send 1048576b to 6 tag 0050060028
+l57 requires l56
+l58: recv 1048576b from 4 tag 0040050028
+l59: send 1048576b to 6 tag 0050060029
+l59 requires l58
+l60: recv 1048576b from 4 tag 0040050029
+}
+
+rank 6 {
+l1: send 1048576b to 7 tag 0060070000
+l2: recv 1048576b from 5 tag 0050060000
+l3: send 1048576b to 7 tag 0060070001
+l3 requires l2
+l4: recv 1048576b from 5 tag 0050060001
+l5: send 1048576b to 7 tag 0060070002
+l5 requires l4
+l6: recv 1048576b from 5 tag 0050060002
+l7: send 1048576b to 7 tag 0060070003
+l7 requires l6
+l8: recv 1048576b from 5 tag 0050060003
+l9: send 1048576b to 7 tag 0060070004
+l9 requires l8
+l10: recv 1048576b from 5 tag 0050060004
+l11: send 1048576b to 7 tag 0060070005
+l11 requires l10
+l12: recv 1048576b from 5 tag 0050060005
+l13: send 1048576b to 7 tag 0060070006
+l13 requires l12
+l14: recv 1048576b from 5 tag 0050060006
+l15: send 1048576b to 7 tag 0060070007
+l15 requires l14
+l16: recv 1048576b from 5 tag 0050060007
+l17: send 1048576b to 7 tag 0060070008
+l17 requires l16
+l18: recv 1048576b from 5 tag 0050060008
+l19: send 1048576b to 7 tag 0060070009
+l19 requires l18
+l20: recv 1048576b from 5 tag 0050060009
+l21: send 1048576b to 7 tag 0060070010
+l21 requires l20
+l22: recv 1048576b from 5 tag 0050060010
+l23: send 1048576b to 7 tag 0060070011
+l23 requires l22
+l24: recv 1048576b from 5 tag 0050060011
+l25: send 1048576b to 7 tag 0060070012
+l25 requires l24
+l26: recv 1048576b from 5 tag 0050060012
+l27: send 1048576b to 7 tag 0060070013
+l27 requires l26
+l28: recv 1048576b from 5 tag 0050060013
+l29: send 1048576b to 7 tag 0060070014
+l29 requires l28
+l30: recv 1048576b from 5 tag 0050060014
+l31: send 1048576b to 7 tag 0060070015
+l31 requires l30
+l32: recv 1048576b from 5 tag 0050060015
+l33: send 1048576b to 7 tag 0060070016
+l33 requires l32
+l34: recv 1048576b from 5 tag 0050060016
+l35: send 1048576b to 7 tag 0060070017
+l35 requires l34
+l36: recv 1048576b from 5 tag 0050060017
+l37: send 1048576b to 7 tag 0060070018
+l37 requires l36
+l38: recv 1048576b from 5 tag 0050060018
+l39: send 1048576b to 7 tag 0060070019
+l39 requires l38
+l40: recv 1048576b from 5 tag 0050060019
+l41: send 1048576b to 7 tag 0060070020
+l41 requires l40
+l42: recv 1048576b from 5 tag 0050060020
+l43: send 1048576b to 7 tag 0060070021
+l43 requires l42
+l44: recv 1048576b from 5 tag 0050060021
+l45: send 1048576b to 7 tag 0060070022
+l45 requires l44
+l46: recv 1048576b from 5 tag 0050060022
+l47: send 1048576b to 7 tag 0060070023
+l47 requires l46
+l48: recv 1048576b from 5 tag 0050060023
+l49: send 1048576b to 7 tag 0060070024
+l49 requires l48
+l50: recv 1048576b from 5 tag 0050060024
+l51: send 1048576b to 7 tag 0060070025
+l51 requires l50
+l52: recv 1048576b from 5 tag 0050060025
+l53: send 1048576b to 7 tag 0060070026
+l53 requires l52
+l54: recv 1048576b from 5 tag 0050060026
+l55: send 1048576b to 7 tag 0060070027
+l55 requires l54
+l56: recv 1048576b from 5 tag 0050060027
+l57: send 1048576b to 7 tag 0060070028
+l57 requires l56
+l58: recv 1048576b from 5 tag 0050060028
+l59: send 1048576b to 7 tag 0060070029
+l59 requires l58
+l60: recv 1048576b from 5 tag 0050060029
+}
+
+rank 7 {
+l1: send 1048576b to 8 tag 0070080000
+l2: recv 1048576b from 6 tag 0060070000
+l3: send 1048576b to 8 tag 0070080001
+l3 requires l2
+l4: recv 1048576b from 6 tag 0060070001
+l5: send 1048576b to 8 tag 0070080002
+l5 requires l4
+l6: recv 1048576b from 6 tag 0060070002
+l7: send 1048576b to 8 tag 0070080003
+l7 requires l6
+l8: recv 1048576b from 6 tag 0060070003
+l9: send 1048576b to 8 tag 0070080004
+l9 requires l8
+l10: recv 1048576b from 6 tag 0060070004
+l11: send 1048576b to 8 tag 0070080005
+l11 requires l10
+l12: recv 1048576b from 6 tag 0060070005
+l13: send 1048576b to 8 tag 0070080006
+l13 requires l12
+l14: recv 1048576b from 6 tag 0060070006
+l15: send 1048576b to 8 tag 0070080007
+l15 requires l14
+l16: recv 1048576b from 6 tag 0060070007
+l17: send 1048576b to 8 tag 0070080008
+l17 requires l16
+l18: recv 1048576b from 6 tag 0060070008
+l19: send 1048576b to 8 tag 0070080009
+l19 requires l18
+l20: recv 1048576b from 6 tag 0060070009
+l21: send 1048576b to 8 tag 0070080010
+l21 requires l20
+l22: recv 1048576b from 6 tag 0060070010
+l23: send 1048576b to 8 tag 0070080011
+l23 requires l22
+l24: recv 1048576b from 6 tag 0060070011
+l25: send 1048576b to 8 tag 0070080012
+l25 requires l24
+l26: recv 1048576b from 6 tag 0060070012
+l27: send 1048576b to 8 tag 0070080013
+l27 requires l26
+l28: recv 1048576b from 6 tag 0060070013
+l29: send 1048576b to 8 tag 0070080014
+l29 requires l28
+l30: recv 1048576b from 6 tag 0060070014
+l31: send 1048576b to 8 tag 0070080015
+l31 requires l30
+l32: recv 1048576b from 6 tag 0060070015
+l33: send 1048576b to 8 tag 0070080016
+l33 requires l32
+l34: recv 1048576b from 6 tag 0060070016
+l35: send 1048576b to 8 tag 0070080017
+l35 requires l34
+l36: recv 1048576b from 6 tag 0060070017
+l37: send 1048576b to 8 tag 0070080018
+l37 requires l36
+l38: recv 1048576b from 6 tag 0060070018
+l39: send 1048576b to 8 tag 0070080019
+l39 requires l38
+l40: recv 1048576b from 6 tag 0060070019
+l41: send 1048576b to 8 tag 0070080020
+l41 requires l40
+l42: recv 1048576b from 6 tag 0060070020
+l43: send 1048576b to 8 tag 0070080021
+l43 requires l42
+l44: recv 1048576b from 6 tag 0060070021
+l45: send 1048576b to 8 tag 0070080022
+l45 requires l44
+l46: recv 1048576b from 6 tag 0060070022
+l47: send 1048576b to 8 tag 0070080023
+l47 requires l46
+l48: recv 1048576b from 6 tag 0060070023
+l49: send 1048576b to 8 tag 0070080024
+l49 requires l48
+l50: recv 1048576b from 6 tag 0060070024
+l51: send 1048576b to 8 tag 0070080025
+l51 requires l50
+l52: recv 1048576b from 6 tag 0060070025
+l53: send 1048576b to 8 tag 0070080026
+l53 requires l52
+l54: recv 1048576b from 6 tag 0060070026
+l55: send 1048576b to 8 tag 0070080027
+l55 requires l54
+l56: recv 1048576b from 6 tag 0060070027
+l57: send 1048576b to 8 tag 0070080028
+l57 requires l56
+l58: recv 1048576b from 6 tag 0060070028
+l59: send 1048576b to 8 tag 0070080029
+l59 requires l58
+l60: recv 1048576b from 6 tag 0060070029
+}
+
+rank 8 {
+l1: send 1048576b to 9 tag 0080090000
+l2: recv 1048576b from 7 tag 0070080000
+l3: send 1048576b to 9 tag 0080090001
+l3 requires l2
+l4: recv 1048576b from 7 tag 0070080001
+l5: send 1048576b to 9 tag 0080090002
+l5 requires l4
+l6: recv 1048576b from 7 tag 0070080002
+l7: send 1048576b to 9 tag 0080090003
+l7 requires l6
+l8: recv 1048576b from 7 tag 0070080003
+l9: send 1048576b to 9 tag 0080090004
+l9 requires l8
+l10: recv 1048576b from 7 tag 0070080004
+l11: send 1048576b to 9 tag 0080090005
+l11 requires l10
+l12: recv 1048576b from 7 tag 0070080005
+l13: send 1048576b to 9 tag 0080090006
+l13 requires l12
+l14: recv 1048576b from 7 tag 0070080006
+l15: send 1048576b to 9 tag 0080090007
+l15 requires l14
+l16: recv 1048576b from 7 tag 0070080007
+l17: send 1048576b to 9 tag 0080090008
+l17 requires l16
+l18: recv 1048576b from 7 tag 0070080008
+l19: send 1048576b to 9 tag 0080090009
+l19 requires l18
+l20: recv 1048576b from 7 tag 0070080009
+l21: send 1048576b to 9 tag 0080090010
+l21 requires l20
+l22: recv 1048576b from 7 tag 0070080010
+l23: send 1048576b to 9 tag 0080090011
+l23 requires l22
+l24: recv 1048576b from 7 tag 0070080011
+l25: send 1048576b to 9 tag 0080090012
+l25 requires l24
+l26: recv 1048576b from 7 tag 0070080012
+l27: send 1048576b to 9 tag 0080090013
+l27 requires l26
+l28: recv 1048576b from 7 tag 0070080013
+l29: send 1048576b to 9 tag 0080090014
+l29 requires l28
+l30: recv 1048576b from 7 tag 0070080014
+l31: send 1048576b to 9 tag 0080090015
+l31 requires l30
+l32: recv 1048576b from 7 tag 0070080015
+l33: send 1048576b to 9 tag 0080090016
+l33 requires l32
+l34: recv 1048576b from 7 tag 0070080016
+l35: send 1048576b to 9 tag 0080090017
+l35 requires l34
+l36: recv 1048576b from 7 tag 0070080017
+l37: send 1048576b to 9 tag 0080090018
+l37 requires l36
+l38: recv 1048576b from 7 tag 0070080018
+l39: send 1048576b to 9 tag 0080090019
+l39 requires l38
+l40: recv 1048576b from 7 tag 0070080019
+l41: send 1048576b to 9 tag 0080090020
+l41 requires l40
+l42: recv 1048576b from 7 tag 0070080020
+l43: send 1048576b to 9 tag 0080090021
+l43 requires l42
+l44: recv 1048576b from 7 tag 0070080021
+l45: send 1048576b to 9 tag 0080090022
+l45 requires l44
+l46: recv 1048576b from 7 tag 0070080022
+l47: send 1048576b to 9 tag 0080090023
+l47 requires l46
+l48: recv 1048576b from 7 tag 0070080023
+l49: send 1048576b to 9 tag 0080090024
+l49 requires l48
+l50: recv 1048576b from 7 tag 0070080024
+l51: send 1048576b to 9 tag 0080090025
+l51 requires l50
+l52: recv 1048576b from 7 tag 0070080025
+l53: send 1048576b to 9 tag 0080090026
+l53 requires l52
+l54: recv 1048576b from 7 tag 0070080026
+l55: send 1048576b to 9 tag 0080090027
+l55 requires l54
+l56: recv 1048576b from 7 tag 0070080027
+l57: send 1048576b to 9 tag 0080090028
+l57 requires l56
+l58: recv 1048576b from 7 tag 0070080028
+l59: send 1048576b to 9 tag 0080090029
+l59 requires l58
+l60: recv 1048576b from 7 tag 0070080029
+}
+
+rank 9 {
+l1: send 1048576b to 10 tag 0090100000
+l2: recv 1048576b from 8 tag 0080090000
+l3: send 1048576b to 10 tag 0090100001
+l3 requires l2
+l4: recv 1048576b from 8 tag 0080090001
+l5: send 1048576b to 10 tag 0090100002
+l5 requires l4
+l6: recv 1048576b from 8 tag 0080090002
+l7: send 1048576b to 10 tag 0090100003
+l7 requires l6
+l8: recv 1048576b from 8 tag 0080090003
+l9: send 1048576b to 10 tag 0090100004
+l9 requires l8
+l10: recv 1048576b from 8 tag 0080090004
+l11: send 1048576b to 10 tag 0090100005
+l11 requires l10
+l12: recv 1048576b from 8 tag 0080090005
+l13: send 1048576b to 10 tag 0090100006
+l13 requires l12
+l14: recv 1048576b from 8 tag 0080090006
+l15: send 1048576b to 10 tag 0090100007
+l15 requires l14
+l16: recv 1048576b from 8 tag 0080090007
+l17: send 1048576b to 10 tag 0090100008
+l17 requires l16
+l18: recv 1048576b from 8 tag 0080090008
+l19: send 1048576b to 10 tag 0090100009
+l19 requires l18
+l20: recv 1048576b from 8 tag 0080090009
+l21: send 1048576b to 10 tag 0090100010
+l21 requires l20
+l22: recv 1048576b from 8 tag 0080090010
+l23: send 1048576b to 10 tag 0090100011
+l23 requires l22
+l24: recv 1048576b from 8 tag 0080090011
+l25: send 1048576b to 10 tag 0090100012
+l25 requires l24
+l26: recv 1048576b from 8 tag 0080090012
+l27: send 1048576b to 10 tag 0090100013
+l27 requires l26
+l28: recv 1048576b from 8 tag 0080090013
+l29: send 1048576b to 10 tag 0090100014
+l29 requires l28
+l30: recv 1048576b from 8 tag 0080090014
+l31: send 1048576b to 10 tag 0090100015
+l31 requires l30
+l32: recv 1048576b from 8 tag 0080090015
+l33: send 1048576b to 10 tag 0090100016
+l33 requires l32
+l34: recv 1048576b from 8 tag 0080090016
+l35: send 1048576b to 10 tag 0090100017
+l35 requires l34
+l36: recv 1048576b from 8 tag 0080090017
+l37: send 1048576b to 10 tag 0090100018
+l37 requires l36
+l38: recv 1048576b from 8 tag 0080090018
+l39: send 1048576b to 10 tag 0090100019
+l39 requires l38
+l40: recv 1048576b from 8 tag 0080090019
+l41: send 1048576b to 10 tag 0090100020
+l41 requires l40
+l42: recv 1048576b from 8 tag 0080090020
+l43: send 1048576b to 10 tag 0090100021
+l43 requires l42
+l44: recv 1048576b from 8 tag 0080090021
+l45: send 1048576b to 10 tag 0090100022
+l45 requires l44
+l46: recv 1048576b from 8 tag 0080090022
+l47: send 1048576b to 10 tag 0090100023
+l47 requires l46
+l48: recv 1048576b from 8 tag 0080090023
+l49: send 1048576b to 10 tag 0090100024
+l49 requires l48
+l50: recv 1048576b from 8 tag 0080090024
+l51: send 1048576b to 10 tag 0090100025
+l51 requires l50
+l52: recv 1048576b from 8 tag 0080090025
+l53: send 1048576b to 10 tag 0090100026
+l53 requires l52
+l54: recv 1048576b from 8 tag 0080090026
+l55: send 1048576b to 10 tag 0090100027
+l55 requires l54
+l56: recv 1048576b from 8 tag 0080090027
+l57: send 1048576b to 10 tag 0090100028
+l57 requires l56
+l58: recv 1048576b from 8 tag 0080090028
+l59: send 1048576b to 10 tag 0090100029
+l59 requires l58
+l60: recv 1048576b from 8 tag 0080090029
+}
+
+rank 10 {
+l1: send 1048576b to 11 tag 0100110000
+l2: recv 1048576b from 9 tag 0090100000
+l3: send 1048576b to 11 tag 0100110001
+l3 requires l2
+l4: recv 1048576b from 9 tag 0090100001
+l5: send 1048576b to 11 tag 0100110002
+l5 requires l4
+l6: recv 1048576b from 9 tag 0090100002
+l7: send 1048576b to 11 tag 0100110003
+l7 requires l6
+l8: recv 1048576b from 9 tag 0090100003
+l9: send 1048576b to 11 tag 0100110004
+l9 requires l8
+l10: recv 1048576b from 9 tag 0090100004
+l11: send 1048576b to 11 tag 0100110005
+l11 requires l10
+l12: recv 1048576b from 9 tag 0090100005
+l13: send 1048576b to 11 tag 0100110006
+l13 requires l12
+l14: recv 1048576b from 9 tag 0090100006
+l15: send 1048576b to 11 tag 0100110007
+l15 requires l14
+l16: recv 1048576b from 9 tag 0090100007
+l17: send 1048576b to 11 tag 0100110008
+l17 requires l16
+l18: recv 1048576b from 9 tag 0090100008
+l19: send 1048576b to 11 tag 0100110009
+l19 requires l18
+l20: recv 1048576b from 9 tag 0090100009
+l21: send 1048576b to 11 tag 0100110010
+l21 requires l20
+l22: recv 1048576b from 9 tag 0090100010
+l23: send 1048576b to 11 tag 0100110011
+l23 requires l22
+l24: recv 1048576b from 9 tag 0090100011
+l25: send 1048576b to 11 tag 0100110012
+l25 requires l24
+l26: recv 1048576b from 9 tag 0090100012
+l27: send 1048576b to 11 tag 0100110013
+l27 requires l26
+l28: recv 1048576b from 9 tag 0090100013
+l29: send 1048576b to 11 tag 0100110014
+l29 requires l28
+l30: recv 1048576b from 9 tag 0090100014
+l31: send 1048576b to 11 tag 0100110015
+l31 requires l30
+l32: recv 1048576b from 9 tag 0090100015
+l33: send 1048576b to 11 tag 0100110016
+l33 requires l32
+l34: recv 1048576b from 9 tag 0090100016
+l35: send 1048576b to 11 tag 0100110017
+l35 requires l34
+l36: recv 1048576b from 9 tag 0090100017
+l37: send 1048576b to 11 tag 0100110018
+l37 requires l36
+l38: recv 1048576b from 9 tag 0090100018
+l39: send 1048576b to 11 tag 0100110019
+l39 requires l38
+l40: recv 1048576b from 9 tag 0090100019
+l41: send 1048576b to 11 tag 0100110020
+l41 requires l40
+l42: recv 1048576b from 9 tag 0090100020
+l43: send 1048576b to 11 tag 0100110021
+l43 requires l42
+l44: recv 1048576b from 9 tag 0090100021
+l45: send 1048576b to 11 tag 0100110022
+l45 requires l44
+l46: recv 1048576b from 9 tag 0090100022
+l47: send 1048576b to 11 tag 0100110023
+l47 requires l46
+l48: recv 1048576b from 9 tag 0090100023
+l49: send 1048576b to 11 tag 0100110024
+l49 requires l48
+l50: recv 1048576b from 9 tag 0090100024
+l51: send 1048576b to 11 tag 0100110025
+l51 requires l50
+l52: recv 1048576b from 9 tag 0090100025
+l53: send 1048576b to 11 tag 0100110026
+l53 requires l52
+l54: recv 1048576b from 9 tag 0090100026
+l55: send 1048576b to 11 tag 0100110027
+l55 requires l54
+l56: recv 1048576b from 9 tag 0090100027
+l57: send 1048576b to 11 tag 0100110028
+l57 requires l56
+l58: recv 1048576b from 9 tag 0090100028
+l59: send 1048576b to 11 tag 0100110029
+l59 requires l58
+l60: recv 1048576b from 9 tag 0090100029
+}
+
+rank 11 {
+l1: send 1048576b to 12 tag 0110120000
+l2: recv 1048576b from 10 tag 0100110000
+l3: send 1048576b to 12 tag 0110120001
+l3 requires l2
+l4: recv 1048576b from 10 tag 0100110001
+l5: send 1048576b to 12 tag 0110120002
+l5 requires l4
+l6: recv 1048576b from 10 tag 0100110002
+l7: send 1048576b to 12 tag 0110120003
+l7 requires l6
+l8: recv 1048576b from 10 tag 0100110003
+l9: send 1048576b to 12 tag 0110120004
+l9 requires l8
+l10: recv 1048576b from 10 tag 0100110004
+l11: send 1048576b to 12 tag 0110120005
+l11 requires l10
+l12: recv 1048576b from 10 tag 0100110005
+l13: send 1048576b to 12 tag 0110120006
+l13 requires l12
+l14: recv 1048576b from 10 tag 0100110006
+l15: send 1048576b to 12 tag 0110120007
+l15 requires l14
+l16: recv 1048576b from 10 tag 0100110007
+l17: send 1048576b to 12 tag 0110120008
+l17 requires l16
+l18: recv 1048576b from 10 tag 0100110008
+l19: send 1048576b to 12 tag 0110120009
+l19 requires l18
+l20: recv 1048576b from 10 tag 0100110009
+l21: send 1048576b to 12 tag 0110120010
+l21 requires l20
+l22: recv 1048576b from 10 tag 0100110010
+l23: send 1048576b to 12 tag 0110120011
+l23 requires l22
+l24: recv 1048576b from 10 tag 0100110011
+l25: send 1048576b to 12 tag 0110120012
+l25 requires l24
+l26: recv 1048576b from 10 tag 0100110012
+l27: send 1048576b to 12 tag 0110120013
+l27 requires l26
+l28: recv 1048576b from 10 tag 0100110013
+l29: send 1048576b to 12 tag 0110120014
+l29 requires l28
+l30: recv 1048576b from 10 tag 0100110014
+l31: send 1048576b to 12 tag 0110120015
+l31 requires l30
+l32: recv 1048576b from 10 tag 0100110015
+l33: send 1048576b to 12 tag 0110120016
+l33 requires l32
+l34: recv 1048576b from 10 tag 0100110016
+l35: send 1048576b to 12 tag 0110120017
+l35 requires l34
+l36: recv 1048576b from 10 tag 0100110017
+l37: send 1048576b to 12 tag 0110120018
+l37 requires l36
+l38: recv 1048576b from 10 tag 0100110018
+l39: send 1048576b to 12 tag 0110120019
+l39 requires l38
+l40: recv 1048576b from 10 tag 0100110019
+l41: send 1048576b to 12 tag 0110120020
+l41 requires l40
+l42: recv 1048576b from 10 tag 0100110020
+l43: send 1048576b to 12 tag 0110120021
+l43 requires l42
+l44: recv 1048576b from 10 tag 0100110021
+l45: send 1048576b to 12 tag 0110120022
+l45 requires l44
+l46: recv 1048576b from 10 tag 0100110022
+l47: send 1048576b to 12 tag 0110120023
+l47 requires l46
+l48: recv 1048576b from 10 tag 0100110023
+l49: send 1048576b to 12 tag 0110120024
+l49 requires l48
+l50: recv 1048576b from 10 tag 0100110024
+l51: send 1048576b to 12 tag 0110120025
+l51 requires l50
+l52: recv 1048576b from 10 tag 0100110025
+l53: send 1048576b to 12 tag 0110120026
+l53 requires l52
+l54: recv 1048576b from 10 tag 0100110026
+l55: send 1048576b to 12 tag 0110120027
+l55 requires l54
+l56: recv 1048576b from 10 tag 0100110027
+l57: send 1048576b to 12 tag 0110120028
+l57 requires l56
+l58: recv 1048576b from 10 tag 0100110028
+l59: send 1048576b to 12 tag 0110120029
+l59 requires l58
+l60: recv 1048576b from 10 tag 0100110029
+}
+
+rank 12 {
+l1: send 1048576b to 13 tag 0120130000
+l2: recv 1048576b from 11 tag 0110120000
+l3: send 1048576b to 13 tag 0120130001
+l3 requires l2
+l4: recv 1048576b from 11 tag 0110120001
+l5: send 1048576b to 13 tag 0120130002
+l5 requires l4
+l6: recv 1048576b from 11 tag 0110120002
+l7: send 1048576b to 13 tag 0120130003
+l7 requires l6
+l8: recv 1048576b from 11 tag 0110120003
+l9: send 1048576b to 13 tag 0120130004
+l9 requires l8
+l10: recv 1048576b from 11 tag 0110120004
+l11: send 1048576b to 13 tag 0120130005
+l11 requires l10
+l12: recv 1048576b from 11 tag 0110120005
+l13: send 1048576b to 13 tag 0120130006
+l13 requires l12
+l14: recv 1048576b from 11 tag 0110120006
+l15: send 1048576b to 13 tag 0120130007
+l15 requires l14
+l16: recv 1048576b from 11 tag 0110120007
+l17: send 1048576b to 13 tag 0120130008
+l17 requires l16
+l18: recv 1048576b from 11 tag 0110120008
+l19: send 1048576b to 13 tag 0120130009
+l19 requires l18
+l20: recv 1048576b from 11 tag 0110120009
+l21: send 1048576b to 13 tag 0120130010
+l21 requires l20
+l22: recv 1048576b from 11 tag 0110120010
+l23: send 1048576b to 13 tag 0120130011
+l23 requires l22
+l24: recv 1048576b from 11 tag 0110120011
+l25: send 1048576b to 13 tag 0120130012
+l25 requires l24
+l26: recv 1048576b from 11 tag 0110120012
+l27: send 1048576b to 13 tag 0120130013
+l27 requires l26
+l28: recv 1048576b from 11 tag 0110120013
+l29: send 1048576b to 13 tag 0120130014
+l29 requires l28
+l30: recv 1048576b from 11 tag 0110120014
+l31: send 1048576b to 13 tag 0120130015
+l31 requires l30
+l32: recv 1048576b from 11 tag 0110120015
+l33: send 1048576b to 13 tag 0120130016
+l33 requires l32
+l34: recv 1048576b from 11 tag 0110120016
+l35: send 1048576b to 13 tag 0120130017
+l35 requires l34
+l36: recv 1048576b from 11 tag 0110120017
+l37: send 1048576b to 13 tag 0120130018
+l37 requires l36
+l38: recv 1048576b from 11 tag 0110120018
+l39: send 1048576b to 13 tag 0120130019
+l39 requires l38
+l40: recv 1048576b from 11 tag 0110120019
+l41: send 1048576b to 13 tag 0120130020
+l41 requires l40
+l42: recv 1048576b from 11 tag 0110120020
+l43: send 1048576b to 13 tag 0120130021
+l43 requires l42
+l44: recv 1048576b from 11 tag 0110120021
+l45: send 1048576b to 13 tag 0120130022
+l45 requires l44
+l46: recv 1048576b from 11 tag 0110120022
+l47: send 1048576b to 13 tag 0120130023
+l47 requires l46
+l48: recv 1048576b from 11 tag 0110120023
+l49: send 1048576b to 13 tag 0120130024
+l49 requires l48
+l50: recv 1048576b from 11 tag 0110120024
+l51: send 1048576b to 13 tag 0120130025
+l51 requires l50
+l52: recv 1048576b from 11 tag 0110120025
+l53: send 1048576b to 13 tag 0120130026
+l53 requires l52
+l54: recv 1048576b from 11 tag 0110120026
+l55: send 1048576b to 13 tag 0120130027
+l55 requires l54
+l56: recv 1048576b from 11 tag 0110120027
+l57: send 1048576b to 13 tag 0120130028
+l57 requires l56
+l58: recv 1048576b from 11 tag 0110120028
+l59: send 1048576b to 13 tag 0120130029
+l59 requires l58
+l60: recv 1048576b from 11 tag 0110120029
+}
+
+rank 13 {
+l1: send 1048576b to 14 tag 0130140000
+l2: recv 1048576b from 12 tag 0120130000
+l3: send 1048576b to 14 tag 0130140001
+l3 requires l2
+l4: recv 1048576b from 12 tag 0120130001
+l5: send 1048576b to 14 tag 0130140002
+l5 requires l4
+l6: recv 1048576b from 12 tag 0120130002
+l7: send 1048576b to 14 tag 0130140003
+l7 requires l6
+l8: recv 1048576b from 12 tag 0120130003
+l9: send 1048576b to 14 tag 0130140004
+l9 requires l8
+l10: recv 1048576b from 12 tag 0120130004
+l11: send 1048576b to 14 tag 0130140005
+l11 requires l10
+l12: recv 1048576b from 12 tag 0120130005
+l13: send 1048576b to 14 tag 0130140006
+l13 requires l12
+l14: recv 1048576b from 12 tag 0120130006
+l15: send 1048576b to 14 tag 0130140007
+l15 requires l14
+l16: recv 1048576b from 12 tag 0120130007
+l17: send 1048576b to 14 tag 0130140008
+l17 requires l16
+l18: recv 1048576b from 12 tag 0120130008
+l19: send 1048576b to 14 tag 0130140009
+l19 requires l18
+l20: recv 1048576b from 12 tag 0120130009
+l21: send 1048576b to 14 tag 0130140010
+l21 requires l20
+l22: recv 1048576b from 12 tag 0120130010
+l23: send 1048576b to 14 tag 0130140011
+l23 requires l22
+l24: recv 1048576b from 12 tag 0120130011
+l25: send 1048576b to 14 tag 0130140012
+l25 requires l24
+l26: recv 1048576b from 12 tag 0120130012
+l27: send 1048576b to 14 tag 0130140013
+l27 requires l26
+l28: recv 1048576b from 12 tag 0120130013
+l29: send 1048576b to 14 tag 0130140014
+l29 requires l28
+l30: recv 1048576b from 12 tag 0120130014
+l31: send 1048576b to 14 tag 0130140015
+l31 requires l30
+l32: recv 1048576b from 12 tag 0120130015
+l33: send 1048576b to 14 tag 0130140016
+l33 requires l32
+l34: recv 1048576b from 12 tag 0120130016
+l35: send 1048576b to 14 tag 0130140017
+l35 requires l34
+l36: recv 1048576b from 12 tag 0120130017
+l37: send 1048576b to 14 tag 0130140018
+l37 requires l36
+l38: recv 1048576b from 12 tag 0120130018
+l39: send 1048576b to 14 tag 0130140019
+l39 requires l38
+l40: recv 1048576b from 12 tag 0120130019
+l41: send 1048576b to 14 tag 0130140020
+l41 requires l40
+l42: recv 1048576b from 12 tag 0120130020
+l43: send 1048576b to 14 tag 0130140021
+l43 requires l42
+l44: recv 1048576b from 12 tag 0120130021
+l45: send 1048576b to 14 tag 0130140022
+l45 requires l44
+l46: recv 1048576b from 12 tag 0120130022
+l47: send 1048576b to 14 tag 0130140023
+l47 requires l46
+l48: recv 1048576b from 12 tag 0120130023
+l49: send 1048576b to 14 tag 0130140024
+l49 requires l48
+l50: recv 1048576b from 12 tag 0120130024
+l51: send 1048576b to 14 tag 0130140025
+l51 requires l50
+l52: recv 1048576b from 12 tag 0120130025
+l53: send 1048576b to 14 tag 0130140026
+l53 requires l52
+l54: recv 1048576b from 12 tag 0120130026
+l55: send 1048576b to 14 tag 0130140027
+l55 requires l54
+l56: recv 1048576b from 12 tag 0120130027
+l57: send 1048576b to 14 tag 0130140028
+l57 requires l56
+l58: recv 1048576b from 12 tag 0120130028
+l59: send 1048576b to 14 tag 0130140029
+l59 requires l58
+l60: recv 1048576b from 12 tag 0120130029
+}
+
+rank 14 {
+l1: send 1048576b to 15 tag 0140150000
+l2: recv 1048576b from 13 tag 0130140000
+l3: send 1048576b to 15 tag 0140150001
+l3 requires l2
+l4: recv 1048576b from 13 tag 0130140001
+l5: send 1048576b to 15 tag 0140150002
+l5 requires l4
+l6: recv 1048576b from 13 tag 0130140002
+l7: send 1048576b to 15 tag 0140150003
+l7 requires l6
+l8: recv 1048576b from 13 tag 0130140003
+l9: send 1048576b to 15 tag 0140150004
+l9 requires l8
+l10: recv 1048576b from 13 tag 0130140004
+l11: send 1048576b to 15 tag 0140150005
+l11 requires l10
+l12: recv 1048576b from 13 tag 0130140005
+l13: send 1048576b to 15 tag 0140150006
+l13 requires l12
+l14: recv 1048576b from 13 tag 0130140006
+l15: send 1048576b to 15 tag 0140150007
+l15 requires l14
+l16: recv 1048576b from 13 tag 0130140007
+l17: send 1048576b to 15 tag 0140150008
+l17 requires l16
+l18: recv 1048576b from 13 tag 0130140008
+l19: send 1048576b to 15 tag 0140150009
+l19 requires l18
+l20: recv 1048576b from 13 tag 0130140009
+l21: send 1048576b to 15 tag 0140150010
+l21 requires l20
+l22: recv 1048576b from 13 tag 0130140010
+l23: send 1048576b to 15 tag 0140150011
+l23 requires l22
+l24: recv 1048576b from 13 tag 0130140011
+l25: send 1048576b to 15 tag 0140150012
+l25 requires l24
+l26: recv 1048576b from 13 tag 0130140012
+l27: send 1048576b to 15 tag 0140150013
+l27 requires l26
+l28: recv 1048576b from 13 tag 0130140013
+l29: send 1048576b to 15 tag 0140150014
+l29 requires l28
+l30: recv 1048576b from 13 tag 0130140014
+l31: send 1048576b to 15 tag 0140150015
+l31 requires l30
+l32: recv 1048576b from 13 tag 0130140015
+l33: send 1048576b to 15 tag 0140150016
+l33 requires l32
+l34: recv 1048576b from 13 tag 0130140016
+l35: send 1048576b to 15 tag 0140150017
+l35 requires l34
+l36: recv 1048576b from 13 tag 0130140017
+l37: send 1048576b to 15 tag 0140150018
+l37 requires l36
+l38: recv 1048576b from 13 tag 0130140018
+l39: send 1048576b to 15 tag 0140150019
+l39 requires l38
+l40: recv 1048576b from 13 tag 0130140019
+l41: send 1048576b to 15 tag 0140150020
+l41 requires l40
+l42: recv 1048576b from 13 tag 0130140020
+l43: send 1048576b to 15 tag 0140150021
+l43 requires l42
+l44: recv 1048576b from 13 tag 0130140021
+l45: send 1048576b to 15 tag 0140150022
+l45 requires l44
+l46: recv 1048576b from 13 tag 0130140022
+l47: send 1048576b to 15 tag 0140150023
+l47 requires l46
+l48: recv 1048576b from 13 tag 0130140023
+l49: send 1048576b to 15 tag 0140150024
+l49 requires l48
+l50: recv 1048576b from 13 tag 0130140024
+l51: send 1048576b to 15 tag 0140150025
+l51 requires l50
+l52: recv 1048576b from 13 tag 0130140025
+l53: send 1048576b to 15 tag 0140150026
+l53 requires l52
+l54: recv 1048576b from 13 tag 0130140026
+l55: send 1048576b to 15 tag 0140150027
+l55 requires l54
+l56: recv 1048576b from 13 tag 0130140027
+l57: send 1048576b to 15 tag 0140150028
+l57 requires l56
+l58: recv 1048576b from 13 tag 0130140028
+l59: send 1048576b to 15 tag 0140150029
+l59 requires l58
+l60: recv 1048576b from 13 tag 0130140029
+}
+
+rank 15 {
+l1: send 1048576b to 0 tag 0150000000
+l2: recv 1048576b from 14 tag 0140150000
+l3: send 1048576b to 0 tag 0150000001
+l3 requires l2
+l4: recv 1048576b from 14 tag 0140150001
+l5: send 1048576b to 0 tag 0150000002
+l5 requires l4
+l6: recv 1048576b from 14 tag 0140150002
+l7: send 1048576b to 0 tag 0150000003
+l7 requires l6
+l8: recv 1048576b from 14 tag 0140150003
+l9: send 1048576b to 0 tag 0150000004
+l9 requires l8
+l10: recv 1048576b from 14 tag 0140150004
+l11: send 1048576b to 0 tag 0150000005
+l11 requires l10
+l12: recv 1048576b from 14 tag 0140150005
+l13: send 1048576b to 0 tag 0150000006
+l13 requires l12
+l14: recv 1048576b from 14 tag 0140150006
+l15: send 1048576b to 0 tag 0150000007
+l15 requires l14
+l16: recv 1048576b from 14 tag 0140150007
+l17: send 1048576b to 0 tag 0150000008
+l17 requires l16
+l18: recv 1048576b from 14 tag 0140150008
+l19: send 1048576b to 0 tag 0150000009
+l19 requires l18
+l20: recv 1048576b from 14 tag 0140150009
+l21: send 1048576b to 0 tag 0150000010
+l21 requires l20
+l22: recv 1048576b from 14 tag 0140150010
+l23: send 1048576b to 0 tag 0150000011
+l23 requires l22
+l24: recv 1048576b from 14 tag 0140150011
+l25: send 1048576b to 0 tag 0150000012
+l25 requires l24
+l26: recv 1048576b from 14 tag 0140150012
+l27: send 1048576b to 0 tag 0150000013
+l27 requires l26
+l28: recv 1048576b from 14 tag 0140150013
+l29: send 1048576b to 0 tag 0150000014
+l29 requires l28
+l30: recv 1048576b from 14 tag 0140150014
+l31: send 1048576b to 0 tag 0150000015
+l31 requires l30
+l32: recv 1048576b from 14 tag 0140150015
+l33: send 1048576b to 0 tag 0150000016
+l33 requires l32
+l34: recv 1048576b from 14 tag 0140150016
+l35: send 1048576b to 0 tag 0150000017
+l35 requires l34
+l36: recv 1048576b from 14 tag 0140150017
+l37: send 1048576b to 0 tag 0150000018
+l37 requires l36
+l38: recv 1048576b from 14 tag 0140150018
+l39: send 1048576b to 0 tag 0150000019
+l39 requires l38
+l40: recv 1048576b from 14 tag 0140150019
+l41: send 1048576b to 0 tag 0150000020
+l41 requires l40
+l42: recv 1048576b from 14 tag 0140150020
+l43: send 1048576b to 0 tag 0150000021
+l43 requires l42
+l44: recv 1048576b from 14 tag 0140150021
+l45: send 1048576b to 0 tag 0150000022
+l45 requires l44
+l46: recv 1048576b from 14 tag 0140150022
+l47: send 1048576b to 0 tag 0150000023
+l47 requires l46
+l48: recv 1048576b from 14 tag 0140150023
+l49: send 1048576b to 0 tag 0150000024
+l49 requires l48
+l50: recv 1048576b from 14 tag 0140150024
+l51: send 1048576b to 0 tag 0150000025
+l51 requires l50
+l52: recv 1048576b from 14 tag 0140150025
+l53: send 1048576b to 0 tag 0150000026
+l53 requires l52
+l54: recv 1048576b from 14 tag 0140150026
+l55: send 1048576b to 0 tag 0150000027
+l55 requires l54
+l56: recv 1048576b from 14 tag 0140150027
+l57: send 1048576b to 0 tag 0150000028
+l57 requires l56
+l58: recv 1048576b from 14 tag 0140150028
+l59: send 1048576b to 0 tag 0150000029
+l59 requires l58
+l60: recv 1048576b from 14 tag 0140150029
+}

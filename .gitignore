@@ -1,0 +1,29 @@
+# Build artifacts
+__pycache__/
+*.py[cod]
+*.o
+*.log
+*.aux
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+
+# Venvs
+.venv/
+venv/
+
+# Generated figures (created at runtime)
+figures/
+
+# Pipeline intermediate output
+data/demo_output/
+
+# Built LogGOPSim binaries
+tools/LogGOPSim/LogGOPSim
+tools/LogGOPSim/txt2bin
+tools/LogGOPSim/cmdline.c
+tools/LogGOPSim/cmdline.h
+tools/LogGOPSim/cmdline_txt2bin.c
+tools/LogGOPSim/cmdline_txt2bin.h
+tools/LogGOPSim/txt2bin.cpp
