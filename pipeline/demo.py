@@ -37,11 +37,9 @@ def main() -> int:
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--with-lp", action="store_true",
                     help="Also run the Composite-LP stage. Requires Gurobi "
-                         "and an NCCL-generated GOAL with a matching "
-                         "comm_dep metadata file (ship-your-own from $A_2$). "
-                         "The default demo GOAL is a Schedgen synthetic ring "
-                         "AllReduce that does not carry NCCL comm_dep "
-                         "metadata, so the LP stage is off by default.")
+                         "and first generates a LogGOPSim comm_dep sidecar. "
+                         "The LP stage is off by default because real paper "
+                         "runs are much larger than the demo trace.")
     args = ap.parse_args()
 
     if not args.goal.exists():
@@ -59,10 +57,20 @@ def main() -> int:
     ])
 
     if args.with_lp:
+        comm_dep = args.out_dir / "comm_dep.csv"
+        print("\n=== Generate comm_dep sidecar for LP ===")
+        run([
+            sys.executable, str(HERE / "run_lgs.py"),
+            "--goal", str(args.goal),
+            "--L", "1000", "--G", "0.04", "--o", "200",
+            "--comm-dep-out", str(comm_dep),
+        ])
+
         print("\n=== Composite-LP sweep ===")
         run([
             sys.executable, str(HERE / "run_composite_lp.py"),
             "--goal", str(args.goal),
+            "--comm-dep", str(comm_dep),
             "--out", str(args.out_dir / "composed_runtime.csv"),
             "--l-min", "0", "--l-max", "1000000", "--step", "100000",
         ])

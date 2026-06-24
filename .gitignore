@@ -15,6 +15,7 @@ venv/
 
 # Generated figures (created at runtime)
 figures/
+solver/*.png
 
 # Pipeline intermediate output
 data/demo_output/

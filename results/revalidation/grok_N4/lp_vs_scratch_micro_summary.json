@@ -1,0 +1,13 @@
+{
+  "actual": "data/revalidation/grok_N4_lp/full_runtime.csv",
+  "expected": "/mnt/scratch/grok_repro/N4/micro/runtime.csv",
+  "label": "lp_vs_scratch_micro",
+  "max_L": 10000.0,
+  "max_abs_diff_ns": 67709319.75989819,
+  "max_abs_rel_diff_pct": 1.1054278934822204,
+  "mean_abs_diff_ns": 67685982.31989734,
+  "mean_abs_rel_diff_pct": 1.1050402694985604,
+  "min_L": 4998.24,
+  "n_points": 3,
+  "points": "actual"
+}

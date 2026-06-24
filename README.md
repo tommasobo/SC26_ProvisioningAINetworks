@@ -2,25 +2,26 @@
 
 This repository supports the SC paper, "Provisioning Networks for AI Supercomputers: A Trace-Driven Study of Performance Sensitivity at Unprecedented Scale".
 
-The artifact takes NCCL/AI workload traces that have already been converted to GOAL-like schedules, replays or analyzes them with LogGOPSim and Composite-LP tooling, and regenerates the paper figures from packaged CSV outputs. It is organized so a user can run the cheap figure path immediately, then optionally run deeper validation from downloaded GOAL traces.
+The artifact takes NCCL/AI workload traces that have already been converted to GOAL-like schedules, replays or analyzes them with LogGOPSim and LP tooling, and regenerates the paper figures from packaged CSV outputs. The cleaned workflow is intentionally tiered: reviewers can run the cheap packaged path on a laptop, while deeper GOAL and LP revalidation can be run on a larger machine with Gurobi and matching sidecars.
 
-Work for the cleanup/revalidation pass lives on branch `clean_version`.
+Work for this cleanup/revalidation pass lives on branch `clean_version`.
 
 ## What Is Included
 
-- `scripts/`: figure-generation scripts for paper figures 1, 3, 4, 5, 6, 7, 8/9, and 10.
-- `data/output/` and `data/workspaces/`: packaged CSVs and intermediate outputs used by the figure scripts.
-- `data/traces/demo_allreduce_16r_1MiB.goal`: a tiny GOAL trace for LogGOPSim smoke tests.
-- `pipeline/`: user-facing wrappers for LogGOPSim replay and Composite-LP runs.
+- `scripts/`: figure-generation and comparison scripts.
+- `data/output/` and `data/workspaces/`: packaged CSVs and intermediate outputs used by the paper figure scripts.
+- `data/traces/demo_allreduce_16r_1MiB.goal`: a tiny GOAL trace for local LogGOPSim and LP smoke tests.
+- `pipeline/`: user-facing wrappers for LogGOPSim replay, GOAL sidecar generation, raw NSYS conversion, and LP runs.
 - `solver/`: dependency-graph and LP tooling for Composite-LP/Monolithic-LP style analyses.
-- `tools/LogGOPSim/`: vendored LogGOPSim source used by the replay wrappers.
-- `docs/progress_log.md`: running cleanup/revalidation log with commands, runtimes, inputs, outputs, and known limitations.
+- `tools/LogGOPSim/`: vendored/patched LogGOPSim source used by replay wrappers.
+- `tools/nccl_generator/`: NCCL trace converter for optional raw NSYS SQLite to GOAL plus metadata sidecars.
+- `docs/progress_log.md` and `docs/revalidation_report.md`: evidence from the cleanup/revalidation pass.
 
-Raw NSYS tracing and GOAL recollection are intentionally out of scope for this cleanup. Use the released GOAL traces and packaged intermediate outputs instead.
+Raw tracing is not part of the normal artifact path. Use released GOAL traces and packaged intermediate outputs unless you are explicitly validating the optional NSYS conversion path.
 
-## Quick Start: Regenerate Paper Figures
+## Tier A: Packaged Figure Reproduction
 
-This path uses packaged CSVs only. It does not need GPUs, raw NSYS traces, Gurobi, or the large GOAL files.
+This path uses packaged CSVs only. It does not need GPUs, raw NSYS traces, Gurobi, or large GOAL files.
 
 ```bash
 git clone -b clean_version https://github.com/tommasobo/SC_Tracing.git
@@ -33,21 +34,14 @@ python reproduce_all.py
 
 Outputs are written to `figures/`. On the cleanup machine (`bigmem`, Ubuntu 24.04, Python 3.12), this completed in about 22 seconds with about 190 MiB peak RSS.
 
-To list the figure mapping:
+Useful variants:
 
 ```bash
 python reproduce_all.py --list
-```
-
-To regenerate a subset:
-
-```bash
 python reproduce_all.py --only 3 6 10
 ```
 
-## LogGOPSim Demo
-
-The demo builds the vendored LogGOPSim source if needed, replays the tiny shipped GOAL trace at four latency points, and writes a CSV.
+## Tier B: Demo and Real GOAL LogGOPSim Replay
 
 System packages needed for building LogGOPSim:
 
@@ -55,13 +49,13 @@ System packages needed for building LogGOPSim:
 sudo apt-get install g++ gengetopt re2c
 ```
 
-Run:
+Run the bundled synthetic demo:
 
 ```bash
 python pipeline/demo.py
 ```
 
-Output:
+The demo writes:
 
 ```text
 data/demo_output/lgs_points.csv
@@ -76,17 +70,21 @@ python pipeline/run_lgs_sweep.py \
   --latencies 0 1000 10000 100000
 ```
 
-## Replay Released GOAL Traces
+To also verify the small LP path with a generated sidecar:
 
-The public trace index is:
+```bash
+python pipeline/demo.py --with-lp
+```
+
+Released GOAL traces are indexed at:
 
 ```text
 http://storage2.spcl.ethz.ch/traces/ai/
 ```
 
-Download only the GOAL files you need. Do not download raw NSYS traces unless you are explicitly redoing trace conversion. Large local inputs should go under `data/external/`, which is ignored by git.
+Download only the GOAL files you need. Large local inputs should go under `data/external/`, which is ignored by git.
 
-Example: Grok 314B, N4/GPU16:
+Example, Grok 314B N4/GPU16:
 
 ```bash
 mkdir -p data/external/grok_N4 data/revalidation/grok_N4_lgs
@@ -102,7 +100,7 @@ python pipeline/run_lgs_sweep.py \
   --G 0.04 --o 200
 ```
 
-Example: vLLM Llama 70B, N2/GPU8:
+Example, vLLM Llama 70B N2/GPU8:
 
 ```bash
 mkdir -p data/external/vllm_llama70b_N2 data/revalidation/vllm_llama70b_N2_lgs
@@ -115,45 +113,113 @@ python pipeline/run_lgs_sweep.py \
   --G 0.04 --o 200
 ```
 
-Cleanup results from `bigmem`:
+## Tier C: GOAL Plus `comm_dep` LP Regeneration
 
-- vLLM N2/GPU8 replay: 147 MiB GOAL, 5,799,631 lines, 14.1 seconds for three points, 307 MiB peak RSS. Runtime was flat at 261.198 ms for 0, 4, and 10 us.
-- Grok N4/GPU16 replay: 213 MiB GOAL, 8,080,201 lines, 35.6 seconds for three points, 575 MiB peak RSS. Runtime was 6125.226 ms at 0 us and 6125.367 ms at 10 us.
-
-## Composite-LP Runs
-
-Install the optional solver dependencies:
+LP regeneration requires Gurobi and a communication-dependency sidecar. Install optional solver dependencies:
 
 ```bash
 python -m pip install -r requirements-solver.txt
 ```
 
-Composite-LP also requires a working Gurobi license. Verify it with:
+Verify Gurobi:
 
 ```bash
 python -c "import gurobipy as gp; m=gp.Model(); x=m.addVar(lb=0); m.setObjective(x, gp.GRB.MAXIMIZE); m.addConstr(x <= 1); m.optimize(); print(m.Status, m.ObjVal)"
 ```
 
-Run the wrapper on a GOAL trace with its matching `comm_dep` sidecar:
+The LP sidecar is a four-column CSV:
+
+```text
+src_rank,src_label_offset,dst_rank,dst_label_offset
+```
+
+Preferred sidecar generation path:
+
+```bash
+python pipeline/run_lgs.py \
+  --goal path/to/output.goal \
+  --L 1000 --G 0.04 --o 200 \
+  --comm-dep-out path/to/comm_dep.csv
+```
+
+Fallback sidecar generation from GOAL text alone:
+
+```bash
+python pipeline/generate_comm_dep_from_goal.py \
+  --goal path/to/output.goal \
+  --out path/to/comm_dep.csv
+```
+
+The fallback is useful for diagnostics and validated on the demo, Grok N4, and a local Llama7B N2 trace, but it is not universally safe. For vLLM Llama70B N2, tag-only FIFO matching produces a cyclic LP graph even though every send/recv is paired; the trace needs true upstream match/dependency information.
+
+Run Monolithic-LP:
+
+```bash
+python pipeline/run_monolithic_lp.py \
+  --goal path/to/output.goal \
+  --comm-dep path/to/comm_dep.csv \
+  --out data/revalidation/workload/full_runtime.csv \
+  --l-min 0 --l-max 1000000 --step 50000 \
+  --l-intra 350 --o 200 --G 0.04
+```
+
+Run the Composite-LP wrapper when the workspace and sidecar are available:
 
 ```bash
 python pipeline/run_composite_lp.py \
   --goal path/to/output.goal \
-  --comm-dep path/to/InterNode_MicroEvents_Dependency.exact.comm_dep.csv \
+  --comm-dep path/to/comm_dep.csv \
   --out data/revalidation/workload/composed_runtime.csv \
   --l-min 0 --l-max 1000000 --step 50000 \
-  --l-intra 350 --o 200
+  --l-intra 350 --o 200 --G 0.04
 ```
 
-Important: many released GOAL files cannot be matched by tag alone. If `--comm-dep` is missing, the solver may fail after parsing with unmatched sends/recvs. The packaged paper figures therefore use precomputed Composite-LP CSVs under `data/output/` and `data/workspaces/`.
+Both LP wrappers fail early if `--comm-dep` is missing or empty. Use `--allow-tag-match` only for known-simple synthetic traces.
+
+## Tier D: Optional Raw NSYS SQLite to GOAL
+
+This path is not needed for normal artifact reproduction. It exists to document how raw NSYS SQLite exports can be converted to GOAL plus NCCL metadata sidecars:
+
+```bash
+python -m pip install -r requirements-tierc.txt
+python pipeline/run_nccl_generator.py \
+  --sqlite-dir /path/to/nsys_sqlite_dir \
+  --out-dir /path/to/analysis
+```
+
+This writes `output.goal`, `collective_instances.csv`, `goal_label_ranges.csv`, `comm_info.csv`, `comm_ring_info.csv`, and related NCCL metadata. It does not write the LP `comm_dep.csv`; generate that from the produced GOAL with `pipeline/run_lgs.py --comm-dep-out`.
+
+For the guarded Fig. 5 NSYS pipeline:
+
+```bash
+bash pipeline/reproduce_fig5_from_nsys.sh --dry-run
+bash pipeline/reproduce_fig5_from_nsys.sh --run-lp
+```
+
+The `--run-lp` mode can take substantial time and requires Gurobi.
+
+## Comparing Regenerated CSVs
+
+Use the numeric comparison helper instead of relying only on plots:
+
+```bash
+python scripts/compare_csv.py \
+  --expected path/to/packaged_or_prior.csv \
+  --actual path/to/new.csv \
+  --out-dir results/revalidation/workload \
+  --label my_check \
+  --points actual
+```
+
+It writes a detailed CSV and JSON summary with absolute and relative differences.
 
 ## Expensive Or Skipped Paths
 
 - Do not retrace workloads or recollect GOAL traces as part of normal artifact reproduction.
-- Do not rerun 4096-GPU Grok LogGOPSim replay unless there is a strong reason; the GOAL schedule is too large for routine validation.
+- Do not rerun 4096-GPU Grok cases unless a specific gap justifies the cost.
 - Use packaged outputs for 4096-GPU Monolithic-LP and full-scale replay baselines.
 - Moderate GOAL replay from released traces is feasible and useful for sanity checks.
-- Composite-LP regeneration is feasible only when the corresponding GOAL and comm-dep metadata are both available.
+- LP regeneration is feasible only when GOAL and matching `comm_dep` information are both available.
 
 ## Tests
 
@@ -162,19 +228,20 @@ For development validation:
 ```bash
 python -m pip install -r requirements-dev.txt
 python -m pytest -q
+python scripts/check_artifact.py --skip-figure
 ```
 
-Cleanup result: `7 passed in 1.92s` on `bigmem`.
+Cleanup result after this pass: `13 passed` on `bigmem`.
 
 ## Current Validation Status
 
 During the `clean_version` cleanup pass:
 
-- Packaged figures regenerated successfully from the bundled CSVs.
-- Vendored LogGOPSim was patched for modern GCC by adding the missing `<cstring>` include.
-- The LogGOPSim demo now writes a real CSV output.
-- Real downloaded GOAL traces for vLLM N2/GPU8 and Grok N4/GPU16 replay successfully through LogGOPSim.
-- Composite-LP wrapper path handling was fixed, but real downloaded GOAL-only runs still require the matching comm-dep sidecar.
-- Solver tests were repaired and now run from the repository root.
+- Packaged figures regenerated successfully from bundled CSVs.
+- Vendored LogGOPSim builds on the current GCC toolchain.
+- Real downloaded GOAL traces for Grok N4/GPU16 and vLLM N2/GPU8 replay through LogGOPSim.
+- Real Monolithic-LP regeneration succeeded for Grok N4/GPU16 and a local Llama7B N2/GPU8 trace when a valid `comm_dep` sidecar was generated.
+- LGS/LP numeric comparisons were saved under `results/revalidation/`.
+- The `comm_dep` issue is root-caused for vLLM N2: GOAL-only matching is insufficient for that trace and the patched LogGOPSim sidecar writer emits an empty file.
 
-See `docs/progress_log.md` for exact commands, runtimes, memory, output paths, and limitations.
+See `docs/progress_log.md` for commands and `docs/revalidation_report.md` for the workload matrix and detailed sidecar analysis.

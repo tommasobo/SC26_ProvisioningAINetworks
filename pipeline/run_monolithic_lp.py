@@ -1,15 +1,25 @@
 #!/usr/bin/env python3
 """
-Pipeline stage: GOAL trace -> Composite-LP latency sensitivity CSV.
+Pipeline stage: GOAL trace -> Monolithic-LP latency sensitivity CSV.
 
-This is a thin wrapper around the solver shipped under ``solver/``. It
-runs the per-signature parametric LP sweep and writes
-``composed_runtime.csv`` (L [ns], runtime [ms]).
+Thin wrapper around ``solver/main.py -a sensitivity``. Builds a single
+full-trace LP and sweeps the latency parameter via dual-simplex
+warm-starts, producing the ``full_runtime.csv`` that serves as the
+paper's Monolithic-LP baseline in Figures 3, 4, and 5. Writes
+(L [ns], runtime [ns]).
+
+NOTE: The paper's headline ``Composite LP`` methodology (per-signature
+parametric solve + program-level composition via ``solver/llamp_nccl/``)
+is a *separate* code path in this repository. It is cheaper to solve
+but requires workspace-aware orchestration beyond the scope of a
+single wrapper; its precomputed outputs ship under ``data/output/``.
+Reviewers who want to re-run the Composite LP at scale should use
+the workspace drivers cited in the AD.
 
 Usage:
-    python3 pipeline/run_composite_lp.py \
-        --goal data/traces/demo_allreduce_16r_1MiB.goal \
-        --out data/demo/composed_runtime.csv \
+    python3 pipeline/run_monolithic_lp.py \\
+        --goal data/traces/demo_allreduce_16r_1MiB.goal \\
+        --out data/demo/full_runtime.csv \\
         --l-min 0 --l-max 1000000 --step 50000
 """
 import argparse
@@ -48,65 +58,78 @@ def main() -> int:
                     help="Intra-node latency, ns (default: 350)")
     ap.add_argument("--o", type=int, default=200,
                     help="LogGP overhead parameter, ns (default: 200)")
+    ap.add_argument("--G", type=float, default=0.018,
+                    help="LogGP bandwidth parameter, ns/byte (default: 0.018)")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="Validate arguments and print the solver command "
+                         "without launching Gurobi.")
     args = ap.parse_args()
+
+    args.goal = args.goal.resolve()
+    args.out = args.out.resolve()
+    if args.comm_dep is not None:
+        args.comm_dep = args.comm_dep.resolve()
 
     if not args.goal.exists():
         print(f"error: GOAL file not found: {args.goal}", file=sys.stderr)
         return 2
-    goal = args.goal.resolve()
-    comm_dep = args.comm_dep.resolve() if args.comm_dep is not None else None
-    out = args.out.resolve()
-
-    if comm_dep is None and not args.allow_tag_match:
+    if args.comm_dep is None and not args.allow_tag_match:
         print(
             "error: --comm-dep is required for real GOAL LP runs. "
             "Generate it with: python3 pipeline/run_lgs.py --goal "
-            f"{goal} --L 1000 --G 0.04 --o 200 --comm-dep-out <comm_dep.csv>. "
+            f"{args.goal} --L 1000 --G 0.04 --o 200 --comm-dep-out <comm_dep.csv>. "
             "Use --allow-tag-match only for known-simple synthetic traces.",
             file=sys.stderr,
         )
         return 2
-    if comm_dep is not None:
-        if not comm_dep.exists():
-            print(f"error: comm_dep file not found: {comm_dep}", file=sys.stderr)
+    if args.comm_dep is not None:
+        if not args.comm_dep.exists():
+            print(f"error: comm_dep file not found: {args.comm_dep}", file=sys.stderr)
             return 2
-        if comm_dep.stat().st_size == 0:
+        if args.comm_dep.stat().st_size == 0:
             print(
-                f"error: comm_dep file is empty: {comm_dep}. "
+                f"error: comm_dep file is empty: {args.comm_dep}. "
                 "Do not run LP with an empty sidecar; this usually means "
                 "LogGOPSim did not record send/recv matches for that GOAL.",
                 file=sys.stderr,
             )
             return 2
 
-    out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.parent.mkdir(parents=True, exist_ok=True)
 
     cmd = [
         sys.executable, str(SOLVER / "main.py"),
-        "-g", str(goal),
+        "-g", str(args.goal),
         "-a", "sensitivity",
         "--l-min", str(args.l_min),
         "--l-max", str(args.l_max),
         "--step", str(args.step),
         "--l-intra", str(args.l_intra),
         "-o", str(args.o),
-        "--output-dir", str(out.parent),
+        "-G", str(args.G),
+        "--output-dir", str(args.out.parent),
     ]
-    if comm_dep is not None:
-        cmd += ["-c", str(comm_dep)]
-    print("[composite-lp]", " ".join(cmd))
+    if args.comm_dep is not None:
+        cmd += ["-c", str(args.comm_dep)]
+    print("[monolithic-lp]", " ".join(cmd))
+    if args.dry_run:
+        print("[monolithic-lp] dry run complete; solver was not launched.")
+        return 0
     t0 = time.perf_counter()
     r = subprocess.run(cmd, cwd=SOLVER)
     dt = time.perf_counter() - t0
     if r.returncode != 0:
-        print(f"[composite-lp] FAILED after {dt:.1f}s", file=sys.stderr)
+        print(f"[monolithic-lp] FAILED after {dt:.1f}s", file=sys.stderr)
         return r.returncode
 
-    # The solver writes its CSV with a fixed name; move it into place.
-    produced = out.parent / "net_lat_sen.csv"
-    if produced.exists() and produced.resolve() != out:
-        produced.rename(out)
-    print(f"[composite-lp] wrote {out} ({dt:.1f}s)")
+    # The sensitivity action writes a fixed runtime filename.
+    for produced in (args.out.parent / "tmp_runtime.csv",
+                     args.out.parent / "runtime.csv",
+                     args.out.parent / "net_lat_sen.csv"):
+        if produced.exists() and produced.resolve() != args.out.resolve():
+            produced.replace(args.out)
+            break
+    print(f"[monolithic-lp] wrote {args.out} ({dt:.1f}s)")
     return 0
 
 

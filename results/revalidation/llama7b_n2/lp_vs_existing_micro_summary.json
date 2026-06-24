@@ -1,0 +1,13 @@
+{
+  "actual": "data/revalidation/llama7b_n2_lp_3700_43700/full_runtime.csv",
+  "expected": "/mnt/scratch/llamp_eval/workspaces/llama7b_n2_gpu8/results/v2_micro_sweep/runtime.csv",
+  "label": "lp_vs_existing_micro",
+  "max_L": 43700.0,
+  "max_abs_diff_ns": 86067626.00000095,
+  "max_abs_rel_diff_pct": 3.208073755064346,
+  "mean_abs_diff_ns": 72816638.88385169,
+  "mean_abs_rel_diff_pct": 2.7174033034062988,
+  "min_L": 23694.99,
+  "n_points": 3,
+  "points": "actual"
+}

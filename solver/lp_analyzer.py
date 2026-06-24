@@ -94,9 +94,31 @@ class LPAnalyzer(object):
         FREQ = 3
         print(f"[DEBUG] Start a: {curr_a}, intervals: {curr_interval}")
         print(f"[DEBUG] Predicted runtime: {model.objVal / (10 ** 9):.3f}s")
+
+        if not np.isfinite(curr_interval[0]):
+            print(
+                "[WARNING] Gurobi returned an unbounded sensitivity interval "
+                "for l; treating the requested sweep range as one constant "
+                "latency-sensitivity segment."
+            )
+            runtime_at_ub = model.objVal
+            lat_ratio_at_ub = curr_a * L_ub / model.objVal if model.objVal else 0
+            l.lb = L_lb
+            if reset_model:
+                model.reset()
+            model.optimize()
+            assert model.status == gp.GRB.OPTIMAL
+            runtime_at_lb = model.objVal
+            lat_ratio_at_lb = curr_a * L_lb / model.objVal if model.objVal else 0
+            return NetLatSensitivity(
+                [(L_lb, curr_a), (L_ub, curr_a)],
+                [(L_lb, runtime_at_lb), (L_ub, runtime_at_ub)],
+                [(L_lb, lat_ratio_at_lb), (L_ub, lat_ratio_at_ub)],
+            )
+
         start_val = curr_interval[0] - eps
         
-        progress_bar = tqdm(total=int(start_val - L_lb), smoothing=1)
+        progress_bar = tqdm(total=max(0, int(start_val - L_lb)), smoothing=1)
         # progress_bar.update()
 
         while l.SALBLow > L_lb:
@@ -125,7 +147,7 @@ class LPAnalyzer(object):
             iter += 1
 
             if iter % FREQ == 0:
-                progress_bar.n = int(start_val - l.lb)
+                progress_bar.n = max(0, int(start_val - l.lb))
                 time_per_solve = (time() - start_time) / iter
                 progress_bar.desc = f"T: {model.objVal / (10 ** 9):.3f}s | L: {l.x:.0f} | avg_t: {time_per_solve:.2f}s"
                 progress_bar.refresh()

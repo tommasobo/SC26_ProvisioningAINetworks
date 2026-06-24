@@ -17,6 +17,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from typing import Optional
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -26,6 +27,8 @@ TXT2BIN = LGS_DIR / "txt2bin"
 
 FINISH_RE = re.compile(r"Maximum finishing time at host \d+:\s*(\d+)")
 HOST_RE = re.compile(r"Host \d+:\s*(\d+)")
+TAG_RE = re.compile(r"(?P<prefix>\btag\s+)(?P<tag>\d+)")
+MAX_LGS_TAG = (2 ** 32) - 2
 
 
 def ensure_built() -> None:
@@ -37,13 +40,59 @@ def ensure_built() -> None:
         raise SystemExit("failed to build LogGOPSim")
 
 
-def run_lgs(goal_path: Path, L: int, G: float, o: int, g: int = 5) -> int:
+def goal_needs_tag_normalization(goal_path: Path) -> bool:
+    """Return True if any GOAL tag exceeds LogGOPSim's uint32 tag field."""
+    with goal_path.open("r", encoding="utf-8") as f:
+        for line in f:
+            match = TAG_RE.search(line)
+            if match and int(match.group("tag")) > MAX_LGS_TAG:
+                return True
+    return False
+
+
+def write_tag_normalized_goal(src: Path, dst: Path) -> int:
+    """Rewrite GOAL tags to compact uint32-safe IDs while preserving labels."""
+    tag_to_id: dict[str, int] = {}
+
+    def replace(match: re.Match[str]) -> str:
+        tag = match.group("tag")
+        if tag not in tag_to_id:
+            tag_to_id[tag] = len(tag_to_id)
+            if tag_to_id[tag] > MAX_LGS_TAG:
+                raise RuntimeError("too many distinct tags for LogGOPSim uint32 tag field")
+        return f"{match.group('prefix')}{tag_to_id[tag]}"
+
+    with src.open("r", encoding="utf-8") as fin, dst.open("w", encoding="utf-8") as fout:
+        for line in fin:
+            fout.write(TAG_RE.sub(replace, line))
+    return len(tag_to_id)
+
+
+def run_lgs(
+    goal_path: Path,
+    L: int,
+    G: float,
+    o: int,
+    g: int = 5,
+    comm_dep_out: Optional[Path] = None,
+    normalize_tags: str = "auto",
+) -> int:
     """Run LGS on a GOAL file and return runtime in ns."""
     ensure_built()
     with tempfile.TemporaryDirectory() as tmp:
+        lgs_goal = goal_path
+        if normalize_tags not in {"auto", "always", "never"}:
+            raise ValueError("normalize_tags must be one of: auto, always, never")
+        if normalize_tags == "always" or (
+            normalize_tags == "auto" and goal_needs_tag_normalization(goal_path)
+        ):
+            lgs_goal = Path(tmp) / "trace.normalized.goal"
+            n_tags = write_tag_normalized_goal(goal_path, lgs_goal)
+            print(f"[lgs] normalized {n_tags} distinct GOAL tags for LogGOPSim uint32 compatibility")
+
         tmp_bin = Path(tmp) / "trace.bin"
         subprocess.run(
-            [str(TXT2BIN), "-i", str(goal_path), "-o", str(tmp_bin)],
+            [str(TXT2BIN), "-i", str(lgs_goal), "-o", str(tmp_bin)],
             check=True,
         )
         cmd = [
@@ -54,6 +103,9 @@ def run_lgs(goal_path: Path, L: int, G: float, o: int, g: int = 5) -> int:
             "-o", str(o),
             "-g", str(g),
         ]
+        if comm_dep_out is not None:
+            comm_dep_out.parent.mkdir(parents=True, exist_ok=True)
+            cmd += ["--comm-dep-file", str(comm_dep_out)]
         r = subprocess.run(cmd, capture_output=True, text=True, check=True)
     m = FINISH_RE.search(r.stdout)
     if m:
@@ -75,6 +127,14 @@ def main() -> int:
                     help="Overhead, ns (default: 200)")
     ap.add_argument("--g", type=int, default=5,
                     help="Gap, ns (default: 5)")
+    ap.add_argument("--comm-dep-out", type=Path, default=None,
+                    help="Optional CSV path for patched LogGOPSim send/recv "
+                         "dependency output. This file can be passed to "
+                         "the LP wrappers as --comm-dep.")
+    ap.add_argument("--normalize-tags", choices=("auto", "always", "never"), default="auto",
+                    help="Rewrite GOAL tags to compact uint32-safe IDs before "
+                         "txt2bin. Default auto only rewrites traces with tags "
+                         "larger than LogGOPSim's uint32 tag field.")
     args = ap.parse_args()
 
     if not args.goal.exists():
@@ -82,7 +142,8 @@ def main() -> int:
         return 2
 
     t0 = time.perf_counter()
-    rt = run_lgs(args.goal, args.L, args.G, args.o, args.g)
+    rt = run_lgs(args.goal, args.L, args.G, args.o, args.g,
+                 args.comm_dep_out, args.normalize_tags)
     dt = time.perf_counter() - t0
     print(f"[lgs] runtime = {rt} ns ({rt / 1e6:.3f} ms) "
           f"[L={args.L} G={args.G} o={args.o}, solved in {dt:.2f}s]")
