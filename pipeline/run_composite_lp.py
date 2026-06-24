@@ -48,22 +48,25 @@ def main() -> int:
     if not args.goal.exists():
         print(f"error: GOAL file not found: {args.goal}", file=sys.stderr)
         return 2
+    goal = args.goal.resolve()
+    comm_dep = args.comm_dep.resolve() if args.comm_dep is not None else None
+    out = args.out.resolve()
 
-    args.out.parent.mkdir(parents=True, exist_ok=True)
+    out.parent.mkdir(parents=True, exist_ok=True)
 
     cmd = [
         sys.executable, str(SOLVER / "main.py"),
-        "-g", str(args.goal),
+        "-g", str(goal),
         "-a", "sensitivity",
         "--l-min", str(args.l_min),
         "--l-max", str(args.l_max),
         "--step", str(args.step),
         "--l-intra", str(args.l_intra),
         "-o", str(args.o),
-        "--output-dir", str(args.out.parent),
+        "--output-dir", str(out.parent),
     ]
-    if args.comm_dep is not None:
-        cmd += ["-c", str(args.comm_dep)]
+    if comm_dep is not None:
+        cmd += ["-c", str(comm_dep)]
     print("[composite-lp]", " ".join(cmd))
     t0 = time.perf_counter()
     r = subprocess.run(cmd, cwd=SOLVER)
@@ -73,10 +76,10 @@ def main() -> int:
         return r.returncode
 
     # The solver writes its CSV with a fixed name; move it into place.
-    produced = args.out.parent / "net_lat_sen.csv"
-    if produced.exists() and produced.resolve() != args.out.resolve():
-        produced.rename(args.out)
-    print(f"[composite-lp] wrote {args.out} ({dt:.1f}s)")
+    produced = out.parent / "net_lat_sen.csv"
+    if produced.exists() and produced.resolve() != out:
+        produced.rename(out)
+    print(f"[composite-lp] wrote {out} ({dt:.1f}s)")
     return 0
 
 

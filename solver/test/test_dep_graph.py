@@ -45,7 +45,7 @@ class TestDependencyGraph(unittest.TestCase):
         v2 = g.add_vertex(VertexType.CALC, 0, 2, 10000)
         g.add_edge_by_global_index(v2, v1)
         v3 = g.add_vertex(VertexType.CALC, 0, 3, 2000)
-        g.add_edge(0, 1, 0, 3, True)
+        g.add_edge(0, 1, 0, 3, is_irequire=True)
         g.finalize()
         self.assertEqual(g.num_vertices(), 3)
         self.assertEqual(g.num_edges(), 2)

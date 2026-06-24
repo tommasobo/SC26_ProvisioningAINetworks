@@ -18,6 +18,8 @@ figures/
 
 # Pipeline intermediate output
 data/demo_output/
+data/external/
+data/revalidation/
 
 # Built LogGOPSim binaries
 tools/LogGOPSim/LogGOPSim

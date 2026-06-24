@@ -1,154 +1,180 @@
-# SC26 Artifact — Provisioning Networks for AI Supercomputers
+# SC Tracing Artifact
 
-This artifact reproduces the figures of the paper
-*"Provisioning Networks for AI Supercomputers: A Trace-Driven Study of
-Performance Sensitivity at Unprecedented Scale"* and provides the full
-pipeline used to derive them from raw execution traces.
+This repository supports the SC paper, "Provisioning Networks for AI Supercomputers: A Trace-Driven Study of Performance Sensitivity at Unprecedented Scale".
 
-## End-to-end reproduction (figures only, ~1 minute)
+The artifact takes NCCL/AI workload traces that have already been converted to GOAL-like schedules, replays or analyzes them with LogGOPSim and Composite-LP tooling, and regenerates the paper figures from packaged CSV outputs. It is organized so a user can run the cheap figure path immediately, then optionally run deeper validation from downloaded GOAL traces.
 
-Four commands, no GPU, no special hardware:
+Work for the cleanup/revalidation pass lives on branch `clean_version`.
+
+## What Is Included
+
+- `scripts/`: figure-generation scripts for paper figures 1, 3, 4, 5, 6, 7, 8/9, and 10.
+- `data/output/` and `data/workspaces/`: packaged CSVs and intermediate outputs used by the figure scripts.
+- `data/traces/demo_allreduce_16r_1MiB.goal`: a tiny GOAL trace for LogGOPSim smoke tests.
+- `pipeline/`: user-facing wrappers for LogGOPSim replay and Composite-LP runs.
+- `solver/`: dependency-graph and LP tooling for Composite-LP/Monolithic-LP style analyses.
+- `tools/LogGOPSim/`: vendored LogGOPSim source used by the replay wrappers.
+- `docs/progress_log.md`: running cleanup/revalidation log with commands, runtimes, inputs, outputs, and known limitations.
+
+Raw NSYS tracing and GOAL recollection are intentionally out of scope for this cleanup. Use the released GOAL traces and packaged intermediate outputs instead.
+
+## Quick Start: Regenerate Paper Figures
+
+This path uses packaged CSVs only. It does not need GPUs, raw NSYS traces, Gurobi, or the large GOAL files.
 
 ```bash
-git clone -b main https://github.com/tommasobo/SC_Tracing.git
+git clone -b clean_version https://github.com/tommasobo/SC_Tracing.git
 cd SC_Tracing
-pip install -r requirements.txt
-python3 reproduce_all.py
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -r requirements.txt
+python reproduce_all.py
 ```
 
-Generated PDFs and PNGs appear under `figures/`.
+Outputs are written to `figures/`. On the cleanup machine (`bigmem`, Ubuntu 24.04, Python 3.12), this completed in about 22 seconds with about 190 MiB peak RSS.
 
-## End-to-end reproduction (figures + pipeline demo, ~2 minutes)
-
-Same three commands plus `--pipeline`, which builds LogGOPSim from
-source and replays a small demo GOAL trace through the LGS stage
-before running the figure scripts:
+To list the figure mapping:
 
 ```bash
-apt-get install g++ gengetopt re2c          # build deps for LogGOPSim
-python3 reproduce_all.py --pipeline
+python reproduce_all.py --list
 ```
 
-## Pipeline stages
-
-The paper's pipeline has four stages. The artifact supplies the code
-for all of them and the packaged outputs that let reviewers bypass
-the expensive ones:
-
-```
-┌────────────┐    ┌──────────┐    ┌──────────────────┐    ┌─────────┐
-│ Raw traces │───▶│   GOAL   │───▶│ Composite-LP     │───▶│ Figure  │
-│  (nsys)    │    │ (A2)     │    │  or LogGOPSim    │    │ scripts │
-└────────────┘    └──────────┘    │  or Monolithic-LP│    └─────────┘
-   Stage 1          Stage 2       └──────────────────┘       Stage 4
-                                           Stage 3
-```
-
-| Stage | What it does | Code in artifact | Runs on reviewer machine? |
-|-------|--------------|------------------|---------------------------|
-| 1. Raw → GOAL | NVIDIA Nsight trace + nccl_generator emits GOAL schedules | documented only | No (needs a GPU cluster + NCCL; we ship the GOAL outputs as artifact $A_2$) |
-| 2. GOAL download | Fetch GOAL traces from $A_2$ | `wget` example | Yes |
-| 3a. Composite-LP sweep | Per-signature parametric LP + program-level composition | `solver/`, `pipeline/run_composite_lp.py` | Yes (needs Gurobi and a proper NCCL GOAL) |
-| 3b. LogGOPSim replay | Validation runtime | `tools/LogGOPSim/`, `pipeline/run_lgs.py` | Yes |
-| 3c. Monolithic LP | Single full-trace LP (paper baseline for Figs 5, 7) | `solver/` (`main.py -a sensitivity --skip-composition`) | Only at small scales — at 4,096 GPUs it requires tens of TB of RAM and we ship the results |
-| 4. Plotting | Figure generation from the sensitivity CSVs | `scripts/fig*.py`, `reproduce_all.py` | Yes (default path, ~1 min) |
-
-## Layout
-
-```
-.
-├── README.md
-├── requirements.txt          # matplotlib, numpy, pandas
-├── reproduce_all.py          # master entry: figures (default) + --pipeline
-├── scripts/                  # figure generators (one per paper figure)
-├── solver/                   # Composite-LP and Monolithic-LP solver (Python)
-├── tools/LogGOPSim/          # LogGOPSim source + Makefile (build with pipeline/build_tools.sh)
-├── pipeline/                 # thin drivers over solver/ and tools/LogGOPSim/
-│   ├── build_tools.sh
-│   ├── demo.py
-│   ├── run_composite_lp.py
-│   └── run_lgs.py
-├── data/
-│   ├── traces/demo_allreduce_16r_1MiB.goal  # tiny GOAL for the pipeline demo
-│   ├── output/...                            # precomputed sensitivity CSVs
-│   └── workspaces/...                        # precomputed per-workload CSVs
-├── figures/                  # generated figures (created on run)
-└── latex/                    # AD LaTeX source
-```
-
-## Paper figure mapping
-
-| Paper Fig | Script                               | Output                              |
-| --------- | ------------------------------------ | ----------------------------------- |
-| 1         | `fig01_sensitivity_maps.py`          | `fig_2d_sensitivity_workloads.pdf`  |
-| 2         | *(diagram, no script)*               | —                                   |
-| 3         | `fig03_allreduce_1x4.py`             | `fig3_sensitivity_1x4.pdf`          |
-| 4         | `fig04_mixed_collectives.py`         | `fig_mixed_16n_ch1.pdf`             |
-| 5         | `fig05_llama_iteration.py`           | `fig5_llama7b.pdf`                  |
-| 6         | `fig06_sensitivity_grid.py`          | `fig_3x3_sensitivity.pdf`           |
-| 7         | `fig07_memory_scaling.py`            | `fig6_grok_memory.pdf`              |
-| 8         | `fig08_09_cluster_params_cost.py`    | `fig_network_perf_combined.pdf`     |
-| 9         | `fig08_09_cluster_params_cost.py`    | `fig_network_perf_combined.pdf`     |
-| 10        | `fig10_jitter.py`                    | `fig_jitter_3panel.pdf`             |
-
-Figures 8 and 9 are the two panels of a single combined plot.
-
-## Precomputed outputs for expensive pipeline stages
-
-Several upstream stages are too resource-intensive to run on a
-typical reviewer machine. We ship their **outputs** as CSV so
-figure reproduction is fully decoupled from the original hardware:
-
-- **Monolithic LP at scale.** The full-trace LP baseline used in
-  Figures 5 and 7 requires ~14 GiB at Llama 8B / 16 GPUs (83 min)
-  and would require tens of TiB at 4,096 GPUs. We ship the
-  small-scale `full_runtime.csv` directly.
-- **LogGOPSim replay of Grok 314B on 4,096 GPUs.** The replay emits
-  a ~1.3 TiB GOAL schedule and takes hours; we ship the
-  `lgs_points.csv` result.
-- **Composite-LP sweeps at full scale.** Llama 70B on 128 GPUs and
-  Grok 314B on 4,096 GPUs each take 1–10 min *and* require a Gurobi
-  license. We ship the sensitivity CSVs so figures are always
-  reproducible, and expose `pipeline/run_composite_lp.py` for
-  reviewers who want to regenerate them.
-- **Hardware reference measurements.** Collected on the Alps
-  supercomputer (NVIDIA GH200, Slingshot-11) and the Azure ND
-  GB200 v6 cluster; both shipped as static CSV.
-
-The packaged CSVs live under `data/output/` and `data/workspaces/`.
-
-## Running the pipeline on real workloads
-
-To drive the pipeline on one of the released traces from $A_2$
-(`http://storage2.spcl.ethz.ch/traces/ai/`), download a per-workload
-sub-tree (each includes the GOAL file and a `comm_dep.csv` that
-disambiguates sends/recvs), then invoke the pipeline drivers:
+To regenerate a subset:
 
 ```bash
-# Download one workload
-wget -r -np -nH --cut-dirs=2 \
-    http://storage2.spcl.ethz.ch/traces/ai/llama3_3_n32/
-
-# Composite-LP sweep over latency
-python3 pipeline/run_composite_lp.py \
-    --goal   llama3_3_n32/output.goal \
-    --comm-dep llama3_3_n32/InterNode_MicroEvents_Dependency.exact.comm_dep.csv \
-    --out    out/llama_n32_composed.csv \
-    --l-min 0 --l-max 1000000 --step 50000
-
-# LogGOPSim replay for a latency point
-python3 pipeline/run_lgs.py \
-    --goal llama3_3_n32/output.goal --L 1000
+python reproduce_all.py --only 3 6 10
 ```
 
-## System requirements
+## LogGOPSim Demo
 
-- Python 3.8+
-- ~200 MiB of free disk
-- No GPU; no special hardware
-- For the `--pipeline` path: `g++`, `gengetopt`, `re2c`
-- For Composite-LP / Monolithic-LP runs: Gurobi 10.0+
-  (free academic license at `gurobi.com/academia`)
+The demo builds the vendored LogGOPSim source if needed, replays the tiny shipped GOAL trace at four latency points, and writes a CSV.
 
-Tested on Ubuntu 22.04 (WSL2) with Python 3.8.10, Matplotlib 3.7,
-g++ 9.4, LogGOPSim 1.x (shipped source).
+System packages needed for building LogGOPSim:
+
+```bash
+sudo apt-get install g++ gengetopt re2c
+```
+
+Run:
+
+```bash
+python pipeline/demo.py
+```
+
+Output:
+
+```text
+data/demo_output/lgs_points.csv
+```
+
+Equivalent direct command:
+
+```bash
+python pipeline/run_lgs_sweep.py \
+  --goal data/traces/demo_allreduce_16r_1MiB.goal \
+  --out data/demo_output/lgs_points.csv \
+  --latencies 0 1000 10000 100000
+```
+
+## Replay Released GOAL Traces
+
+The public trace index is:
+
+```text
+http://storage2.spcl.ethz.ch/traces/ai/
+```
+
+Download only the GOAL files you need. Do not download raw NSYS traces unless you are explicitly redoing trace conversion. Large local inputs should go under `data/external/`, which is ignored by git.
+
+Example: Grok 314B, N4/GPU16:
+
+```bash
+mkdir -p data/external/grok_N4 data/revalidation/grok_N4_lgs
+curl -L -o data/external/grok_N4/grok.goal \
+  http://storage2.spcl.ethz.ch/traces/ai/grok/Grok314B_N4_GPU16_TP4_PP1_CP1_VP1_EP4_ETP4_GBS256/grok.goal
+curl -L -o data/external/grok_N4/SHA256SUMS \
+  http://storage2.spcl.ethz.ch/traces/ai/grok/Grok314B_N4_GPU16_TP4_PP1_CP1_VP1_EP4_ETP4_GBS256/SHA256SUMS
+(cd data/external/grok_N4 && sha256sum -c SHA256SUMS --ignore-missing)
+python pipeline/run_lgs_sweep.py \
+  --goal data/external/grok_N4/grok.goal \
+  --out data/revalidation/grok_N4_lgs/lgs_points.csv \
+  --latencies 0 4000 10000 \
+  --G 0.04 --o 200
+```
+
+Example: vLLM Llama 70B, N2/GPU8:
+
+```bash
+mkdir -p data/external/vllm_llama70b_N2 data/revalidation/vllm_llama70b_N2_lgs
+curl -L -o data/external/vllm_llama70b_N2/vllm_llama_N2_GPU8_PP8.goal \
+  http://storage2.spcl.ethz.ch/traces/ai/vllm/Llama_3.1_70B_Instruct_N2_GPU8_TP8_Short_Prompts/vllm_llama_N2_GPU8_PP8.goal
+python pipeline/run_lgs_sweep.py \
+  --goal data/external/vllm_llama70b_N2/vllm_llama_N2_GPU8_PP8.goal \
+  --out data/revalidation/vllm_llama70b_N2_lgs/lgs_points.csv \
+  --latencies 0 4000 10000 \
+  --G 0.04 --o 200
+```
+
+Cleanup results from `bigmem`:
+
+- vLLM N2/GPU8 replay: 147 MiB GOAL, 5,799,631 lines, 14.1 seconds for three points, 307 MiB peak RSS. Runtime was flat at 261.198 ms for 0, 4, and 10 us.
+- Grok N4/GPU16 replay: 213 MiB GOAL, 8,080,201 lines, 35.6 seconds for three points, 575 MiB peak RSS. Runtime was 6125.226 ms at 0 us and 6125.367 ms at 10 us.
+
+## Composite-LP Runs
+
+Install the optional solver dependencies:
+
+```bash
+python -m pip install -r requirements-solver.txt
+```
+
+Composite-LP also requires a working Gurobi license. Verify it with:
+
+```bash
+python -c "import gurobipy as gp; m=gp.Model(); x=m.addVar(lb=0); m.setObjective(x, gp.GRB.MAXIMIZE); m.addConstr(x <= 1); m.optimize(); print(m.Status, m.ObjVal)"
+```
+
+Run the wrapper on a GOAL trace with its matching `comm_dep` sidecar:
+
+```bash
+python pipeline/run_composite_lp.py \
+  --goal path/to/output.goal \
+  --comm-dep path/to/InterNode_MicroEvents_Dependency.exact.comm_dep.csv \
+  --out data/revalidation/workload/composed_runtime.csv \
+  --l-min 0 --l-max 1000000 --step 50000 \
+  --l-intra 350 --o 200
+```
+
+Important: many released GOAL files cannot be matched by tag alone. If `--comm-dep` is missing, the solver may fail after parsing with unmatched sends/recvs. The packaged paper figures therefore use precomputed Composite-LP CSVs under `data/output/` and `data/workspaces/`.
+
+## Expensive Or Skipped Paths
+
+- Do not retrace workloads or recollect GOAL traces as part of normal artifact reproduction.
+- Do not rerun 4096-GPU Grok LogGOPSim replay unless there is a strong reason; the GOAL schedule is too large for routine validation.
+- Use packaged outputs for 4096-GPU Monolithic-LP and full-scale replay baselines.
+- Moderate GOAL replay from released traces is feasible and useful for sanity checks.
+- Composite-LP regeneration is feasible only when the corresponding GOAL and comm-dep metadata are both available.
+
+## Tests
+
+For development validation:
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+```
+
+Cleanup result: `7 passed in 1.92s` on `bigmem`.
+
+## Current Validation Status
+
+During the `clean_version` cleanup pass:
+
+- Packaged figures regenerated successfully from the bundled CSVs.
+- Vendored LogGOPSim was patched for modern GCC by adding the missing `<cstring>` include.
+- The LogGOPSim demo now writes a real CSV output.
+- Real downloaded GOAL traces for vLLM N2/GPU8 and Grok N4/GPU16 replay successfully through LogGOPSim.
+- Composite-LP wrapper path handling was fixed, but real downloaded GOAL-only runs still require the matching comm-dep sidecar.
+- Solver tests were repaired and now run from the repository root.
+
+See `docs/progress_log.md` for exact commands, runtimes, memory, output paths, and limitations.

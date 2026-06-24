@@ -144,7 +144,15 @@ class DependencyGraph(object):
         dummy_end = self.add_vertex(VertexType.CALC, -1, -1, cost=0)
         for v in start_vertices:
             self.add_edge_by_global_index(dummy_start, v)
-        for v in self.rank_to_end_v:
+        end_vertices = list(self.rank_to_end_v)
+        if any(v is None for v in end_vertices):
+            # Manually constructed graphs may not populate rank_to_end_v.
+            # In that case, connect every current sink to the dummy end.
+            end_vertices = [
+                v for v in self.graph.vs.select(_outdegree_eq=0).indices
+                if v != dummy_start and v != dummy_end
+            ]
+        for v in end_vertices:
             self.add_edge_by_global_index(v, dummy_end)
         self.add_pending_edges()
 
@@ -236,7 +244,8 @@ class DependencyGraph(object):
             attrs["cpu"] = cpu
         idx = self.graph.add_vertex(**attrs).index
         # Adds the global index to the mapping
-        self.local_index_to_global_index[rank][local_index] = idx
+        if rank >= 0 and local_index >= 0:
+            self.local_index_to_global_index[rank][local_index] = idx
         return idx
 
     def get_topological_sort(self, mode: str = "out") -> List[int]:

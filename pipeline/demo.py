@@ -51,12 +51,12 @@ def main() -> int:
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
     print("\n=== LogGOPSim replay (builds and runs LogGOPSim on the demo GOAL) ===")
-    for L in (0, 1_000, 10_000, 100_000):
-        run([
-            sys.executable, str(HERE / "run_lgs.py"),
-            "--goal", str(args.goal),
-            "--L", str(L),
-        ])
+    run([
+        sys.executable, str(HERE / "run_lgs_sweep.py"),
+        "--goal", str(args.goal),
+        "--out", str(args.out_dir / "lgs_points.csv"),
+        "--latencies", "0", "1000", "10000", "100000",
+    ])
 
     if args.with_lp:
         print("\n=== Composite-LP sweep ===")

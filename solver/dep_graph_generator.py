@@ -160,14 +160,19 @@ class DependencyGraphGenerator(object):
         else:
             # Checks if there are unmatched sends and recvs
             if len(sends) != 0 or len(recvs) != 0:
-                for _, idx in sends.items():
+                max_examples = 20
+                for _, idx in list(sends.items())[:max_examples]:
                     print("[DEBUG] Unmatched send: l" + \
                           str(dep_graph.graph.vs[idx]["l"]) + \
                           " (rank " + str(dep_graph.graph.vs[idx]["r"]) + ")")
-                for _, idx in recvs.items():
+                if len(sends) > max_examples:
+                    print(f"[DEBUG] ... {len(sends) - max_examples} more unmatched sends")
+                for _, idx in list(recvs.items())[:max_examples]:
                     print("[DEBUG] Unmatched recv: l" + \
                           str(dep_graph.graph.vs[idx]["l"]) + \
                           " (rank " + str(dep_graph.graph.vs[idx]["r"]) + ")")
+                if len(recvs) > max_examples:
+                    print(f"[DEBUG] ... {len(recvs) - max_examples} more unmatched recvs")
             assert len(sends) == 0 and len(recvs) == 0, \
                 "[ERROR] There are unmatched sends and recvs in the goal file.\n" \
                 "Communication dependency file is required to match them."

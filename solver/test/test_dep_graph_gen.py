@@ -1,5 +1,6 @@
 import os
 import unittest
+from pathlib import Path
 from dep_graph_generator import DependencyGraphGenerator
 from dep_graph import VertexType
 
@@ -8,6 +9,8 @@ Integration tests for the dependency graph generator.
 """
 
 class TestDepGraphGenerator(unittest.TestCase):
+    DATA = Path(__file__).resolve().parent / "data"
+
     def test_generate_dep_graph_blocking(self):
         """
         Tests the dependency graph generator with the goal
@@ -19,8 +22,8 @@ class TestDepGraphGenerator(unittest.TestCase):
                     V
         4 (l2) -> 3 (l1) -> 5 (l3) : Rank 1
         """
-        goal_path = "mpi-dep-graph/test/data/blocking.goal"
-        generator = DependencyGraphGenerator(goal_path)
+        goal_path = self.DATA / "blocking.goal"
+        generator = DependencyGraphGenerator(str(goal_path))
         dep_graph = generator.generate()
 
         # Checks the number of vertices and edges
@@ -61,8 +64,8 @@ class TestDepGraphGenerator(unittest.TestCase):
                     V
         5 (l2) -> 4 (l1) -> 6 (l3) : Rank 1
         """
-        goal_path = "mpi-dep-graph/test/data/non_blocking.goal"
-        generator = DependencyGraphGenerator(goal_path)
+        goal_path = self.DATA / "non_blocking.goal"
+        generator = DependencyGraphGenerator(str(goal_path))
         dep_graph = generator.generate()
 
         # Checks the number of vertices and edges
