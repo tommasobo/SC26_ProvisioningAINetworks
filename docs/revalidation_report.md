@@ -10,6 +10,8 @@ Initial artifact commit: `90231b14a03b526b406fb4811229b5544cc2a5c4`
 
 Baseline cleanup commit before this continuation: `9f4cb97 Clean and revalidate tracing artifact`
 
+Continuation commit: `af696ec Revalidate comm-dep LP workflows`
+
 Related pushed branch inspected: `origin/clean_version_local` at `652bbf020ebbd29e9b015386712eb4f18909f001`
 
 Machine: `bigmem`, Ubuntu 24.04, Linux `6.8.0-1044-azure`, 416 logical CPUs, 10 TiB RAM, Python 3.12.3
@@ -303,6 +305,14 @@ cd SC_Tracing
 ```
 
 The previous side branch `clean_version_local` was pushed before this continuation and used as an input, but the consolidated branch for this cleanup is `clean_version`.
+
+Push status: pushing `clean_version` from `bigmem` failed because the HTTPS remote could not prompt for GitHub credentials:
+
+```text
+fatal: could not read Username for 'https://github.com': No such device or address
+```
+
+The local branch is committed and clean.
 
 ## Remaining TODOs Ranked By Importance
 
