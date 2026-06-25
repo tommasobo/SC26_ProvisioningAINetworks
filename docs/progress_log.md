@@ -354,3 +354,8 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Actual demo outputs: `/tmp/sc_regen_actual/comm_dep.csv` with 480 rows, `/tmp/sc_regen_actual/lgs_runtime.csv`, `/tmp/sc_regen_actual/monolithic_points.csv`, and `/tmp/sc_regen_actual/regeneration_manifest.json`.
 - Actual demo result: LGS returned 1.271710 ms at `L=0 ns` and 1.391670 ms at `L=4000 ns`; Monolithic-LP returned 12,000 ns at both exact points for the tiny synthetic trace.
 - Cleanup: normalized `--l-intra` parsing in `pipeline/run_monolithic_lp.py` and `pipeline/run_composite_lp.py` to floats, matching `pipeline/run_monolithic_points.py` and the solver API.
+- Command: `git commit -m "Add consolidated regeneration driver"`.
+- Result: success; created local commit `5afab9e Add consolidated regeneration driver`.
+- Command: `git push -u origin clean_version`.
+- Result: failed because this environment still has no interactive GitHub HTTPS credentials.
+- Exact error: `fatal: could not read Username for 'https://github.com': No such device or address`.
