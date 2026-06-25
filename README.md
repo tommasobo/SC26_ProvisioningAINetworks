@@ -232,7 +232,7 @@ python pipeline/run_nccl_composite.py \
   --clear-cache --parallel-solve --max-workers 8
 ```
 
-For Grok, this was validated end-to-end for N4, N8, N16, and N32 against the
+For Grok, this was validated end-to-end for N4, N8, N16, N32, and N64 against the
 existing scratch Composite-LP baselines. The maximum relative curve difference
 was at most `0.014%` over the full `L=0..1e6 ns` sweep.
 
@@ -318,7 +318,7 @@ During the `clean_version` cleanup pass:
 - Vendored LogGOPSim builds on the current GCC toolchain.
 - Real downloaded GOAL traces for Grok N4/GPU16 and vLLM N2/GPU8 replay through LogGOPSim.
 - Real Monolithic-LP regeneration succeeded for Grok N4/GPU16 and a local Llama7B N2/GPU8 trace when a valid `comm_dep` sidecar was generated.
-- Real NCCL metadata-sidecar Composite-LP regeneration succeeded for Grok N4, N8, N16, and N32; regenerated curves match existing scratch baselines within `0.014%` max relative difference.
+- Real NCCL metadata-sidecar Composite-LP regeneration succeeded for Grok N4, N8, N16, N32, and N64; regenerated curves match existing scratch baselines within `0.014%` max relative difference.
 - LGS/LP numeric comparisons were saved under `results/revalidation/`.
 - The `comm_dep` issue is root-caused for vLLM N2: GOAL-only matching is insufficient for that trace and the patched LogGOPSim sidecar writer emits an empty file.
 
