@@ -1,0 +1,17 @@
+{
+  "key": "28ff847f10a968b7",
+  "description": "allreduce_ring_ll_3944448B_16r_16ch",
+  "piecewise": {
+    "pieces": [
+      [
+        8.0,
+        175807.68736000173
+      ]
+    ]
+  },
+  "lp_vars": 4116,
+  "lp_constrs": 15632,
+  "solve_time_s": 1.36326003074646,
+  "nic_finish_ns": 175057.6873600001,
+  "cpu_finish_ns": 175807.6873600001
+}

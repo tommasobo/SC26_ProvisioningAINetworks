@@ -1,0 +1,21 @@
+{
+  "key": "1d898cd746e648f8",
+  "description": "allgather_ring_ll_98304B_32r_16ch",
+  "piecewise": {
+    "pieces": [
+      [
+        7.0,
+        144686.34848000002
+      ],
+      [
+        8.0,
+        144561.64896000084
+      ]
+    ]
+  },
+  "lp_vars": 32292,
+  "lp_constrs": 79904,
+  "solve_time_s": 5.763485670089722,
+  "nic_finish_ns": 143811.64896000002,
+  "cpu_finish_ns": 144561.64896000002
+}

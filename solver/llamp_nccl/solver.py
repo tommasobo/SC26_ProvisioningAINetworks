@@ -8,6 +8,8 @@ reduced-cost algorithm.
 
 from __future__ import annotations
 
+import os
+import sys
 import time
 from pathlib import Path
 from typing import Optional
@@ -21,6 +23,59 @@ from .types import (
     PiecewiseAffine,
     RingTopology,
 )
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _prepend_sys_path(path: Path) -> None:
+    path_str = str(path)
+    if path_str not in sys.path:
+        sys.path.insert(0, path_str)
+
+
+def _resolve_generator_dir() -> Path:
+    env = os.environ.get("LLAMP_NCCL_GENERATOR_DIR")
+    candidates = []
+    if env:
+        candidates.append(Path(env))
+    root = _repo_root()
+    candidates.extend([
+        root / "tools" / "nccl_generator",
+        root / "tools" / "nccl_generator_v2_hwfix",
+    ])
+    for candidate in candidates:
+        if (candidate / "nccl_comm.py").exists() and (candidate / "goal.py").exists():
+            return candidate
+    tried = ", ".join(str(c) for c in candidates)
+    raise FileNotFoundError(
+        "Could not locate the NCCL generator Python modules. "
+        "Set LLAMP_NCCL_GENERATOR_DIR or install tools/nccl_generator. "
+        f"Tried: {tried}"
+    )
+
+
+def _resolve_npkit_paths() -> tuple[Path, Path]:
+    root = _repo_root()
+    simple_env = os.environ.get("LLAMP_NPKIT_SIMPLE")
+    ll_env = os.environ.get("LLAMP_NPKIT_LL")
+    simple = Path(simple_env) if simple_env else root / "data" / "npkit" / "npkit_alps_simple.json"
+    ll = Path(ll_env) if ll_env else root / "data" / "npkit" / "npkit_alps_ll.json"
+    if simple.exists() and ll.exists():
+        return simple, ll
+
+    legacy_root = root / "workspaces" / "collective_motif_clean_20260329" / "reference_bundle" / "npkit_results"
+    legacy_simple = legacy_root / "simple_1ch" / "npkit_data_summary_Simple_alps.json"
+    legacy_ll = legacy_root / "ll_1ch" / "npkit_data_summary_LL_alps.json"
+    if legacy_simple.exists() and legacy_ll.exists():
+        return legacy_simple, legacy_ll
+
+    raise FileNotFoundError(
+        "Could not locate NPKit timing summaries for Composite-LP motif generation. "
+        "Set LLAMP_NPKIT_SIMPLE and LLAMP_NPKIT_LL, or provide data/npkit/npkit_alps_simple.json "
+        "and data/npkit/npkit_alps_ll.json."
+    )
 
 
 def build_ring_allreduce_lp(sig: CollectiveSignature) -> gp.Model:
@@ -273,32 +328,28 @@ def solve_collective(sig: CollectiveSignature,
     Uses the exact same LP formulation as the monolithic Full LP,
     guaranteeing identical results for single collectives.
     """
-    import sys, os, tempfile
+    import tempfile
     t0 = time.time()
 
     # --- Step 1: Generate GOAL text for this collective ---
-    # Add generator to path
-    gen_dir = str(Path(__file__).resolve().parents[3] / "tools" / "nccl_generator_v2_hwfix")
-    if gen_dir not in sys.path:
-        sys.path.insert(0, gen_dir)
+    _prepend_sys_path(_resolve_generator_dir())
 
     from nccl_comm import (
         AllReduce as NCCLAllReduce, AllGather as NCCLAllGather,
         ReduceScatter as NCCLReduceScatter,
         Communicator, CollInfo, CollChnlInfo, CollAlgo, NCCLProto,
     )
-    from nccl_primitives import init_data, GpuId
+    from nccl_primitives import init_data, init_generation_flags
     from goal import GoalOpAtom, GoalSend, GoalRecv, GoalRank, GoalCPU
 
     # Ensure npkit data is loaded
-    npkit_root = Path(__file__).resolve().parents[3] / "workspaces" / "collective_motif_clean_20260329" / "reference_bundle" / "npkit_results"
-    npkit_simple = npkit_root / "simple_1ch" / "npkit_data_summary_Simple_alps.json"
-    npkit_ll = npkit_root / "ll_1ch" / "npkit_data_summary_LL_alps.json"
-    if npkit_simple.exists() and npkit_ll.exists():
-        try:
-            init_data(str(npkit_simple), str(npkit_ll))
-        except Exception:
-            pass  # already initialized
+    npkit_simple, npkit_ll = _resolve_npkit_paths()
+    init_data(str(npkit_simple), str(npkit_ll))
+
+    intra_env = os.environ.get("LLAMP_NCCL_ENABLE_INTRA_NODE_TRANSFER")
+    if intra_env is not None:
+        enabled = intra_env.strip().lower() not in {"0", "false", "no"}
+        init_generation_flags(False, False, enabled)
 
     topo = sig.ring_topology
     N = sig.n_ranks
@@ -381,9 +432,7 @@ def solve_collective(sig: CollectiveSignature,
     try:
         # --- Step 2: Build dep graph and LP (same as Full LP) ---
         # Add LLAMP LP code to path
-        lp_dir = str(Path(__file__).resolve().parents[1])
-        if lp_dir not in sys.path:
-            sys.path.insert(0, lp_dir)
+        _prepend_sys_path(Path(__file__).resolve().parents[1])
 
         from dep_graph_generator import DependencyGraphGenerator
         from lp_converter import LPConverter

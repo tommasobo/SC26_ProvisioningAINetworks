@@ -1,0 +1,21 @@
+{
+  "key": "14f7f50de3886be8",
+  "description": "allgather_ring_simple_18141696B_16r_16ch",
+  "piecewise": {
+    "pieces": [
+      [
+        1.0,
+        690336.5999999999
+      ],
+      [
+        4.0,
+        348139.1913600005
+      ]
+    ]
+  },
+  "lp_vars": 39188,
+  "lp_constrs": 86032,
+  "solve_time_s": 7.797286033630371,
+  "nic_finish_ns": 653224.02144,
+  "cpu_finish_ns": 690336.5999999999
+}

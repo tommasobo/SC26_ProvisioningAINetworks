@@ -168,6 +168,10 @@ def grok_row(node_count: int, args: argparse.Namespace, target_latency: float) -
         ROOT / "data" / "revalidation" / f"grok_node_scaling/monolithic_N{node_count}/sweeps/full_runtime.csv",
         ROOT / "data" / "revalidation" / f"grok_N{node_count}_lp/full_runtime.csv",
     ]
+    composite_candidates = [
+        ROOT / "data" / "revalidation" / f"grok_N{node_count}_composite_regen" / "comp" / "sweeps" / "composed_runtime.csv",
+        output_dir / "comp" / "sweeps" / "composed_runtime.csv",
+    ]
     if args.include_legacy_monolithic:
         monolithic_candidates.append(output_dir / "monolithic" / "sweeps" / "full_runtime.csv")
 
@@ -188,7 +192,7 @@ def grok_row(node_count: int, args: argparse.Namespace, target_latency: float) -
         row["sidecar_available"] = True
         row["sidecar_size_mb"] = sidecar.stat().st_size / 1e6
     row.update(hw_reference_ms(analysis_dir))
-    add_curve(row, "composite_lp", output_dir / "comp" / "sweeps" / "composed_runtime.csv", target_latency)
+    add_curve(row, "composite_lp", first_existing(composite_candidates), target_latency)
     add_curve(row, "lgs", output_dir / "lgs" / "sweeps" / "lgs_runtime.csv", target_latency)
     monolithic_path = first_existing(monolithic_candidates)
     add_curve(row, "monolithic_lp", monolithic_path, target_latency)

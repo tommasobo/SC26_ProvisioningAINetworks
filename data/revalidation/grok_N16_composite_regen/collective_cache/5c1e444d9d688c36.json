@@ -1,0 +1,21 @@
+{
+  "key": "5c1e444d9d688c36",
+  "description": "reducescatter_ring_simple_18140928B_16r_16ch",
+  "piecewise": {
+    "pieces": [
+      [
+        1.0,
+        695925.5200000001
+      ],
+      [
+        4.0,
+        343311.1513600005
+      ]
+    ]
+  },
+  "lp_vars": 39188,
+  "lp_constrs": 86032,
+  "solve_time_s": 6.48566460609436,
+  "nic_finish_ns": 642705.9016000002,
+  "cpu_finish_ns": 695925.5200000001
+}

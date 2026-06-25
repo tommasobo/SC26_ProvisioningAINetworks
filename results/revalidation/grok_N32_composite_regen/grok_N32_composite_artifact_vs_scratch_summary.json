@@ -1,0 +1,13 @@
+{
+  "actual": "data/revalidation/grok_N32_composite_regen/comp/sweeps/composed_runtime.csv",
+  "expected": "/mnt/scratch/GrokStudy/repo/output/grok_n32/comp/sweeps/composed_runtime.csv",
+  "label": "grok_N32_composite_artifact_vs_scratch",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 423390.9401741028,
+  "max_abs_rel_diff_pct": 0.005031087644208052,
+  "mean_abs_diff_ns": 354841.7793513815,
+  "mean_abs_rel_diff_pct": 0.004140354364877174,
+  "min_L": 0.0,
+  "n_points": 201,
+  "points": "intersection"
+}

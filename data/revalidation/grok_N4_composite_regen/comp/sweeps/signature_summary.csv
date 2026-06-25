@@ -1,0 +1,11 @@
+signature,count,status,reason,lp_vars,lp_constrs,n_pieces,error
+allgather_ring_simple_114459648B_16r_16ch,1,ok,lp,136468,301072,1,
+allgather_ring_simple_72566784B_16r_16ch,1,ok,lp,97556,215056,2,
+reducescatter_ring_simple_12582912B_16r_16ch,128,ok,lp,19732,43024,2,
+allgather_ring_simple_98697216B_16r_16ch,1,ok,lp,117012,258064,2,
+allgather_ring_simple_12582912B_16r_16ch,192,ok,lp,19732,43024,2,
+allgather_ring_ll_49152B_16r_12ch,64,ok,lp,5972,14608,2,
+reducescatter_ring_simple_98697216B_16r_16ch,1,ok,lp,117012,258064,2,
+reducescatter_ring_simple_72566784B_16r_16ch,1,ok,lp,97556,215056,2,
+reducescatter_ring_simple_114459648B_16r_16ch,1,ok,lp,136468,301072,1,
+allreduce_ring_ll_995328B_16r_16ch,1,ok,lp,1236,9872,1,

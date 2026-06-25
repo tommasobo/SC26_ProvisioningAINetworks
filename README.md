@@ -204,7 +204,9 @@ python pipeline/run_monolithic_points.py \
   --o 200 --G 0.04 --add-barriers
 ```
 
-Run the Composite-LP wrapper when the workspace and sidecar are available:
+Run the GOAL-level LP sensitivity wrapper when the GOAL and LP sidecar are
+available. This path builds a dependency graph from the full GOAL trace and
+therefore requires `comm_dep.csv` for real NCCL traces:
 
 ```bash
 python pipeline/run_composite_lp.py \
@@ -215,7 +217,24 @@ python pipeline/run_composite_lp.py \
   --l-intra 350 --o 200 --G 0.04
 ```
 
-Both LP wrappers fail early if `--comm-dep` is missing or empty. Use `--allow-tag-match` only for known-simple synthetic traces.
+Both GOAL-level LP wrappers fail early if `--comm-dep` is missing or empty. Use `--allow-tag-match` only for known-simple synthetic traces.
+
+Run the paper-style NCCL Composite-LP path when the NCCL metadata sidecars are
+available. This path does not use `comm_dep.csv`; it reads
+`collective_instances.csv` and `comm_ring_info.csv`, solves unique collective
+motifs, and composes the program-level curve:
+
+```bash
+python pipeline/run_nccl_composite.py \
+  --analysis-dir path/to/analysis \
+  --out data/revalidation/workload/comp/sweeps/composed_runtime.csv \
+  --cache-dir data/revalidation/workload/collective_cache \
+  --clear-cache --parallel-solve --max-workers 8
+```
+
+For Grok, this was validated end-to-end for N4, N8, N16, and N32 against the
+existing scratch Composite-LP baselines. The maximum relative curve difference
+was at most `0.014%` over the full `L=0..1e6 ns` sweep.
 
 The high-RAM Grok node-scaling aggregation used during revalidation is:
 
@@ -227,10 +246,11 @@ python scripts/grok_node_scaling.py \
   --target-latencies 0 4000 10000
 ```
 
-It combines hardware wall times from `collective_instances.csv`, existing
-scratch Composite-LP and LGS curves, regenerated Monolithic-LP points under
-`data/revalidation/`, and packaged N512/N1024 Composite-LP summaries. The
-multi-latency mode writes per-latency CSV/JSON summaries plus
+It combines hardware wall times from `collective_instances.csv`, regenerated
+Composite-LP curves under `data/revalidation/` where available, existing
+scratch Composite-LP and LGS curves for larger scales, regenerated
+Monolithic-LP points under `data/revalidation/`, and packaged N512/N1024
+Composite-LP summaries. The multi-latency mode writes per-latency CSV/JSON summaries plus
 `grok_node_scaling_multi_latency.{png,pdf}`.
 
 ## Tier D: Optional Raw NSYS SQLite to GOAL
@@ -298,6 +318,7 @@ During the `clean_version` cleanup pass:
 - Vendored LogGOPSim builds on the current GCC toolchain.
 - Real downloaded GOAL traces for Grok N4/GPU16 and vLLM N2/GPU8 replay through LogGOPSim.
 - Real Monolithic-LP regeneration succeeded for Grok N4/GPU16 and a local Llama7B N2/GPU8 trace when a valid `comm_dep` sidecar was generated.
+- Real NCCL metadata-sidecar Composite-LP regeneration succeeded for Grok N4, N8, N16, and N32; regenerated curves match existing scratch baselines within `0.014%` max relative difference.
 - LGS/LP numeric comparisons were saved under `results/revalidation/`.
 - The `comm_dep` issue is root-caused for vLLM N2: GOAL-only matching is insufficient for that trace and the patched LogGOPSim sidecar writer emits an empty file.
 
