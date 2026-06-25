@@ -169,6 +169,29 @@ The driver was also run end-to-end on the packaged demo GOAL:
 
 Result: generated 480 `comm_dep.csv` rows with patched LogGOPSim, wrote `lgs_runtime.csv`, wrote `monolithic_points.csv`, and wrote `regeneration_manifest.json`.
 
+The same driver was then exercised on the public Grok N4/GPU16 GOAL trace using the current pipeline:
+
+```bash
+/usr/bin/time -v .venv/bin/python pipeline/regenerate_from_inputs.py \
+  --goal data/external/grok_N4/grok.goal \
+  --out-dir data/revalidation/grok_N4_regen_driver \
+  --comm-dep-mode lgs \
+  --lgs-latencies 0 4000 10000 \
+  --monolithic-latencies 0 4000 10000 \
+  --l-intra 350 --o 200 --G 0.04
+```
+
+Result: generated 566,844 `comm_dep.csv` rows, wrote LGS and Monolithic-LP point CSVs, and completed in 4 minutes 58.22 seconds with 5,130,368 KiB peak RSS. Numeric comparisons are saved under `results/revalidation/grok_N4_regen_driver/`.
+
+| Comparison | Points | Max abs diff | Max rel diff |
+| --- | ---: | ---: | ---: |
+| Driver LGS vs prior standalone regeneration | 3 | 0 ns | 0% |
+| Driver LGS vs scratch LGS baseline | 3 | 82,725 ns | 0.00135% |
+| Driver Monolithic-LP vs prior standalone regeneration | 3 | 0.000002 ns | 3.15e-14% |
+| Driver Monolithic-LP vs scratch micro baseline | 3 | 67,744,307 ns | 1.106% |
+
+This validates that the consolidated driver is compatible with the current lower-level pipeline and reproduces the existing regenerated Grok N4 outputs. The remaining difference against the older scratch micro baseline is a model/baseline difference already seen in the standalone comparison, not a driver-integration error.
+
 ## Data-Level Revalidation Matrix
 
 | Workload | Scale | Inputs available | Sidecar status | LGS | Monolithic-LP | Composite-LP wrapper | Comparison status | Runtime and memory | Notes |

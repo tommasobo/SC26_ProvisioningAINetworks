@@ -1,0 +1,13 @@
+{
+  "actual": "data/revalidation/grok_N4_regen_driver/lgs_runtime.csv",
+  "expected": "/mnt/scratch/grok_repro/N4/lgs/runtime.csv",
+  "label": "driver_lgs_vs_scratch_lgs",
+  "max_L": 10000.0,
+  "max_abs_diff_ns": 82725.0,
+  "max_abs_rel_diff_pct": 0.0013505442303880317,
+  "mean_abs_diff_ns": 74534.4666665395,
+  "mean_abs_rel_diff_pct": 0.001216824056474858,
+  "min_L": 0.0,
+  "n_points": 3,
+  "points": "actual"
+}

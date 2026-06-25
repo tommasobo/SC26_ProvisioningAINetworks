@@ -1,0 +1,13 @@
+{
+  "actual": "data/revalidation/grok_N4_regen_driver/monolithic_points.csv",
+  "expected": "/mnt/scratch/grok_repro/N4/micro/runtime.csv",
+  "label": "driver_mono_vs_scratch_micro",
+  "max_L": 10000.0,
+  "max_abs_diff_ns": 67744307.43989563,
+  "max_abs_rel_diff_pct": 1.106009032948966,
+  "mean_abs_diff_ns": 67711640.77322896,
+  "mean_abs_rel_diff_pct": 1.1054664483257206,
+  "min_L": 0.0,
+  "n_points": 3,
+  "points": "actual"
+}

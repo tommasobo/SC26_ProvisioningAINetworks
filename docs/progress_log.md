@@ -359,3 +359,19 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Command: `git push -u origin clean_version`.
 - Result: failed because this environment still has no interactive GitHub HTTPS credentials.
 - Exact error: `fatal: could not read Username for 'https://github.com': No such device or address`.
+
+### 2026-06-25: Current-Pipeline Grok N4 Driver Validation
+
+- Command: `/usr/bin/time -v .venv/bin/python pipeline/regenerate_from_inputs.py --goal data/external/grok_N4/grok.goal --out-dir data/revalidation/grok_N4_regen_driver --comm-dep-mode lgs --lgs-latencies 0 4000 10000 --monolithic-latencies 0 4000 10000 --l-intra 350 --o 200 --G 0.04`.
+- Output: `data/revalidation/grok_N4_regen_driver/comm_dep.csv` with 566,844 rows, `lgs_runtime.csv`, `monolithic_points.csv`, and `regeneration_manifest.json`.
+- Runtime: 4 minutes 58.22 seconds wall clock.
+- Peak memory: 5,130,368 KiB RSS.
+- Result: success. The run used the current wrapper pipeline (`run_lgs.py`, `run_lgs_sweep.py`, and `run_monolithic_points.py`) through the consolidated driver.
+- Command: `python3 scripts/compare_csv.py --expected data/revalidation/grok_N4_lgs/lgs_points.csv --actual data/revalidation/grok_N4_regen_driver/lgs_runtime.csv --expected-x-col L_ns --expected-y-col runtime_ns --actual-x-col L_ns --actual-y-col runtime_ns --out-dir results/revalidation/grok_N4_regen_driver --label driver_lgs_vs_prior_regen --points intersection`.
+- Result: 3 points, exact match; max absolute difference 0 ns.
+- Command: `python3 scripts/compare_csv.py --expected /mnt/scratch/grok_repro/N4/lgs/runtime.csv --actual data/revalidation/grok_N4_regen_driver/lgs_runtime.csv --actual-x-col L_ns --actual-y-col runtime_ns --out-dir results/revalidation/grok_N4_regen_driver --label driver_lgs_vs_scratch_lgs --points actual`.
+- Result: 3 points, max absolute difference 82,725 ns, max relative difference 0.00135%.
+- Command: `python3 scripts/compare_csv.py --expected data/revalidation/grok_N4_lp/full_runtime.csv --actual data/revalidation/grok_N4_regen_driver/monolithic_points.csv --out-dir results/revalidation/grok_N4_regen_driver --label driver_mono_vs_prior_regen --points actual`.
+- Result: 3 points, max absolute difference 0.000002 ns, max relative difference 3.15e-14%.
+- Command: `python3 scripts/compare_csv.py --expected /mnt/scratch/grok_repro/N4/micro/runtime.csv --actual data/revalidation/grok_N4_regen_driver/monolithic_points.csv --out-dir results/revalidation/grok_N4_regen_driver --label driver_mono_vs_scratch_micro --points actual`.
+- Result: 3 points, max absolute difference 67,744,307 ns, max relative difference 1.106%.
