@@ -222,12 +222,16 @@ The high-RAM Grok node-scaling aggregation used during revalidation is:
 ```bash
 python scripts/grok_node_scaling.py \
   --scratch-root /mnt/scratch/GrokStudy/repo \
-  --out-dir results/revalidation/grok_node_scaling
+  --out-dir results/revalidation/grok_node_scaling \
+  --target-latency 4000 \
+  --target-latencies 0 4000 10000
 ```
 
 It combines hardware wall times from `collective_instances.csv`, existing
 scratch Composite-LP and LGS curves, regenerated Monolithic-LP points under
-`data/revalidation/`, and packaged N512/N1024 Composite-LP summaries.
+`data/revalidation/`, and packaged N512/N1024 Composite-LP summaries. The
+multi-latency mode writes per-latency CSV/JSON summaries plus
+`grok_node_scaling_multi_latency.{png,pdf}`.
 
 ## Tier D: Optional Raw NSYS SQLite to GOAL
 

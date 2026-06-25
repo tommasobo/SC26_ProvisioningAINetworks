@@ -152,13 +152,14 @@ def add_monolithic_metadata(row: dict[str, Any], path: Path | None) -> None:
     })
 
 
-def grok_row(node_count: int, args: argparse.Namespace) -> dict[str, Any]:
+def grok_row(node_count: int, args: argparse.Namespace, target_latency: float) -> dict[str, Any]:
     scratch = args.scratch_root
     analysis_dir = scratch / "workspaces" / "grok" / f"N{node_count}" / "analysis"
     output_dir = scratch / "output" / f"grok_n{node_count}"
     goal = analysis_dir / "output.goal"
     sidecar_candidates = [
         output_dir / "output.comm-dep",
+        ROOT / "data" / "revalidation" / f"grok_N{node_count}_commdep_lgs" / "comm_dep.csv",
         ROOT / "data" / "revalidation" / f"grok_N{node_count}_commdep" / "comm_dep.csv",
         ROOT / "data" / "revalidation" / f"grok_N{node_count}_commdep_goalmatch" / "comm_dep.csv",
     ]
@@ -187,15 +188,15 @@ def grok_row(node_count: int, args: argparse.Namespace) -> dict[str, Any]:
         row["sidecar_available"] = True
         row["sidecar_size_mb"] = sidecar.stat().st_size / 1e6
     row.update(hw_reference_ms(analysis_dir))
-    add_curve(row, "composite_lp", output_dir / "comp" / "sweeps" / "composed_runtime.csv", args.target_latency)
-    add_curve(row, "lgs", output_dir / "lgs" / "sweeps" / "lgs_runtime.csv", args.target_latency)
+    add_curve(row, "composite_lp", output_dir / "comp" / "sweeps" / "composed_runtime.csv", target_latency)
+    add_curve(row, "lgs", output_dir / "lgs" / "sweeps" / "lgs_runtime.csv", target_latency)
     monolithic_path = first_existing(monolithic_candidates)
-    add_curve(row, "monolithic_lp", monolithic_path, args.target_latency)
+    add_curve(row, "monolithic_lp", monolithic_path, target_latency)
     add_monolithic_metadata(row, monolithic_path)
     return row
 
 
-def packaged_large_row(node_count: int, args: argparse.Namespace) -> dict[str, Any]:
+def packaged_large_row(node_count: int, args: argparse.Namespace, target_latency: float) -> dict[str, Any]:
     lat = ROOT / "data" / "output" / "grok_final" / f"grok_N{node_count}_latency_sweep.csv"
     summary = ROOT / "data" / "output" / "grok_final" / f"grok_N{node_count}_summary.csv"
     row: dict[str, Any] = {
@@ -222,15 +223,33 @@ def packaged_large_row(node_count: int, args: argparse.Namespace) -> dict[str, A
         })
     else:
         row["hw_status"] = "missing_packaged_summary"
-    add_curve(row, "composite_lp", lat if lat.exists() else None, args.target_latency)
-    add_curve(row, "lgs", None, args.target_latency)
-    add_curve(row, "monolithic_lp", None, args.target_latency)
+    add_curve(row, "composite_lp", lat if lat.exists() else None, target_latency)
+    add_curve(row, "lgs", None, target_latency)
+    add_curve(row, "monolithic_lp", None, target_latency)
     add_monolithic_metadata(row, None)
     return row
 
 
-def write_report(df: pd.DataFrame, out_dir: Path, target_latency: float) -> None:
-    report = out_dir / "grok_node_scaling_report.md"
+def build_summary(args: argparse.Namespace, target_latency: float) -> pd.DataFrame:
+    rows = [grok_row(node, args, target_latency) for node in args.nodes]
+    if args.include_packaged_large:
+        rows.extend(packaged_large_row(node, args, target_latency) for node in [512, 1024])
+    df = pd.DataFrame(rows).sort_values("node_count").reset_index(drop=True)
+    df.insert(0, "target_latency_ns", target_latency)
+    for prefix in ["composite_lp", "lgs", "monolithic_lp"]:
+        df[f"{prefix}_vs_hw_pct"] = [
+            pct_diff(value, hw)
+            for value, hw in zip(df[f"{prefix}_target_ms"], df["hw_ms_max"])
+        ]
+    return df
+
+
+def lat_tag(target_latency: float) -> str:
+    return f"L{target_latency:g}".replace(".", "p")
+
+
+def write_report(df: pd.DataFrame, out_dir: Path, target_latency: float, filename: str = "grok_node_scaling_report.md") -> None:
+    report = out_dir / filename
     plotted = df[["node_count", "hw_ms_max", "composite_lp_target_ms", "lgs_target_ms", "monolithic_lp_target_ms"]].copy()
     plotted = plotted.rename(columns={
         "hw_ms_max": "HW ms",
@@ -291,9 +310,80 @@ def plot(df: pd.DataFrame, out_dir: Path, target_latency: float) -> None:
     ax.legend(frameon=False, ncol=2)
     ax.set_title("Grok scaling: measured HW vs predicted runtime")
     fig.tight_layout()
-    lat_tag = f"L{target_latency:g}".replace(".", "p")
-    fig.savefig(out_dir / f"grok_node_scaling_nominal_{lat_tag}.png", dpi=240)
-    fig.savefig(out_dir / f"grok_node_scaling_nominal_{lat_tag}.pdf")
+    tag = lat_tag(target_latency)
+    fig.savefig(out_dir / f"grok_node_scaling_nominal_{tag}.png", dpi=240)
+    fig.savefig(out_dir / f"grok_node_scaling_nominal_{tag}.pdf")
+
+
+def plot_multi_latency(long_df: pd.DataFrame, out_dir: Path) -> None:
+    latencies = sorted(long_df["target_latency_ns"].dropna().unique())
+    if not latencies:
+        return
+    ncols = min(3, len(latencies))
+    nrows = int(np.ceil(len(latencies) / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(5.2 * ncols, 4.2 * nrows), squeeze=False, sharey=True)
+    series = [
+        ("HW logs", "hw_ms_max", "#1f2933", "*", "-"),
+        ("Composite LP", "composite_lp_target_ms", "#15616d", "o", "-"),
+        ("LogGOPSim", "lgs_target_ms", "#b85c00", "s", "--"),
+        ("Monolithic LP", "monolithic_lp_target_ms", "#7c3aed", "D", "-."),
+    ]
+    for ax, target_latency in zip(axes.flat, latencies):
+        df = long_df[long_df["target_latency_ns"] == target_latency]
+        for label, column, color, marker, linestyle in series:
+            valid = df[["node_count", column]].dropna()
+            valid = valid[valid[column] > 0]
+            if valid.empty:
+                continue
+            ax.plot(
+                valid["node_count"],
+                valid[column],
+                marker=marker,
+                linestyle=linestyle,
+                color=color,
+                linewidth=1.8,
+                markersize=6,
+                label=label,
+            )
+        ticks = df["node_count"].dropna().astype(int).tolist()
+        ax.set_xscale("log", base=2)
+        ax.set_xticks(ticks)
+        ax.set_xticklabels([str(t) for t in ticks], rotation=0)
+        ax.set_title(f"L={target_latency / 1000:g} us")
+        ax.grid(True, which="major", axis="both", alpha=0.22)
+        ax.set_xlabel("Grok node count")
+    for ax in axes[:, 0]:
+        ax.set_ylabel("Runtime (ms)")
+    for ax in axes.flat[len(latencies):]:
+        ax.axis("off")
+    handles, labels = axes.flat[0].get_legend_handles_labels()
+    if handles:
+        fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 0.925), ncol=4, frameon=False)
+    fig.suptitle("Grok scaling across latency assumptions", y=0.985)
+    fig.tight_layout(rect=(0, 0, 1, 0.86))
+    fig.savefig(out_dir / "grok_node_scaling_multi_latency.png", dpi=240)
+    fig.savefig(out_dir / "grok_node_scaling_multi_latency.pdf")
+
+
+def write_summary_outputs(df: pd.DataFrame, out_dir: Path, target_latency: float, *, tagged: bool) -> None:
+    if tagged:
+        tag = lat_tag(target_latency)
+        csv_path = out_dir / f"grok_node_scaling_summary_{tag}.csv"
+        json_path = out_dir / f"grok_node_scaling_summary_{tag}.json"
+        report_name = f"grok_node_scaling_report_{tag}.md"
+    else:
+        csv_path = out_dir / "grok_node_scaling_summary.csv"
+        json_path = out_dir / "grok_node_scaling_summary.json"
+        report_name = "grok_node_scaling_report.md"
+    df.to_csv(csv_path, index=False)
+    with json_path.open("w", encoding="utf-8") as f:
+        json.dump(df.where(pd.notnull(df), None).to_dict(orient="records"), f, indent=2)
+        f.write("\n")
+    write_report(df, out_dir, target_latency, report_name)
+    plot(df, out_dir, target_latency)
+    print(f"[grok-node-scaling] wrote {csv_path}")
+    print(f"[grok-node-scaling] wrote {json_path}")
+    print(f"[grok-node-scaling] wrote {out_dir / report_name}")
 
 
 def main() -> int:
@@ -303,6 +393,9 @@ def main() -> int:
     ap.add_argument("--out-dir", type=Path, default=ROOT / "results" / "revalidation" / "grok_node_scaling")
     ap.add_argument("--target-latency", type=float, default=4000.0,
                     help="Latency point in ns for the node-scaling plot.")
+    ap.add_argument("--target-latencies", nargs="+", type=float, default=None,
+                    help="Latency points in ns for a multi-panel scaling plot. "
+                         "If omitted, only --target-latency is used.")
     ap.add_argument("--nodes", nargs="+", type=int, default=[4, 8, 16, 32, 64, 128])
     ap.add_argument("--include-packaged-large", action="store_true", default=True,
                     help="Include packaged N512/N1024 Composite-LP summary rows.")
@@ -313,31 +406,27 @@ def main() -> int:
     ap.add_argument("--gpus-per-node", type=int, default=4)
     args = ap.parse_args()
 
-    rows = [grok_row(node, args) for node in args.nodes]
-    if args.include_packaged_large:
-        rows.extend(packaged_large_row(node, args) for node in [512, 1024])
-    df = pd.DataFrame(rows).sort_values("node_count").reset_index(drop=True)
-
-    for prefix in ["composite_lp", "lgs", "monolithic_lp"]:
-        df[f"{prefix}_vs_hw_pct"] = [
-            pct_diff(value, hw)
-            for value, hw in zip(df[f"{prefix}_target_ms"], df["hw_ms_max"])
-        ]
-
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = args.out_dir / "grok_node_scaling_summary.csv"
-    json_path = args.out_dir / "grok_node_scaling_summary.json"
-    df.to_csv(csv_path, index=False)
-    with json_path.open("w", encoding="utf-8") as f:
-        json.dump(df.where(pd.notnull(df), None).to_dict(orient="records"), f, indent=2)
+    target_latencies = args.target_latencies if args.target_latencies else [args.target_latency]
+    dfs = []
+    for target_latency in target_latencies:
+        df = build_summary(args, target_latency)
+        dfs.append(df)
+        write_summary_outputs(df, args.out_dir, target_latency, tagged=True)
+        if target_latency == args.target_latency:
+            write_summary_outputs(df, args.out_dir, target_latency, tagged=False)
+
+    long_df = pd.concat(dfs, ignore_index=True)
+    multi_csv = args.out_dir / "grok_node_scaling_multi_latency_summary.csv"
+    multi_json = args.out_dir / "grok_node_scaling_multi_latency_summary.json"
+    long_df.to_csv(multi_csv, index=False)
+    with multi_json.open("w", encoding="utf-8") as f:
+        json.dump(long_df.where(pd.notnull(long_df), None).to_dict(orient="records"), f, indent=2)
         f.write("\n")
-    write_report(df, args.out_dir, args.target_latency)
-    plot(df, args.out_dir, args.target_latency)
-    print(f"[grok-node-scaling] wrote {csv_path}")
-    print(f"[grok-node-scaling] wrote {json_path}")
-    print(f"[grok-node-scaling] wrote {args.out_dir / 'grok_node_scaling_report.md'}")
-    lat_tag = f"L{args.target_latency:g}".replace(".", "p")
-    print(f"[grok-node-scaling] wrote {args.out_dir / f'grok_node_scaling_nominal_{lat_tag}.png'}")
+    plot_multi_latency(long_df, args.out_dir)
+    print(f"[grok-node-scaling] wrote {multi_csv}")
+    print(f"[grok-node-scaling] wrote {multi_json}")
+    print(f"[grok-node-scaling] wrote {args.out_dir / 'grok_node_scaling_multi_latency.png'}")
     return 0
 
 

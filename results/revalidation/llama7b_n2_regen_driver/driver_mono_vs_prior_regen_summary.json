@@ -1,0 +1,13 @@
+{
+  "actual": "data/revalidation/llama7b_n2_regen_driver/monolithic_points.csv",
+  "expected": "data/revalidation/llama7b_n2_lp_3700_43700/full_runtime.csv",
+  "label": "driver_mono_vs_prior_regen",
+  "max_L": 43700.0,
+  "max_abs_diff_ns": 15.572520732879639,
+  "max_abs_rel_diff_pct": 5.855418908283402e-07,
+  "mean_abs_diff_ns": 7.190230369567871,
+  "mean_abs_rel_diff_pct": 2.6884610852530055e-07,
+  "min_L": 3700.0,
+  "n_points": 3,
+  "points": "actual"
+}

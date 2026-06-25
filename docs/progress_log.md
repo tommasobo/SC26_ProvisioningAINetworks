@@ -332,6 +332,7 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Outputs: `results/revalidation/grok_node_scaling/grok_node_scaling_summary.csv`, `.json`, `.md`, `.png`, and `.pdf`.
 - Result at `L=4000 ns`: Monolithic-LP is available through N32; Composite-LP and hardware references are available through N128 plus packaged N512/N1024; LGS is usable through N64; N128 LGS is excluded because its curve is all zero.
 - Stopping point: N64/N128 Monolithic-LP was not attempted because no matching four-column LP `comm_dep` sidecar was found for those scales. This is a sidecar/input boundary, not a RAM boundary.
+- Superseded note: the later 2026-06-25 N64 sidecar probe generated a valid N64 sidecar and completed one N64 Monolithic-LP point at `L=4000 ns`. N128 remains unattempted.
 
 - Command: `.venv/bin/python scripts/check_artifact.py --skip-figure`
 - Result: success.
@@ -375,3 +376,33 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Result: 3 points, max absolute difference 0.000002 ns, max relative difference 3.15e-14%.
 - Command: `python3 scripts/compare_csv.py --expected /mnt/scratch/grok_repro/N4/micro/runtime.csv --actual data/revalidation/grok_N4_regen_driver/monolithic_points.csv --out-dir results/revalidation/grok_N4_regen_driver --label driver_mono_vs_scratch_micro --points actual`.
 - Result: 3 points, max absolute difference 67,744,307 ns, max relative difference 1.106%.
+
+### 2026-06-25: Llama7B N2 Driver Validation
+
+- Command: `/usr/bin/time -v .venv/bin/python pipeline/regenerate_from_inputs.py --goal /mnt/scratch/llamp_eval/workspaces/llama7b_n2_gpu8/v2_goal_sidecars/output.goal --out-dir data/revalidation/llama7b_n2_regen_driver --comm-dep-mode lgs --lgs-latencies 3700 23700 43700 --monolithic-latencies 3700 23700 43700 --l-intra 350 --o 200 --G 0.04`.
+- Output: `data/revalidation/llama7b_n2_regen_driver/comm_dep.csv` with 656,012 rows, `lgs_runtime.csv`, `monolithic_points.csv`, and `regeneration_manifest.json`.
+- Runtime: 5 minutes 58.57 seconds wall clock.
+- Peak memory: 4,654,160 KiB RSS.
+- Result: success. LGS matched the prior regeneration exactly; Monolithic-LP matched the prior regeneration within 15.6 ns.
+- Baseline comparisons: driver LGS vs scratch LGS max relative difference 1.831%; driver Monolithic-LP vs scratch micro max relative difference 3.208%.
+
+### 2026-06-25: Grok N64 Sidecar Probe
+
+- Command: `/usr/bin/time -v timeout 7200 .venv/bin/python pipeline/run_lgs.py --goal /mnt/scratch/GrokStudy/repo/workspaces/grok/N64/analysis/output.goal --L 1000 --G 0.04 --o 200 --comm-dep-out data/revalidation/grok_N64_commdep_lgs/comm_dep.csv`.
+- Output: `data/revalidation/grok_N64_commdep_lgs/comm_dep.csv`.
+- Runtime: 12 minutes 53.48 seconds wall clock.
+- Peak memory: 22,744,012 KiB RSS.
+- Result: success; generated a valid 23,892,802-row four-column LP sidecar. N64 Monolithic-LP is now input-unblocked.
+- Command: `/usr/bin/time -v timeout 21600 .venv/bin/python pipeline/run_monolithic_points.py --goal /mnt/scratch/GrokStudy/repo/workspaces/grok/N64/analysis/output.goal --comm-dep data/revalidation/grok_N64_commdep_lgs/comm_dep.csv --out data/revalidation/grok_node_scaling/monolithic_N64_points/full_runtime.csv --latencies 4000 --ranks-per-node 4 --l-intra 350 --g-intra 0.00333 --o 200 --G 0.04 --add-barriers`.
+- Output: `data/revalidation/grok_node_scaling/monolithic_N64_points/full_runtime.csv` and `.json`.
+- Runtime: 2 hours 27 minutes 20 seconds wall clock.
+- Peak memory: 184,530,844 KiB RSS.
+- Model size: 113,546,844 vertices, 167,055,798 edges, 66,550,365 variables, and 145,994,946 constraints.
+- Result: success; `L=4000 ns` runtime 8,957.498 ms. No further Monolithic-LP points were launched.
+
+### 2026-06-25: Grok Multi-Latency Scaling Plot
+
+- Command: `.venv/bin/python scripts/grok_node_scaling.py --scratch-root /mnt/scratch/GrokStudy/repo --out-dir new_results --target-latency 4000 --target-latencies 0 4000 10000`.
+- Outputs: `new_results/grok_node_scaling_multi_latency.png`, `new_results/grok_node_scaling_multi_latency.pdf`, per-latency CSV/JSON summaries, and per-latency Markdown reports.
+- Plot design: node count on the x-axis and runtime in milliseconds on the y-axis; panels show `L=0`, `L=4000`, and `L=10000 ns`; series show hardware logs, Composite-LP, LogGOPSim, and Monolithic-LP where data exists.
+- Current status: regenerated after N64 Monolithic-LP completed. The final `L=4000 ns` panel includes N64 Monolithic-LP; `L=0` and `L=10000 ns` show Monolithic-LP only where existing exact points or sweeps cover those latencies.
