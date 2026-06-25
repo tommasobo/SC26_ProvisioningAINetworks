@@ -31,7 +31,9 @@ def test_expected_packaged_inputs_exist():
         "data/output/vllm_llama8b_128tok/latency_runtime.csv",
         "tools/LogGOPSim/Makefile",
         "pipeline/demo.py",
+        "pipeline/run_monolithic_points.py",
         "pipeline/reproduce_fig5_from_nsys.sh",
+        "scripts/grok_node_scaling.py",
     ]
     for rel in expected:
         path = ROOT / rel
@@ -70,6 +72,19 @@ def test_tier_c_wrappers_have_safe_dry_runs(tmp_path):
         goal,
         "--out",
         tmp_path / "full_runtime.csv",
+        "--dry-run",
+        "--allow-tag-match",
+    )
+    run_cmd(
+        sys.executable,
+        "pipeline/run_monolithic_points.py",
+        "--goal",
+        goal,
+        "--out",
+        tmp_path / "points_runtime.csv",
+        "--latencies",
+        "0",
+        "4000",
         "--dry-run",
         "--allow-tag-match",
     )

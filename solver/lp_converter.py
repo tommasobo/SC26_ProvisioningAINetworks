@@ -480,7 +480,7 @@ class LPConverter(object):
         # ========================================================
         # Iterates through all the vertices in the graph
         # ========================================================
-        for v in tqdm(vs):
+        for v in tqdm(vs, disable=not verbose):
             v_obj = self.dep_graph.graph.vs[v]
             if v in var_map:
                 # Skips the vertex if it has already been computed

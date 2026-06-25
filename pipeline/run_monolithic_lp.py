@@ -56,6 +56,22 @@ def main() -> int:
                     help="Sweep step, ns (default: 50000)")
     ap.add_argument("--l-intra", type=int, default=350,
                     help="Intra-node latency, ns (default: 350)")
+    ap.add_argument("--g-intra", type=float, default=None,
+                    help="Fixed intra-node bandwidth parameter, ns/byte. "
+                         "Used only when a rank-to-node map is provided.")
+    ap.add_argument("--rank-node-map", type=Path, default=None,
+                    help="Optional JSON mapping ranks to node indices.")
+    ap.add_argument("--ranks-per-node", type=int, default=None,
+                    help="Build a positional rank-to-node map when no JSON "
+                         "rank map is available. Rank r maps to "
+                         "floor(r / ranks_per_node).")
+    ap.add_argument("--add-barriers", action="store_true",
+                    help="Add inferred inter-collective barrier constraints.")
+    ap.add_argument("--nic-per-rank", action="store_true",
+                    help="Use one serialized NIC injection queue per rank.")
+    ap.add_argument("--nics-per-node", type=int, default=1,
+                    help="Number of physical NICs per node for --nic-per-rank "
+                         "(default: 1).")
     ap.add_argument("--o", type=int, default=200,
                     help="LogGP overhead parameter, ns (default: 200)")
     ap.add_argument("--G", type=float, default=0.018,
@@ -69,9 +85,24 @@ def main() -> int:
     args.out = args.out.resolve()
     if args.comm_dep is not None:
         args.comm_dep = args.comm_dep.resolve()
+    if args.rank_node_map is not None:
+        args.rank_node_map = args.rank_node_map.resolve()
+
+    if args.rank_node_map is not None and args.ranks_per_node is not None:
+        print("error: --rank-node-map and --ranks-per-node are mutually exclusive", file=sys.stderr)
+        return 2
+    if args.ranks_per_node is not None and args.ranks_per_node <= 0:
+        print("error: --ranks-per-node must be positive", file=sys.stderr)
+        return 2
+    if args.nics_per_node <= 0:
+        print("error: --nics-per-node must be positive", file=sys.stderr)
+        return 2
 
     if not args.goal.exists():
         print(f"error: GOAL file not found: {args.goal}", file=sys.stderr)
+        return 2
+    if args.rank_node_map is not None and not args.rank_node_map.exists():
+        print(f"error: rank-node-map file not found: {args.rank_node_map}", file=sys.stderr)
         return 2
     if args.comm_dep is None and not args.allow_tag_match:
         print(
@@ -111,6 +142,18 @@ def main() -> int:
     ]
     if args.comm_dep is not None:
         cmd += ["-c", str(args.comm_dep)]
+    if args.g_intra is not None:
+        cmd += ["--g-intra", str(args.g_intra)]
+    if args.rank_node_map is not None:
+        cmd += ["--rank-node-map", str(args.rank_node_map)]
+    if args.ranks_per_node is not None:
+        cmd += ["--ranks-per-node", str(args.ranks_per_node)]
+    if args.add_barriers:
+        cmd += ["--add-barriers"]
+    if args.nic_per_rank:
+        cmd += ["--nic-per-rank"]
+    if args.nics_per_node != 1:
+        cmd += ["--nics-per-node", str(args.nics_per_node)]
     print("[monolithic-lp]", " ".join(cmd))
     if args.dry_run:
         print("[monolithic-lp] dry run complete; solver was not launched.")

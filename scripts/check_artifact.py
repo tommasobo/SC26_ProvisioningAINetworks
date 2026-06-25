@@ -44,9 +44,11 @@ def require_files():
         "pipeline/run_lgs.py",
         "pipeline/run_lgs_sweep.py",
         "pipeline/run_monolithic_lp.py",
+        "pipeline/run_monolithic_points.py",
         "pipeline/run_nccl_generator.py",
         "pipeline/reproduce_fig5_from_nsys.sh",
         "scripts/compare_csv.py",
+        "scripts/grok_node_scaling.py",
         "tools/LogGOPSim/Makefile",
         "tools/nccl_generator/main.py",
     ]
@@ -78,8 +80,10 @@ def main():
     run([sys.executable, "pipeline/run_lgs.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_lgs_sweep.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_monolithic_lp.py", "--help"], args.timeout)
+    run([sys.executable, "pipeline/run_monolithic_points.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_nccl_generator.py", "--help"], args.timeout)
     run([sys.executable, "scripts/compare_csv.py", "--help"], args.timeout)
+    run([sys.executable, "scripts/grok_node_scaling.py", "--help"], args.timeout)
     run(["bash", "-n", "pipeline/reproduce_fig5_from_nsys.sh"], args.timeout)
     run(["bash", "pipeline/reproduce_fig5_from_nsys.sh", "--dry-run"], args.timeout)
     run([

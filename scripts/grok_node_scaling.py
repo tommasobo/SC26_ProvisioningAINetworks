@@ -1,0 +1,345 @@
+#!/usr/bin/env python3
+"""Aggregate Grok node-scaling data across HW, LGS, Monolithic LP, and Composite LP."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Any
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def first_existing(paths: list[Path]) -> Path | None:
+    for path in paths:
+        if path.exists() and path.stat().st_size > 0:
+            return path
+    return None
+
+
+def curve_columns(df: pd.DataFrame) -> tuple[str, str]:
+    x_candidates = ["L", "L_ns", "latency_ns", "Latency"]
+    y_candidates = ["runtime", "runtime_ns", "runtime_ns_mean", "Runtime"]
+    x_col = next((col for col in x_candidates if col in df.columns), None)
+    y_col = next((col for col in y_candidates if col in df.columns), None)
+    if x_col is None or y_col is None:
+        raise ValueError(f"could not infer latency/runtime columns from {list(df.columns)}")
+    return x_col, y_col
+
+
+def load_curve_ms(path: Path, target_latency: float) -> tuple[float | None, float | None, str]:
+    df = pd.read_csv(path)
+    x_col, y_col = curve_columns(df)
+    xs = pd.to_numeric(df[x_col], errors="coerce").to_numpy(dtype=float)
+    ys = pd.to_numeric(df[y_col], errors="coerce").to_numpy(dtype=float)
+    mask = np.isfinite(xs) & np.isfinite(ys)
+    xs = xs[mask]
+    ys = ys[mask]
+    if len(xs) == 0:
+        return None, None, "empty_curve"
+    order = np.argsort(xs)
+    xs = xs[order]
+    ys = ys[order]
+    if np.nanmax(ys) <= 0:
+        return None, None, "nonpositive_curve"
+    t0 = float(np.interp(0.0, xs, ys) / 1e6)
+    if target_latency < xs[0] or target_latency > xs[-1]:
+        return t0, None, f"target_outside_range_{xs[0]:g}_{xs[-1]:g}"
+    return t0, float(np.interp(target_latency, xs, ys) / 1e6), "ok"
+
+
+def hw_reference_ms(analysis_dir: Path) -> dict[str, Any]:
+    ci_path = analysis_dir / "collective_instances.csv"
+    if not ci_path.exists():
+        return {"hw_status": "missing_collective_instances"}
+    ci = pd.read_csv(ci_path)
+    walls = []
+    for rank in ci["goal_rank"].unique():
+        rank_rows = ci[ci["goal_rank"] == rank]
+        walls.append((rank_rows["end"].max() - rank_rows["start"].min()) / 1e6)
+    return {
+        "hw_status": "ok",
+        "hw_ms_max": float(max(walls)),
+        "hw_ms_mean": float(np.mean(walls)),
+        "hw_rank_count": int(len(walls)),
+        "collective_rows": int(len(ci)),
+        "collective_instances": str(ci_path),
+    }
+
+
+def pct_diff(value: float | None, reference: float | None) -> float | None:
+    if value is None or reference is None or reference == 0:
+        return None
+    return 100.0 * (value - reference) / reference
+
+
+def markdown_table(df: pd.DataFrame) -> str:
+    headers = [str(col) for col in df.columns]
+    rows = []
+    for _, row in df.iterrows():
+        cells = []
+        for value in row.tolist():
+            if pd.isna(value):
+                cells.append("")
+            elif isinstance(value, (float, np.floating)):
+                cells.append(f"{value:.3f}")
+            else:
+                cells.append(str(value))
+        rows.append(cells)
+    lines = [
+        "| " + " | ".join(headers) + " |",
+        "| " + " | ".join(["---"] * len(headers)) + " |",
+    ]
+    lines.extend("| " + " | ".join(row) + " |" for row in rows)
+    return "\n".join(lines)
+
+
+def add_curve(row: dict[str, Any], prefix: str, path: Path | None, target_latency: float) -> None:
+    if path is None:
+        row[f"{prefix}_status"] = "missing"
+        row[f"{prefix}_source"] = ""
+        row[f"{prefix}_t0_ms"] = None
+        row[f"{prefix}_target_ms"] = None
+        return
+    try:
+        t0_ms, target_ms, status = load_curve_ms(path, target_latency)
+    except Exception as exc:
+        t0_ms, target_ms, status = None, None, f"error:{exc}"
+    row[f"{prefix}_status"] = status
+    row[f"{prefix}_source"] = str(path)
+    row[f"{prefix}_t0_ms"] = t0_ms
+    row[f"{prefix}_target_ms"] = target_ms
+
+
+def add_monolithic_metadata(row: dict[str, Any], path: Path | None) -> None:
+    defaults = {
+        "monolithic_lp_metadata_source": "",
+        "monolithic_lp_wall_s": None,
+        "monolithic_lp_rss_mb": None,
+        "monolithic_lp_num_vertices": None,
+        "monolithic_lp_num_edges": None,
+        "monolithic_lp_num_vars": None,
+        "monolithic_lp_num_constraints": None,
+    }
+    row.update(defaults)
+    if path is None:
+        return
+    metadata_path = path.with_suffix(path.suffix + ".json")
+    if not metadata_path.exists():
+        return
+    try:
+        with metadata_path.open(encoding="utf-8") as f:
+            metadata = json.load(f)
+    except Exception as exc:
+        row["monolithic_lp_metadata_source"] = f"error:{metadata_path}:{exc}"
+        return
+    row.update({
+        "monolithic_lp_metadata_source": str(metadata_path),
+        "monolithic_lp_wall_s": metadata.get("wall_s"),
+        "monolithic_lp_rss_mb": metadata.get("rss_mb"),
+        "monolithic_lp_num_vertices": metadata.get("num_vertices"),
+        "monolithic_lp_num_edges": metadata.get("num_edges"),
+        "monolithic_lp_num_vars": metadata.get("num_vars"),
+        "monolithic_lp_num_constraints": metadata.get("num_constraints"),
+    })
+
+
+def grok_row(node_count: int, args: argparse.Namespace) -> dict[str, Any]:
+    scratch = args.scratch_root
+    analysis_dir = scratch / "workspaces" / "grok" / f"N{node_count}" / "analysis"
+    output_dir = scratch / "output" / f"grok_n{node_count}"
+    goal = analysis_dir / "output.goal"
+    sidecar_candidates = [
+        output_dir / "output.comm-dep",
+        ROOT / "data" / "revalidation" / f"grok_N{node_count}_commdep" / "comm_dep.csv",
+        ROOT / "data" / "revalidation" / f"grok_N{node_count}_commdep_goalmatch" / "comm_dep.csv",
+    ]
+    monolithic_candidates = [
+        ROOT / "data" / "revalidation" / f"grok_node_scaling/monolithic_N{node_count}_points/full_runtime.csv",
+        ROOT / "data" / "revalidation" / f"grok_node_scaling/monolithic_N{node_count}/sweeps/full_runtime.csv",
+        ROOT / "data" / "revalidation" / f"grok_N{node_count}_lp/full_runtime.csv",
+    ]
+    if args.include_legacy_monolithic:
+        monolithic_candidates.append(output_dir / "monolithic" / "sweeps" / "full_runtime.csv")
+
+    row: dict[str, Any] = {
+        "node_count": node_count,
+        "gpu_count": node_count * args.gpus_per_node,
+        "input_class": "scratch_real_grok",
+        "goal_source": str(goal) if goal.exists() else "",
+        "goal_available": goal.exists() and goal.stat().st_size > 1024,
+        "goal_size_mb": goal.stat().st_size / 1e6 if goal.exists() else None,
+        "sidecar_source": "",
+        "sidecar_available": False,
+        "sidecar_size_mb": None,
+    }
+    sidecar = first_existing(sidecar_candidates)
+    if sidecar is not None:
+        row["sidecar_source"] = str(sidecar)
+        row["sidecar_available"] = True
+        row["sidecar_size_mb"] = sidecar.stat().st_size / 1e6
+    row.update(hw_reference_ms(analysis_dir))
+    add_curve(row, "composite_lp", output_dir / "comp" / "sweeps" / "composed_runtime.csv", args.target_latency)
+    add_curve(row, "lgs", output_dir / "lgs" / "sweeps" / "lgs_runtime.csv", args.target_latency)
+    monolithic_path = first_existing(monolithic_candidates)
+    add_curve(row, "monolithic_lp", monolithic_path, args.target_latency)
+    add_monolithic_metadata(row, monolithic_path)
+    return row
+
+
+def packaged_large_row(node_count: int, args: argparse.Namespace) -> dict[str, Any]:
+    lat = ROOT / "data" / "output" / "grok_final" / f"grok_N{node_count}_latency_sweep.csv"
+    summary = ROOT / "data" / "output" / "grok_final" / f"grok_N{node_count}_summary.csv"
+    row: dict[str, Any] = {
+        "node_count": node_count,
+        "gpu_count": None,
+        "input_class": "packaged_large_composite_only",
+        "goal_source": "",
+        "goal_available": False,
+        "goal_size_mb": None,
+        "sidecar_source": "",
+        "sidecar_available": False,
+        "sidecar_size_mb": None,
+    }
+    if summary.exists():
+        sr = pd.read_csv(summary).iloc[0]
+        row.update({
+            "gpu_count": int(sr["n_gpus"]),
+            "hw_status": "ok_packaged_summary",
+            "hw_ms_max": float(sr["hw_ms"]),
+            "hw_ms_mean": float(sr["hw_ms"]),
+            "hw_rank_count": None,
+            "collective_rows": int(sr["n_collectives"]),
+            "collective_instances": str(summary),
+        })
+    else:
+        row["hw_status"] = "missing_packaged_summary"
+    add_curve(row, "composite_lp", lat if lat.exists() else None, args.target_latency)
+    add_curve(row, "lgs", None, args.target_latency)
+    add_curve(row, "monolithic_lp", None, args.target_latency)
+    add_monolithic_metadata(row, None)
+    return row
+
+
+def write_report(df: pd.DataFrame, out_dir: Path, target_latency: float) -> None:
+    report = out_dir / "grok_node_scaling_report.md"
+    plotted = df[["node_count", "hw_ms_max", "composite_lp_target_ms", "lgs_target_ms", "monolithic_lp_target_ms"]].copy()
+    plotted = plotted.rename(columns={
+        "hw_ms_max": "HW ms",
+        "composite_lp_target_ms": "Composite-LP ms",
+        "lgs_target_ms": "LGS ms",
+        "monolithic_lp_target_ms": "Monolithic-LP ms",
+    })
+    availability = df[[
+        "node_count",
+        "goal_available",
+        "sidecar_available",
+        "lgs_status",
+        "composite_lp_status",
+        "monolithic_lp_status",
+        "input_class",
+    ]].copy()
+    with report.open("w", encoding="utf-8") as f:
+        f.write("# Grok Node-Scaling Revalidation\n\n")
+        f.write(f"Target network latency: `{target_latency:g} ns`.\n\n")
+        f.write("## Runtime Summary\n\n")
+        f.write(markdown_table(plotted))
+        f.write("\n\n## Availability Matrix\n\n")
+        f.write(markdown_table(availability))
+        f.write("\n\n")
+        f.write("Rows N512/N1024 use packaged Composite-LP summaries only; no GOAL/LGS/Monolithic inputs are bundled for those scales.\n")
+
+
+def plot(df: pd.DataFrame, out_dir: Path, target_latency: float) -> None:
+    fig, ax = plt.subplots(figsize=(8.4, 4.8))
+    series = [
+        ("HW logs", "hw_ms_max", "#1f2933", "*", "-"),
+        ("Composite LP", "composite_lp_target_ms", "#15616d", "o", "-"),
+        ("LogGOPSim", "lgs_target_ms", "#b85c00", "s", "--"),
+        ("Monolithic LP", "monolithic_lp_target_ms", "#7c3aed", "D", "-."),
+    ]
+    for label, column, color, marker, linestyle in series:
+        valid = df[["node_count", column]].dropna()
+        valid = valid[valid[column] > 0]
+        if valid.empty:
+            continue
+        ax.plot(
+            valid["node_count"],
+            valid[column],
+            marker=marker,
+            linestyle=linestyle,
+            color=color,
+            linewidth=1.9,
+            markersize=7,
+            label=label,
+        )
+    ticks = df["node_count"].dropna().astype(int).tolist()
+    ax.set_xscale("log", base=2)
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([str(t) for t in ticks])
+    ax.set_xlabel("Grok node count")
+    ax.set_ylabel(f"Runtime at L={target_latency / 1000:g} us (ms)")
+    ax.grid(True, which="major", axis="both", alpha=0.22)
+    ax.legend(frameon=False, ncol=2)
+    ax.set_title("Grok scaling: measured HW vs predicted runtime")
+    fig.tight_layout()
+    lat_tag = f"L{target_latency:g}".replace(".", "p")
+    fig.savefig(out_dir / f"grok_node_scaling_nominal_{lat_tag}.png", dpi=240)
+    fig.savefig(out_dir / f"grok_node_scaling_nominal_{lat_tag}.pdf")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--scratch-root", type=Path, default=Path("/mnt/scratch/GrokStudy/repo"),
+                    help="Root containing Grok workspaces/output from the high-RAM run.")
+    ap.add_argument("--out-dir", type=Path, default=ROOT / "results" / "revalidation" / "grok_node_scaling")
+    ap.add_argument("--target-latency", type=float, default=4000.0,
+                    help="Latency point in ns for the node-scaling plot.")
+    ap.add_argument("--nodes", nargs="+", type=int, default=[4, 8, 16, 32, 64, 128])
+    ap.add_argument("--include-packaged-large", action="store_true", default=True,
+                    help="Include packaged N512/N1024 Composite-LP summary rows.")
+    ap.add_argument("--no-packaged-large", dest="include_packaged_large", action="store_false")
+    ap.add_argument("--include-legacy-monolithic", action="store_true",
+                    help="Allow fallback to older scratch monolithic outputs. "
+                         "Default excludes them because earlier logs lacked comm_dep.")
+    ap.add_argument("--gpus-per-node", type=int, default=4)
+    args = ap.parse_args()
+
+    rows = [grok_row(node, args) for node in args.nodes]
+    if args.include_packaged_large:
+        rows.extend(packaged_large_row(node, args) for node in [512, 1024])
+    df = pd.DataFrame(rows).sort_values("node_count").reset_index(drop=True)
+
+    for prefix in ["composite_lp", "lgs", "monolithic_lp"]:
+        df[f"{prefix}_vs_hw_pct"] = [
+            pct_diff(value, hw)
+            for value, hw in zip(df[f"{prefix}_target_ms"], df["hw_ms_max"])
+        ]
+
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = args.out_dir / "grok_node_scaling_summary.csv"
+    json_path = args.out_dir / "grok_node_scaling_summary.json"
+    df.to_csv(csv_path, index=False)
+    with json_path.open("w", encoding="utf-8") as f:
+        json.dump(df.where(pd.notnull(df), None).to_dict(orient="records"), f, indent=2)
+        f.write("\n")
+    write_report(df, args.out_dir, args.target_latency)
+    plot(df, args.out_dir, args.target_latency)
+    print(f"[grok-node-scaling] wrote {csv_path}")
+    print(f"[grok-node-scaling] wrote {json_path}")
+    print(f"[grok-node-scaling] wrote {args.out_dir / 'grok_node_scaling_report.md'}")
+    lat_tag = f"L{args.target_latency:g}".replace(".", "p")
+    print(f"[grok-node-scaling] wrote {args.out_dir / f'grok_node_scaling_nominal_{lat_tag}.png'}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

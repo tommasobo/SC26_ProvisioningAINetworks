@@ -299,3 +299,41 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Result: failed because this environment has no interactive GitHub HTTPS credentials.
 - Exact error: `fatal: could not read Username for 'https://github.com': No such device or address`
 - Local state after failed push: branch `clean_version` is clean locally and contains the committed cleanup/revalidation work.
+
+### 2026-06-25: Grok Node-Scaling High-RAM Revalidation
+
+- Added `pipeline/run_monolithic_points.py` for exact Monolithic-LP solves at selected latency points without running a full sensitivity sweep.
+- Extended `solver/main.py` and `pipeline/run_monolithic_lp.py` with `--ranks-per-node`, `--g-intra`, `--add-barriers`, `--nic-per-rank`, and `--nics-per-node` so the public wrapper can express the Grok Full-LP+NIC setup.
+- Added `scripts/grok_node_scaling.py` to aggregate Grok hardware wall time, scratch Composite-LP curves, scratch LogGOPSim curves, regenerated Monolithic-LP points, and packaged N512/N1024 Composite-LP summaries.
+- Changed `solver/lp_converter.py` so `verbose=False` suppresses the large conversion progress bar; this kept the N32 logs usable.
+
+- Command: `/usr/bin/time -v timeout 2400 .venv/bin/python - <<'PY' ... run_lp_analysis(..., comm_dep_file='/mnt/scratch/GrokStudy/repo/output/grok_n8/output.comm-dep') ... PY`
+- Input: `/mnt/scratch/GrokStudy/repo/workspaces/grok/N8/analysis/output.goal` and `/mnt/scratch/GrokStudy/repo/output/grok_n8/output.comm-dep`.
+- Output: `data/revalidation/grok_node_scaling/monolithic_N8/sweeps/full_runtime.csv`.
+- Runtime: 23 minutes 41.71 seconds wall clock.
+- Peak memory: 10,353,216 KiB RSS.
+- Result: success. Full LP+NIC at `L=4000 ns` interpolates to 5,128.127 ms.
+
+- Command: `/usr/bin/time -v timeout 7200 .venv/bin/python pipeline/run_monolithic_points.py --goal /mnt/scratch/GrokStudy/repo/workspaces/grok/N16/analysis/output.goal --comm-dep /mnt/scratch/GrokStudy/repo/output/grok_n16/output.comm-dep --out data/revalidation/grok_node_scaling/monolithic_N16_points/full_runtime.csv --latencies 0 4000 --ranks-per-node 4 --l-intra 350 --g-intra 0.00333 --o 200 --G 0.04 --add-barriers`
+- Output: `data/revalidation/grok_node_scaling/monolithic_N16_points/full_runtime.csv`.
+- Runtime: 10 minutes 16.15 seconds wall clock.
+- Peak memory: 14,068,792 KiB RSS.
+- Graph/model: 8,512,334 vertices, 12,647,238 edges, 64 ranks; 4,682,808 LP variables; 9,903,517 constraints.
+- Result: success. `L=0` runtime 9,413.176 ms; `L=4000 ns` runtime 9,413.344 ms.
+
+- Command: `/usr/bin/time -v timeout 10800 .venv/bin/python pipeline/run_monolithic_points.py --goal /mnt/scratch/GrokStudy/repo/workspaces/grok/N32/analysis/output.goal --comm-dep /mnt/scratch/GrokStudy/repo/output/grok_n32/output.comm-dep --out data/revalidation/grok_node_scaling/monolithic_N32_points/full_runtime.csv --latencies 4000 --ranks-per-node 4 --l-intra 350 --g-intra 0.00333 --o 200 --G 0.04 --add-barriers`
+- Output: `data/revalidation/grok_node_scaling/monolithic_N32_points/full_runtime.csv`.
+- Runtime: 47 minutes 15.23 seconds wall clock.
+- Peak memory: 59,253,804 KiB RSS.
+- Graph/model: 35,242,350 vertices, 53,195,238 edges, 128 ranks; 21,484,472 LP variables; 46,948,317 constraints.
+- Result: success. `L=4000 ns` runtime 8,675.907 ms. This is the largest sidecar-backed Grok Monolithic-LP run found locally.
+
+- Command: `.venv/bin/python scripts/grok_node_scaling.py --scratch-root /mnt/scratch/GrokStudy/repo --out-dir results/revalidation/grok_node_scaling`
+- Outputs: `results/revalidation/grok_node_scaling/grok_node_scaling_summary.csv`, `.json`, `.md`, `.png`, and `.pdf`.
+- Result at `L=4000 ns`: Monolithic-LP is available through N32; Composite-LP and hardware references are available through N128 plus packaged N512/N1024; LGS is usable through N64; N128 LGS is excluded because its curve is all zero.
+- Stopping point: N64/N128 Monolithic-LP was not attempted because no matching four-column LP `comm_dep` sidecar was found for those scales. This is a sidecar/input boundary, not a RAM boundary.
+
+- Command: `.venv/bin/python scripts/check_artifact.py --skip-figure`
+- Result: success.
+- Command: `.venv/bin/python -m pytest -q`
+- Result: success, `13 passed in 5.87s`.

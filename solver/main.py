@@ -114,6 +114,11 @@ if __name__ == "__main__":
                         default=None, type=str,
                         help="Path to a JSON file mapping ranks to node indices. "
                         "Format: {\"rank_to_node_index\": {\"0\": 0, \"1\": 0, ...}}")
+    parser.add_argument("--ranks-per-node", dest="ranks_per_node", required=False,
+                        default=None, type=int,
+                        help="Build a positional rank-to-node map when no "
+                        "--rank-node-map JSON is available. Rank r maps to "
+                        "floor(r / ranks_per_node).")
     parser.add_argument("--l-intra", dest="l_intra", required=False,
                         default=None, type=float,
                         help="Fixed intra-node latency in ns. Used for communication "
@@ -122,9 +127,25 @@ if __name__ == "__main__":
                         default=None, type=float,
                         help="Fixed intra-node bandwidth parameter in ns/byte. "
                         "Used for communication between ranks on the same node.")
+    parser.add_argument("--add-barriers", dest="add_barriers", action="store_true",
+                        default=False,
+                        help="Add inferred inter-collective barrier constraints.")
+    parser.add_argument("--nic-per-rank", dest="nic_per_rank", action="store_true",
+                        default=False,
+                        help="Use one serialized NIC injection queue per rank "
+                        "instead of per channel/destination.")
+    parser.add_argument("--nics-per-node", dest="nics_per_node", required=False,
+                        default=1, type=int,
+                        help="Number of physical NICs per node for --nic-per-rank.")
 
 
     args = parser.parse_args()
+    if args.rank_node_map is not None and args.ranks_per_node is not None:
+        parser.error("--rank-node-map and --ranks-per-node are mutually exclusive")
+    if args.ranks_per_node is not None and args.ranks_per_node <= 0:
+        parser.error("--ranks-per-node must be positive")
+    if args.nics_per_node <= 0:
+        parser.error("--nics-per-node must be positive")
     goal_file = args.goal_file
     comm_dep_file = args.comm_dep_file
     model = None
@@ -217,10 +238,20 @@ if __name__ == "__main__":
             if "rank_to_node_index" in rnm:
                 rnm = rnm["rank_to_node_index"]
             rank_node_map = {int(k): int(v) for k, v in rnm.items()}
+        elif args.ranks_per_node is not None:
+            rank_node_map = {
+                rank: rank // args.ranks_per_node
+                for rank in range(dep_graph.num_ranks)
+            }
+            print("[INFO] Built positional rank-to-node map "
+                  f"with ranks_per_node={args.ranks_per_node}", flush=True)
         converter = LPConverter(dep_graph, o=args.o, S=args.S,
                                 rank_node_map=rank_node_map,
                                 l_intra=args.l_intra,
-                                g_intra=args.g_intra)
+                                g_intra=args.g_intra,
+                                add_barriers=args.add_barriers,
+                                nic_per_rank=args.nic_per_rank,
+                                nics_per_node=args.nics_per_node)
 
         # =================================================
         # Network topology

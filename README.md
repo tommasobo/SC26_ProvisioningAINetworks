@@ -163,6 +163,21 @@ python pipeline/run_monolithic_lp.py \
   --l-intra 350 --o 200 --G 0.04
 ```
 
+For node-scaling or hardware-comparison checks where only a few latency
+points are needed, use the exact-point runner. It builds the full LP once
+and solves only the requested latency values:
+
+```bash
+python pipeline/run_monolithic_points.py \
+  --goal path/to/output.goal \
+  --comm-dep path/to/comm_dep.csv \
+  --out data/revalidation/workload/monolithic_points.csv \
+  --latencies 0 4000 \
+  --ranks-per-node 4 \
+  --l-intra 350 --g-intra 0.00333 \
+  --o 200 --G 0.04 --add-barriers
+```
+
 Run the Composite-LP wrapper when the workspace and sidecar are available:
 
 ```bash
@@ -175,6 +190,18 @@ python pipeline/run_composite_lp.py \
 ```
 
 Both LP wrappers fail early if `--comm-dep` is missing or empty. Use `--allow-tag-match` only for known-simple synthetic traces.
+
+The high-RAM Grok node-scaling aggregation used during revalidation is:
+
+```bash
+python scripts/grok_node_scaling.py \
+  --scratch-root /mnt/scratch/GrokStudy/repo \
+  --out-dir results/revalidation/grok_node_scaling
+```
+
+It combines hardware wall times from `collective_instances.csv`, existing
+scratch Composite-LP and LGS curves, regenerated Monolithic-LP points under
+`data/revalidation/`, and packaged N512/N1024 Composite-LP summaries.
 
 ## Tier D: Optional Raw NSYS SQLite to GOAL
 
