@@ -44,7 +44,7 @@ def main() -> int:
                     help="Maximum latency sweep point, ns (default: 1e6)")
     ap.add_argument("--step", type=int, default=50_000,
                     help="Sweep step, ns (default: 50000)")
-    ap.add_argument("--l-intra", type=int, default=350,
+    ap.add_argument("--l-intra", type=float, default=350,
                     help="Intra-node latency, ns (default: 350)")
     ap.add_argument("--o", type=int, default=200,
                     help="LogGP overhead parameter, ns (default: 200)")

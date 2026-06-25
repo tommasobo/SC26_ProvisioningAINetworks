@@ -137,6 +137,38 @@ Validation of fallback against LogGOPSim-emitted sidecars:
 
 vLLM Llama70B N2/GPU8 differs. Patched LogGOPSim wrote an empty sidecar even after GOAL tags were normalized to fit LogGOPSim's 32-bit tag field. GOAL-only fallback paired all 160,088 sends and 160,088 receives, but the LP graph then failed topological sorting because the generated dependency graph has cycles. CPU-aware matching failed completely with 160,088 unmatched sends and 160,088 unmatched receives. This means GOAL text alone is insufficient for this trace; the missing upstream information is the true send/receive match ordering or equivalent dependency metadata from the tracing/conversion stage.
 
+### Consolidated Regeneration Driver
+
+For new data-level regeneration, use `pipeline/regenerate_from_inputs.py` rather than chaining lower-level scripts by hand. It accepts either `--goal` or `--sqlite-dir`, generates or validates the LP `comm_dep.csv`, can run LGS latency points, can run Monolithic-LP exact points or a full sweep, and writes `regeneration_manifest.json` for provenance.
+
+Example dry run used for validation:
+
+```bash
+python3 pipeline/regenerate_from_inputs.py \
+  --goal data/traces/demo_allreduce_16r_1MiB.goal \
+  --out-dir /tmp/sc_regen_dry \
+  --comm-dep-mode goal \
+  --lgs-latencies 0 4000 \
+  --monolithic-latencies 0 4000 \
+  --dry-run
+```
+
+The default sidecar mode is `auto`: reuse a provided `--comm-dep`, otherwise ask patched LogGOPSim to emit one. GOAL-only sidecar generation remains explicit because it is validated for some traces but fails for vLLM Llama70B N2.
+
+The driver was also run end-to-end on the packaged demo GOAL:
+
+```bash
+.venv/bin/python pipeline/regenerate_from_inputs.py \
+  --goal data/traces/demo_allreduce_16r_1MiB.goal \
+  --out-dir /tmp/sc_regen_actual \
+  --comm-dep-mode lgs \
+  --lgs-latencies 0 4000 \
+  --monolithic-latencies 0 4000 \
+  --allow-goal-fallback
+```
+
+Result: generated 480 `comm_dep.csv` rows with patched LogGOPSim, wrote `lgs_runtime.csv`, wrote `monolithic_points.csv`, and wrote `regeneration_manifest.json`.
+
 ## Data-Level Revalidation Matrix
 
 | Workload | Scale | Inputs available | Sidecar status | LGS | Monolithic-LP | Composite-LP wrapper | Comparison status | Runtime and memory | Notes |

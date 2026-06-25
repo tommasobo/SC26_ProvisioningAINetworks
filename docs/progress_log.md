@@ -342,3 +342,15 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Command: `git push -u origin clean_version`
 - Result: failed because this environment still has no interactive GitHub HTTPS credentials.
 - Exact error: `fatal: could not read Username for 'https://github.com': No such device or address`
+
+### 2026-06-25: Generic Regeneration Driver
+
+- Added `pipeline/regenerate_from_inputs.py` as the main user-facing driver for data-level regeneration from either existing GOAL traces or NSYS-exported SQLite directories.
+- The driver can run `pipeline/run_nccl_generator.py` for SQLite input, generate or validate the LP `comm_dep.csv` sidecar, optionally run LGS sweeps, optionally run Monolithic-LP exact-point solves, and write `regeneration_manifest.json`.
+- Default sidecar behavior is `--comm-dep-mode auto`: use a provided existing sidecar, otherwise generate one with patched LogGOPSim. GOAL-only matching is only used when explicitly selected or when `--allow-goal-fallback` is set after LogGOPSim generation fails.
+- Validation command: `python3 pipeline/regenerate_from_inputs.py --goal data/traces/demo_allreduce_16r_1MiB.goal --out-dir /tmp/sc_regen_dry --comm-dep-mode goal --lgs-latencies 0 4000 --monolithic-latencies 0 4000 --dry-run`.
+- Result: dry run succeeded and printed the expected sidecar, LGS sweep, Monolithic-LP exact-point commands, and manifest structure.
+- Actual demo command: `.venv/bin/python pipeline/regenerate_from_inputs.py --goal data/traces/demo_allreduce_16r_1MiB.goal --out-dir /tmp/sc_regen_actual --comm-dep-mode lgs --lgs-latencies 0 4000 --monolithic-latencies 0 4000 --allow-goal-fallback`.
+- Actual demo outputs: `/tmp/sc_regen_actual/comm_dep.csv` with 480 rows, `/tmp/sc_regen_actual/lgs_runtime.csv`, `/tmp/sc_regen_actual/monolithic_points.csv`, and `/tmp/sc_regen_actual/regeneration_manifest.json`.
+- Actual demo result: LGS returned 1.271710 ms at `L=0 ns` and 1.391670 ms at `L=4000 ns`; Monolithic-LP returned 12,000 ns at both exact points for the tiny synthetic trace.
+- Cleanup: normalized `--l-intra` parsing in `pipeline/run_monolithic_lp.py` and `pipeline/run_composite_lp.py` to floats, matching `pipeline/run_monolithic_points.py` and the solver API.

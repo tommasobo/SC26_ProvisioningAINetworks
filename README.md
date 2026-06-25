@@ -152,6 +152,32 @@ python pipeline/generate_comm_dep_from_goal.py \
 
 The fallback is useful for diagnostics and validated on the demo, Grok N4, and a local Llama7B N2 trace, but it is not universally safe. For vLLM Llama70B N2, tag-only FIFO matching produces a cyclic LP graph even though every send/recv is paired; the trace needs true upstream match/dependency information.
 
+For most data-level regeneration tasks, use the orchestration driver instead of chaining the lower-level scripts manually. From an existing GOAL:
+
+```bash
+python pipeline/regenerate_from_inputs.py \
+  --goal path/to/output.goal \
+  --out-dir data/revalidation/workload \
+  --comm-dep-mode auto \
+  --lgs-latencies 0 4000 10000 \
+  --monolithic-latencies 0 4000 \
+  --ranks-per-node 4 \
+  --l-intra 350 --g-intra 0.00333 \
+  --o 200 --G 0.04 --add-barriers
+```
+
+From NSYS-exported SQLite files, use the same driver with `--sqlite-dir`; it first invokes `pipeline/run_nccl_generator.py` and then emits/validates the LP `comm_dep.csv`:
+
+```bash
+python pipeline/regenerate_from_inputs.py \
+  --sqlite-dir path/to/nsys_sqlite_dir \
+  --out-dir data/revalidation/workload \
+  --lgs-latencies 0 4000 \
+  --monolithic-latencies 0 4000
+```
+
+By default, `--comm-dep-mode auto` uses an existing `--comm-dep` if supplied, otherwise patched LogGOPSim. The driver validates that the sidecar is non-empty and has four integer columns. Use `--allow-goal-fallback` only for diagnostics or traces already known to match the LogGOPSim sidecar exactly.
+
 Run Monolithic-LP:
 
 ```bash

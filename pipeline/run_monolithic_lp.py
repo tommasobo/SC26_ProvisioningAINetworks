@@ -54,7 +54,7 @@ def main() -> int:
                     help="Maximum latency sweep point, ns (default: 1e6)")
     ap.add_argument("--step", type=int, default=50_000,
                     help="Sweep step, ns (default: 50000)")
-    ap.add_argument("--l-intra", type=int, default=350,
+    ap.add_argument("--l-intra", type=float, default=350,
                     help="Intra-node latency, ns (default: 350)")
     ap.add_argument("--g-intra", type=float, default=None,
                     help="Fixed intra-node bandwidth parameter, ns/byte. "

@@ -31,6 +31,7 @@ def test_expected_packaged_inputs_exist():
         "data/output/vllm_llama8b_128tok/latency_runtime.csv",
         "tools/LogGOPSim/Makefile",
         "pipeline/demo.py",
+        "pipeline/regenerate_from_inputs.py",
         "pipeline/run_monolithic_points.py",
         "pipeline/reproduce_fig5_from_nsys.sh",
         "scripts/grok_node_scaling.py",
@@ -87,6 +88,23 @@ def test_tier_c_wrappers_have_safe_dry_runs(tmp_path):
         "4000",
         "--dry-run",
         "--allow-tag-match",
+    )
+    run_cmd(
+        sys.executable,
+        "pipeline/regenerate_from_inputs.py",
+        "--goal",
+        goal,
+        "--out-dir",
+        tmp_path / "regen",
+        "--comm-dep-mode",
+        "goal",
+        "--lgs-latencies",
+        "0",
+        "4000",
+        "--monolithic-latencies",
+        "0",
+        "4000",
+        "--dry-run",
     )
 
     sqlite_dir = tmp_path / "sqlite"

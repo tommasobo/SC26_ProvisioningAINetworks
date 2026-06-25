@@ -41,6 +41,7 @@ def require_files():
         "data/output/vllm_llama8b_128tok/latency_runtime.csv",
         "pipeline/demo.py",
         "pipeline/generate_comm_dep_from_goal.py",
+        "pipeline/regenerate_from_inputs.py",
         "pipeline/run_lgs.py",
         "pipeline/run_lgs_sweep.py",
         "pipeline/run_monolithic_lp.py",
@@ -77,6 +78,7 @@ def main():
 
     run([sys.executable, "reproduce_all.py", "--list"], args.timeout)
     run([sys.executable, "pipeline/generate_comm_dep_from_goal.py", "--help"], args.timeout)
+    run([sys.executable, "pipeline/regenerate_from_inputs.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_lgs.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_lgs_sweep.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_monolithic_lp.py", "--help"], args.timeout)
