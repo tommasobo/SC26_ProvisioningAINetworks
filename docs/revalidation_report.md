@@ -353,6 +353,14 @@ fatal: could not read Username for 'https://github.com': No such device or addre
 
 The local branch is committed and clean.
 
+Latest local Grok node-scaling implementation commit before this report note:
+
+```text
+15032e6 Add Grok node-scaling revalidation
+```
+
+Pushing after that commit failed with the same HTTPS credential error.
+
 ## Remaining TODOs Ranked By Importance
 
 1. Publish or reconstruct true upstream `comm_dep` metadata for vLLM and for Grok N64/N128 if Monolithic-LP scaling beyond N32 is required.
