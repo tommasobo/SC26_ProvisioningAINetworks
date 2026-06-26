@@ -1,0 +1,13 @@
+{
+  "actual": "data/revalidation/grok_N4_composite_regen/comp/sweeps/composed_runtime.csv",
+  "expected": "/mnt/scratch/GrokStudyCodex/Traces_Compression/output/grok_n4/comp/sweeps/composed_runtime.csv",
+  "label": "grok_N4_legacy_vs_codex",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 2096598.5717639923,
+  "max_abs_rel_diff_pct": 0.03444523154735965,
+  "mean_abs_diff_ns": 857546.2504301213,
+  "mean_abs_rel_diff_pct": 0.013413518099578239,
+  "min_L": 0.0,
+  "n_points": 201,
+  "points": "actual"
+}

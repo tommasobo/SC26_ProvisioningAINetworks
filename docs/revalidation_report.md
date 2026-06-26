@@ -275,7 +275,43 @@ Fresh-cache Grok Composite-LP regeneration results:
 | Grok N32/GPU128 | `data/revalidation/grok_N32_composite_regen/comp/sweeps/composed_runtime.csv` | 16 | 5m33.65s | 1.89 GiB | max relative diff 0.00503%, mean 0.00414% |
 | Grok N64/GPU256 | `data/revalidation/grok_N64_composite_regen/comp/sweeps/composed_runtime.csv` | 16 | 8.34s | 250.1 MiB | max relative diff 0.0000484%, mean 0.0000475% |
 
-Numeric comparison outputs are saved under `results/revalidation/grok_N{4,8,16,32,64}_composite_regen/`. The regenerated multi-latency scaling plot in `new_results/` now uses these fresh Composite-LP curves for N4, N8, N16, N32, and N64. N128 still uses the existing scratch Composite-LP curve; N512/N1024 still use packaged summaries.
+Numeric comparison outputs are saved under `results/revalidation/grok_N{4,8,16,32,64}_composite_regen/`. These runs are retained because they reproduce the older scratch baselines, but they use the legacy global-rank shortcut described below.
+
+### Corrected Row-Nranks Composite Update
+
+The N64 point in the first regenerated Composite set was suspicious because it was much faster than N32. The root cause was a legacy shortcut in the wrapper: it used the first `collective_instances.csv` row's `nranks` value for every motif. For N64 that file-level first row has `nranks=8`, while rank 0's first collective has `nranks=64` and rank 0 uses communicator sizes `4,8,64,256`. The cleaned wrapper now defaults to `--rank-count-mode row-nranks`, which matches the newer development replay scripts and uses communicator-specific ring topology where available.
+
+Corrected warm-cache validation copied development replay motif caches into repo-local `data/revalidation/grok_N*_composite_row_nranks_warm/collective_cache` directories and reran the cleaned composition wrapper without mutating the original baselines:
+
+```bash
+python3 pipeline/run_nccl_composite.py \
+  --analysis-dir /path/to/grok/N<node_count>/analysis \
+  --out data/revalidation/grok_N<node_count>_composite_row_nranks_warm/comp/sweeps/composed_runtime.csv \
+  --cache-dir data/revalidation/grok_N<node_count>_composite_row_nranks_warm/collective_cache \
+  --parallel-solve --max-workers 4
+```
+
+| Nodes | Row communicator sizes on rank 0 | Signatures | Uncached at start | Wall time | Peak RSS | L=0 ms | L=1e6 ns ms | Comparison vs development replay |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 4 | 4,16 | 10 | 10 | 4.23s | 87.7 MiB | 6060.226 | 6075.742 | Differs from replay N4 because replay cache is legacy 16-rank/global-rank. |
+| 8 | 4,8,32 | 12 | 0 | 0.49s | 87.8 MiB | 4911.808 | 4963.701 | Exact match, max diff 0 ns. |
+| 16 | 2,4,16,64 | 16 | 0 | 1.04s | 89.3 MiB | 9383.580 | 9559.150 | Exact match, max diff 0 ns. |
+| 32 | 4,32,128 | 16 | 0 | 1.46s | 100.7 MiB | 8337.437 | 9016.038 | Exact match, max diff 0 ns. |
+| 64 | 4,8,64,256 | 16 | 0 | 2.24s | 117.5 MiB | 8600.014 | 9985.034 | Exact match, max diff 0 ns. |
+| 128 | 4,16,128,512 | 16 | 0 | 3.84s | 130.5 MiB | 8096.343 | 10890.223 | Exact match, max diff 0 ns. |
+| 256 | 4,32,256,1024 | 16 | 0 | 6.79s | 154.5 MiB | 7498.338 | 12960.667 | Exact match, max diff 0 ns. |
+
+N256 inputs were found under `/mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N256/analysis`; they were not present under `/mnt/scratch/GrokStudy/repo/workspaces/grok`. A fresh-cache N256 Composite regeneration was also run with a 7200s timeout:
+
+```bash
+/usr/bin/time -v timeout 7200 python3 pipeline/run_nccl_composite.py \
+  --analysis-dir /mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N256/analysis \
+  --out data/revalidation/grok_N256_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv \
+  --cache-dir data/revalidation/grok_N256_composite_row_nranks_regen/collective_cache \
+  --clear-cache --parallel-solve --max-workers 4
+```
+
+Fresh-cache N256 result: success, 16/16 uncached signatures solved, no failed signatures, 31m36.40s wall time from `/usr/bin/time`, 8,402,960 KiB max RSS, 21,098,960 unique LP variables, and 52,630,928 unique LP constraints. The fresh curve gives 7498.399 ms at `L=0` and 12960.838 ms at `L=1e6 ns`. Compared with the development replay curve, the max relative difference is 0.002275% over 201 sampled latency points. The warm-cache validation remains the plot input because it reproduces the replay curve exactly; the fresh-cache run validates that the cleaned artifact can regenerate N256 motifs end-to-end.
 
 ## Data-Level Revalidation Matrix
 
@@ -287,21 +323,26 @@ Numeric comparison outputs are saved under `results/revalidation/grok_N{4,8,16,3
 | Grok 314B | N16/GPU64 | Local high-RAM workspace `/mnt/scratch/GrokStudy/repo/workspaces/grok/N16/analysis/output.goal` | Existing sidecar `/mnt/scratch/GrokStudy/repo/output/grok_n16/output.comm-dep` | Works | Works | Regenerated from metadata | Composite curve max rel diff 0.000272% vs scratch baseline; included in node-scaling table | Exact-point LP 10m16s, 14.07 GiB peak RSS; Composite regen 52.65s, 768.6 MiB RSS | `L=4000 ns` Monolithic-LP runtime 9,413.344 ms. |
 | Grok 314B | N32/GPU128 | Local high-RAM workspace `/mnt/scratch/GrokStudy/repo/workspaces/grok/N32/analysis/output.goal` | Existing sidecar `/mnt/scratch/GrokStudy/repo/output/grok_n32/output.comm-dep` | Works | Works | Regenerated from metadata | Composite curve max rel diff 0.00503% vs scratch baseline; included in node-scaling table | Exact-point LP 47m15s, 59.25 GiB peak RSS; Composite regen 5m33.65s, 1.89 GiB RSS | `L=4000 ns` runtime 8,675.907 ms. |
 | Grok 314B | N64/GPU256 | Local high-RAM workspace `/mnt/scratch/GrokStudy/repo/workspaces/grok/N64/analysis/output.goal` | Generated sidecar `data/revalidation/grok_N64_commdep_lgs/comm_dep.csv` | Works | Works at `L=4000 ns` | Regenerated from metadata | Composite curve max rel diff 0.0000484% vs scratch baseline; included in node-scaling table | Sidecar 12m53s, 22.7 GiB RSS; exact-point LP 2h27m, 184.5 GiB RSS; Composite regen 8.34s, 250.1 MiB RSS | `L=4000 ns` Monolithic-LP runtime 8,957.498 ms. No extra Monolithic points launched. |
-| Grok 314B | N128/GPU512 | Local high-RAM workspace exists | Not attempted in this pass | Existing LGS curve is all zero and excluded | Not attempted | Existing scratch Composite-LP curve | Included in node-scaling table without LGS/Monolithic-LP | Not run | Left for later decision; existing LGS output is invalid. |
+| Grok 314B | N128/GPU512 | Local high-RAM workspace exists | Not needed for metadata Composite-LP | Existing LGS curve is all zero and excluded | Excluded from this pass | Corrected row-nranks Composite-LP warm-cache composition works | Exact match vs development replay Composite curve; included in N4-N256 no-monolithic plot | Warm-cache composition 3.84s, 130.5 MiB RSS | Existing LGS output is invalid/nonpositive. |
+| Grok 314B | N256/GPU1024 | Local high-RAM workspace `/mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N256/analysis` | Not needed for metadata Composite-LP | Works from existing replay stats | Excluded from this pass | Corrected row-nranks Composite-LP warm-cache and fresh-cache composition work | Warm-cache exact match vs development replay; fresh-cache max relative diff 0.002275%; included in N4-N256 no-monolithic plot | Warm-cache composition 6.79s, 154.5 MiB RSS; fresh-cache regeneration 31m36s, 8.0 GiB RSS | N256 inputs were found in the development replay workspace, not the earlier `/mnt/scratch/GrokStudy/repo` workspace. |
 | Llama7B | N2/GPU8 | Local scratch GOAL at `/mnt/scratch/llamp_eval/workspaces/llama7b_n2_gpu8/v2_goal_sidecars/output.goal` | LGS sidecar 656,012 rows; GOAL fallback exact | Works | Works | Requires full workspace orchestration; wrapper validates sidecar | LGS vs existing scratch max rel diff 1.831%; LP vs existing micro max rel diff 3.208% | LGS sweep 44.98s, 639 MiB RSS; LP 3m45s, 4.39 GiB RSS | Good high-RAM validation from existing intermediate data. |
 | vLLM Llama70B | N2/GPU8 | Released GOAL downloaded to `data/external/vllm_llama70b_N2/` | LGS sidecar empty; GOAL fallback pairs all ops but is cyclic | Works | Blocked | Fails early for empty sidecar; cyclic with fallback sidecar | LGS packaged/prior comparison only; LP cannot be trusted | LGS sidecar attempt 11.35s; fallback 10.69s; LP failure after 1m07s, 1.87 GiB RSS | Root-caused as requiring upstream match/dependency metadata. |
 | Grok 314B | 4096 GPUs | Packaged outputs only | Not searched as a runnable target | Skipped | Skipped | Skipped | Packaged figure path only | Not run | Intentionally too expensive for cleanup. |
 
 ## Grok Node-Scaling Comparison
 
-The Grok comparison uses node count on the x-axis and runtime at nominal `L=4000 ns` on the y-axis. Hardware wall time is computed from `collective_instances.csv` as max per-rank wall time, matching the historical Grok analysis script. Composite-LP uses regenerated metadata-sidecar curves for N4, N8, N16, N32, and N64, the existing scratch curve for N128, and packaged summaries for N512/N1024. LGS curves come from `/mnt/scratch/GrokStudy/repo/output/grok_n*/...`; Monolithic-LP uses regenerated sidecar-aware outputs where available.
+The current Grok comparison uses node count on the x-axis and runtime in milliseconds on the y-axis. Hardware wall time is computed from `collective_instances.csv` as max per-rank wall time, matching the historical Grok analysis script. Composite-LP uses corrected row-nranks curves under `data/revalidation/grok_N*_composite_row_nranks_warm/`. LGS uses existing LGS CSVs where available and derives N256 from `stats/lgs_L*.json`. This pass intentionally excludes Monolithic-LP from the plot and does not launch any Monolithic-LP solves.
 
 Command:
 
 ```bash
-.venv/bin/python scripts/grok_node_scaling.py \
-  --scratch-root /mnt/scratch/GrokStudy/repo \
-  --out-dir results/revalidation/grok_node_scaling
+python3 scripts/grok_node_scaling.py \
+  --out-dir results/revalidation/grok_node_scaling \
+  --nodes 4 8 16 32 64 128 256 \
+  --target-latency 0 \
+  --target-latencies 0 4000 10000 250000 500000 1000000 \
+  --no-packaged-large \
+  --exclude-monolithic
 ```
 
 Outputs:
@@ -309,23 +350,34 @@ Outputs:
 - `results/revalidation/grok_node_scaling/grok_node_scaling_summary.csv`
 - `results/revalidation/grok_node_scaling/grok_node_scaling_summary.json`
 - `results/revalidation/grok_node_scaling/grok_node_scaling_report.md`
-- `results/revalidation/grok_node_scaling/grok_node_scaling_nominal_L4000.png`
-- `results/revalidation/grok_node_scaling/grok_node_scaling_nominal_L4000.pdf`
+- `results/revalidation/grok_node_scaling/grok_node_scaling_multi_latency.png`
+- `results/revalidation/grok_node_scaling/grok_node_scaling_multi_latency.pdf`
 
-Runtime summary at `L=4000 ns`:
+Runtime summary at `L=0 ns`:
 
-| Nodes | GPUs | HW ms | Composite-LP ms | LGS ms | Monolithic-LP ms | Monolithic note |
-| ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| 4 | 16 | 6,202.184 | 6,077.393 | 6,125.290 | 6,057.441 | Prior public GOAL LP run. |
-| 8 | 32 | 5,257.040 | 4,911.837 | 5,085.758 | 5,128.127 | Regenerated sidecar-aware all-model sweep; 23m42s, 10.35 GiB RSS. |
-| 16 | 64 | 9,961.441 | 9,383.628 | 9,618.225 | 9,413.344 | Exact-point LP; 4.68M vars, 9.90M constraints, 10m16s, 14.07 GiB RSS. |
-| 32 | 128 | 9,459.765 | 8,391.541 | 9,499.005 | 8,675.907 | Exact-point LP; 21.48M vars, 46.95M constraints, 47m15s, 59.25 GiB RSS. |
-| 64 | 256 | 9,562.007 | 8,584.191 | 9,716.899 | 8,957.498 | Generated sidecar and exact-point LP; 2h27m, 184.5 GiB RSS. |
-| 128 | 512 | 8,530.951 | 8,137.504 | | | N128 sidecar/Monolithic not attempted; existing LGS curve is all zero and excluded. |
-| 512 | 2048 | 8,824.133 | 7,554.102 | | | Packaged Composite-LP summary only. |
-| 1024 | 4096 | 11,661.604 | 10,564.135 | | | Packaged Composite-LP summary only. |
+| Nodes | HW ms | Composite-LP ms | LGS ms |
+| ---: | ---: | ---: | ---: |
+| 4 | 6202.184 | 6060.226 | 6125.270 |
+| 8 | 5257.040 | 4911.808 | 5085.724 |
+| 16 | 9961.441 | 9383.580 | 9618.172 |
+| 32 | 9459.765 | 8337.437 | 9497.306 |
+| 64 | 9562.007 | 8600.014 | 9717.271 |
+| 128 | 8530.951 | 8096.343 | |
+| 256 | 8809.187 | 7498.338 | 8894.789 |
 
-Relative to hardware at `L=4000 ns`, Composite-LP is within -2.0% to -11.3% for N4-N128, LGS is within -3.45% to +1.62% for the usable N4-N64 curves, and regenerated Monolithic-LP is -2.33%, -2.45%, -5.50%, -8.29%, and -6.32% for N4, N8, N16, N32, and N64 respectively.
+Runtime summary at `L=1e6 ns`:
+
+| Nodes | HW ms | Composite-LP ms | LGS ms |
+| ---: | ---: | ---: | ---: |
+| 4 | 6202.184 | 6075.742 | 6199.406 |
+| 8 | 5257.040 | 4963.701 | 5093.742 |
+| 16 | 9961.441 | 9559.150 | 9669.394 |
+| 32 | 9459.765 | 9016.038 | 9819.073 |
+| 64 | 9562.007 | 9985.034 | 10547.836 |
+| 128 | 8530.951 | 10890.223 | |
+| 256 | 8809.187 | 12960.667 | 13810.054 |
+
+N128 LGS remains blank because no valid local LGS curve was found; the available N128 LGS CSV is nonpositive. The multi-latency plot also includes panels for `L=4000 ns`, `L=10000 ns`, `L=250000 ns`, and `L=500000 ns`.
 
 ## Numeric Comparison Outputs
 

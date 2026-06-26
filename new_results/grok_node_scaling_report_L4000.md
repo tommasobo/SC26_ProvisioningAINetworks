@@ -6,26 +6,24 @@ Target network latency: `4000 ns`.
 
 | node_count | HW ms | Composite-LP ms | LGS ms | Monolithic-LP ms |
 | --- | --- | --- | --- | --- |
-| 4.000 | 6202.184 | 6077.392 | 6125.290 | 6057.441 |
-| 8.000 | 5257.040 | 4911.838 | 5085.758 | 5128.127 |
-| 16.000 | 9961.441 | 9383.627 | 9618.225 | 9413.344 |
-| 32.000 | 9459.765 | 8391.481 | 9499.005 | 8675.907 |
-| 64.000 | 9562.007 | 8584.193 | 9716.899 | 8957.498 |
-| 128.000 | 8530.951 | 8137.504 |  |  |
-| 512.000 | 8824.133 | 7554.102 |  |  |
-| 1024.000 | 11661.604 | 10564.135 |  |  |
+| 4 | 6202.184 | 6060.250 | 6125.290 |  |
+| 8 | 5257.040 | 4911.840 | 5085.758 |  |
+| 16 | 9961.441 | 9383.628 | 9618.225 |  |
+| 32 | 9459.765 | 8338.166 | 9499.005 |  |
+| 64 | 9562.007 | 8604.774 | 9716.899 |  |
+| 128 | 8530.951 | 8107.423 |  |  |
+| 256 | 8809.187 | 7498.338 | 8909.015 |  |
 
 ## Availability Matrix
 
 | node_count | goal_available | sidecar_available | lgs_status | composite_lp_status | monolithic_lp_status | input_class |
 | --- | --- | --- | --- | --- | --- | --- |
-| 4 | True | True | ok | ok | ok | scratch_real_grok |
-| 8 | True | True | ok | ok | ok | scratch_real_grok |
-| 16 | True | True | ok | ok | ok | scratch_real_grok |
-| 32 | True | True | ok | ok | ok | scratch_real_grok |
-| 64 | True | True | ok | ok | ok | scratch_real_grok |
+| 4 | True | True | ok | ok | missing | scratch_real_grok |
+| 8 | True | True | ok | ok | missing | scratch_real_grok |
+| 16 | True | True | ok | ok | missing | scratch_real_grok |
+| 32 | True | True | ok | ok | missing | scratch_real_grok |
+| 64 | True | True | ok | ok | missing | scratch_real_grok |
 | 128 | True | False | nonpositive_curve | ok | missing | scratch_real_grok |
-| 512 | False | False | missing | ok | missing | packaged_large_composite_only |
-| 1024 | False | False | missing | ok | missing | packaged_large_composite_only |
+| 256 | True | False | ok | ok | missing | scratch_real_grok |
 
 Rows N512/N1024 use packaged Composite-LP summaries only; no GOAL/LGS/Monolithic inputs are bundled for those scales.

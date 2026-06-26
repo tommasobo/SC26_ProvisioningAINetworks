@@ -59,9 +59,11 @@ def _required(path: Path, label: str) -> None:
         raise FileNotFoundError(f"{label} not found: {path}")
 
 
-def _rank_count(ci: pd.DataFrame, mode: str, explicit: int | None) -> int:
+def _rank_count(ci: pd.DataFrame, mode: str, explicit: int | None) -> int | None:
     if explicit is not None:
         return explicit
+    if mode == "row-nranks":
+        return None
     if mode == "first-row":
         return int(ci["nranks"].iloc[0])
     if mode == "goal-ranks":
@@ -71,16 +73,32 @@ def _rank_count(ci: pd.DataFrame, mode: str, explicit: int | None) -> int:
 
 def _build_topologies(
     ri: pd.DataFrame,
-    nranks: int,
     ranks_per_node: int,
-) -> tuple[dict[str, list[RingTopology]], RingTopology, dict[int, int]]:
-    rank_to_node = {r: r // ranks_per_node for r in range(nranks)}
+) -> tuple[dict[str, list[RingTopology]], dict[int, RingTopology]]:
     comm_channel_topos: dict[str, list[RingTopology]] = {}
-    for comm_id in ri["commId"].dropna().unique():
-        ri_comm = ri[ri["commId"] == comm_id]
+    if "commId" in ri.columns:
+        ri = ri.copy()
+        ri["commId"] = ri["commId"].astype(str)
+    for comm_id, ri_comm in ri.groupby("commId"):
+        rank_rows = (
+            ri_comm[["myRank", "nodeId"]]
+            .drop_duplicates(subset=["myRank"], keep="first")
+            .sort_values("myRank")
+        )
+        nranks = int(rank_rows["myRank"].nunique())
+        node_order = list(dict.fromkeys(rank_rows["nodeId"].astype(str)))
+        node_index = {node_id: idx for idx, node_id in enumerate(node_order)}
+        rank_to_node = {
+            int(row.myRank): node_index[str(row.nodeId)]
+            for row in rank_rows.itertuples(index=False)
+        }
         topos: list[RingTopology] = []
         for channel in sorted(ri_comm["channelId"].dropna().unique()):
-            ch_ring = ri_comm[ri_comm["channelId"] == channel]
+            ch_ring = (
+                ri_comm[ri_comm["channelId"] == channel]
+                .drop_duplicates(subset=["myRank"], keep="first")
+                .sort_values("myRank")
+            )
             ring_next = {
                 int(row["myRank"]): int(row["nextRank"])
                 for _, row in ch_ring.iterrows()
@@ -90,12 +108,24 @@ def _build_topologies(
         if topos:
             comm_channel_topos[str(comm_id)] = topos
 
-    default_topo = RingTopology.from_dicts(
-        nranks,
-        {r: (r + 1) % nranks for r in range(nranks)},
-        rank_to_node,
-    )
-    return comm_channel_topos, default_topo, rank_to_node
+    default_topos: dict[int, RingTopology] = {}
+
+    def default_topology(nranks: int) -> RingTopology:
+        topo = default_topos.get(nranks)
+        if topo is None:
+            topo = RingTopology.from_dicts(
+                nranks,
+                {r: (r + 1) % nranks for r in range(nranks)},
+                {r: r // ranks_per_node for r in range(nranks)},
+            )
+            default_topos[nranks] = topo
+        return topo
+
+    # Seed the common communicator sizes so summaries are deterministic even
+    # when a trace falls back to synthetic ring topology.
+    for nranks in sorted({topos[0].n_ranks for topos in comm_channel_topos.values()}):
+        default_topology(nranks)
+    return comm_channel_topos, default_topos
 
 
 def _series_value(row: pd.Series, name: str, default: Any) -> Any:
@@ -105,10 +135,11 @@ def _series_value(row: pd.Series, name: str, default: Any) -> Any:
 
 def _build_signature(
     row: pd.Series,
-    nranks: int,
+    global_nranks: int | None,
     net: NetworkParams,
     comm_channel_topos: dict[str, list[RingTopology]],
-    default_topo: RingTopology,
+    default_topos: dict[int, RingTopology],
+    ranks_per_node: int,
 ) -> tuple[CollectiveSignature | None, str, str]:
     collective_type = str(_series_value(row, "collective", "")).lower()
     data_bytes = int(_series_value(row, "data_size", 0))
@@ -131,10 +162,24 @@ def _build_signature(
     slice_bytes = slice_steps * step_size
     slices_per_step = max(1, chunk_steps // max(1, slice_steps))
 
+    row_nranks = int(_series_value(row, "nranks", global_nranks or 1))
+    nranks = global_nranks or row_nranks
     comm_id = str(_series_value(row, "commId", ""))
-    coll_topos = comm_channel_topos.get(comm_id, [default_topo])
-    topo0 = coll_topos[0]
-    extra_topos = coll_topos[1:n_channels] if n_channels > 1 and len(coll_topos) > 1 else []
+    comm_topos = comm_channel_topos.get(comm_id)
+    if global_nranks is None and comm_topos:
+        topo0 = comm_topos[0]
+        nranks = topo0.n_ranks
+        extra_topos = comm_topos[1:n_channels] if n_channels > 1 else []
+    else:
+        topo0 = default_topos.get(nranks)
+        if topo0 is None:
+            topo0 = RingTopology.from_dicts(
+                nranks,
+                {r: (r + 1) % nranks for r in range(nranks)},
+                {r: r // ranks_per_node for r in range(nranks)},
+            )
+            default_topos[nranks] = topo0
+        extra_topos = [topo0] * max(0, n_channels - 1)
 
     sig = CollectiveSignature(
         collective_type=collective_type,
@@ -199,7 +244,7 @@ def run_composite(args: argparse.Namespace) -> int:
     t0 = time.perf_counter()
     ci = pd.read_csv(ci_path)
     ri = pd.read_csv(ri_path)
-    nranks = _rank_count(ci, args.rank_count_mode, args.nranks)
+    global_nranks = _rank_count(ci, args.rank_count_mode, args.nranks)
     net = NetworkParams(
         G_inter=args.G_inter,
         G_intra=args.G_intra,
@@ -208,7 +253,7 @@ def run_composite(args: argparse.Namespace) -> int:
         msg_gap=args.msg_gap,
     )
     l_points = _latency_points(args.l_min, args.l_max, args.step)
-    comm_channel_topos, default_topo, _ = _build_topologies(ri, nranks, args.ranks_per_node)
+    comm_channel_topos, default_topos = _build_topologies(ri, args.ranks_per_node)
 
     r0 = ci[ci["goal_rank"] == args.program_rank].sort_values("start").copy()
     if args.max_collectives is not None:
@@ -220,7 +265,14 @@ def run_composite(args: argparse.Namespace) -> int:
     signature_counts: dict[str, int] = {}
     fallback_rows: list[dict[str, Any]] = []
     for _, row in r0.iterrows():
-        sig, collective_type, reason = _build_signature(row, nranks, net, comm_channel_topos, default_topo)
+        sig, collective_type, reason = _build_signature(
+            row,
+            global_nranks,
+            net,
+            comm_channel_topos,
+            default_topos,
+            args.ranks_per_node,
+        )
         if sig is None:
             fallback_rows.append({
                 "collective": collective_type,
@@ -282,7 +334,14 @@ def run_composite(args: argparse.Namespace) -> int:
         print("[nccl-composite] all signatures are already cached")
 
     def to_program_op(row: pd.Series, idx: int) -> ProgramOp:
-        sig, collective_type, reason = _build_signature(row, nranks, net, comm_channel_topos, default_topo)
+        sig, collective_type, reason = _build_signature(
+            row,
+            global_nranks,
+            net,
+            comm_channel_topos,
+            default_topos,
+            args.ranks_per_node,
+        )
         if sig is None:
             return ProgramOp(
                 name=f"{collective_type}_{reason}_{idx}",
@@ -338,7 +397,14 @@ def run_composite(args: argparse.Namespace) -> int:
     total_constrs = 0
     signature_rows: list[dict[str, Any]] = []
     for _, row in r0.iterrows():
-        sig, _, reason = _build_signature(row, nranks, net, comm_channel_topos, default_topo)
+        sig, _, reason = _build_signature(
+            row,
+            global_nranks,
+            net,
+            comm_channel_topos,
+            default_topos,
+            args.ranks_per_node,
+        )
         if sig is None:
             continue
         key = sig.short_description()
@@ -395,7 +461,12 @@ def run_composite(args: argparse.Namespace) -> int:
         "npkit_simple": str(args.npkit_simple.resolve()),
         "npkit_ll": str(args.npkit_ll.resolve()),
         "rank_count_mode": args.rank_count_mode,
-        "nranks_used": nranks,
+        "nranks_used": global_nranks,
+        "row_nranks_unique": [int(v) for v in sorted(r0["nranks"].dropna().unique())],
+        "row_nranks_counts": {
+            str(int(k)): int(v)
+            for k, v in r0["nranks"].value_counts().sort_index().items()
+        },
         "program_rank": args.program_rank,
         "ranks_per_node": args.ranks_per_node,
         "n_collectives": int(len(r0)),
@@ -439,8 +510,13 @@ def main() -> int:
                         help="NCCL generator module directory used for motif GOAL generation.")
     parser.add_argument("--npkit-simple", type=Path, default=DEFAULT_NPKIT_SIMPLE)
     parser.add_argument("--npkit-ll", type=Path, default=DEFAULT_NPKIT_LL)
-    parser.add_argument("--rank-count-mode", choices=("first-row", "goal-ranks"), default="first-row",
-                        help="Rank count for motif signatures. first-row matches historical Grok scripts.")
+    parser.add_argument("--rank-count-mode", choices=("row-nranks", "first-row", "goal-ranks"),
+                        default="row-nranks",
+                        help=(
+                            "Rank count for motif signatures. row-nranks uses each "
+                            "collective's communicator size and matches the newer Grok "
+                            "replay driver; first-row preserves older shortcut outputs."
+                        ))
     parser.add_argument("--nranks", type=int, default=None,
                         help="Explicit rank count override for motif signatures.")
     parser.add_argument("--program-rank", type=int, default=0,

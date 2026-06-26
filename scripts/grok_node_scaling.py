@@ -25,6 +25,20 @@ def first_existing(paths: list[Path]) -> Path | None:
     return None
 
 
+def scratch_roots(args: argparse.Namespace) -> list[Path]:
+    roots = [args.scratch_root]
+    roots.extend(args.extra_scratch_root or [])
+    deduped = []
+    seen = set()
+    for root in roots:
+        resolved = root.resolve() if root.exists() else root
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        deduped.append(root)
+    return deduped
+
+
 def curve_columns(df: pd.DataFrame) -> tuple[str, str]:
     x_candidates = ["L", "L_ns", "latency_ns", "Latency"]
     y_candidates = ["runtime", "runtime_ns", "runtime_ns_mean", "Runtime"]
@@ -54,6 +68,34 @@ def load_curve_ms(path: Path, target_latency: float) -> tuple[float | None, floa
     if target_latency < xs[0] or target_latency > xs[-1]:
         return t0, None, f"target_outside_range_{xs[0]:g}_{xs[-1]:g}"
     return t0, float(np.interp(target_latency, xs, ys) / 1e6), "ok"
+
+
+def lgs_curve_from_stats(output_dir: Path, node_count: int, out_dir: Path) -> Path | None:
+    stats_dir = output_dir / "stats"
+    if not stats_dir.exists():
+        return None
+    rows = []
+    for path in sorted(stats_dir.glob("lgs_L*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if "L" not in payload or "runtime_ns" not in payload:
+            continue
+        rows.append({
+            "L": float(payload["L"]),
+            "runtime": float(payload["runtime_ns"]),
+            "elapsed_s": payload.get("elapsed_s"),
+            "peak_rss_mb": payload.get("peak_rss_mb"),
+            "source_json": str(path),
+        })
+    if not rows:
+        return None
+    curve = pd.DataFrame(rows).sort_values("L")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"grok_N{node_count}_lgs_from_stats.csv"
+    curve.to_csv(out_path, index=False)
+    return out_path
 
 
 def hw_reference_ms(analysis_dir: Path) -> dict[str, Any]:
@@ -153,9 +195,15 @@ def add_monolithic_metadata(row: dict[str, Any], path: Path | None) -> None:
 
 
 def grok_row(node_count: int, args: argparse.Namespace, target_latency: float) -> dict[str, Any]:
-    scratch = args.scratch_root
-    analysis_dir = scratch / "workspaces" / "grok" / f"N{node_count}" / "analysis"
-    output_dir = scratch / "output" / f"grok_n{node_count}"
+    roots = scratch_roots(args)
+    analysis_dir = first_existing([
+        root / "workspaces" / "grok" / f"N{node_count}" / "analysis"
+        for root in roots
+    ]) or roots[0] / "workspaces" / "grok" / f"N{node_count}" / "analysis"
+    output_dir = first_existing([
+        root / "output" / f"grok_n{node_count}"
+        for root in roots
+    ]) or roots[0] / "output" / f"grok_n{node_count}"
     goal = analysis_dir / "output.goal"
     sidecar_candidates = [
         output_dir / "output.comm-dep",
@@ -169,9 +217,14 @@ def grok_row(node_count: int, args: argparse.Namespace, target_latency: float) -
         ROOT / "data" / "revalidation" / f"grok_N{node_count}_lp/full_runtime.csv",
     ]
     composite_candidates = [
+        ROOT / "data" / "revalidation" / f"grok_N{node_count}_composite_row_nranks_regen" / "comp" / "sweeps" / "composed_runtime.csv",
+        ROOT / "data" / "revalidation" / f"grok_N{node_count}_composite_row_nranks_warm" / "comp" / "sweeps" / "composed_runtime.csv",
         ROOT / "data" / "revalidation" / f"grok_N{node_count}_composite_regen" / "comp" / "sweeps" / "composed_runtime.csv",
-        output_dir / "comp" / "sweeps" / "composed_runtime.csv",
     ]
+    composite_candidates.extend(
+        root / "output" / f"grok_n{node_count}" / "comp" / "sweeps" / "composed_runtime.csv"
+        for root in roots
+    )
     if args.include_legacy_monolithic:
         monolithic_candidates.append(output_dir / "monolithic" / "sweeps" / "full_runtime.csv")
 
@@ -193,8 +246,22 @@ def grok_row(node_count: int, args: argparse.Namespace, target_latency: float) -
         row["sidecar_size_mb"] = sidecar.stat().st_size / 1e6
     row.update(hw_reference_ms(analysis_dir))
     add_curve(row, "composite_lp", first_existing(composite_candidates), target_latency)
-    add_curve(row, "lgs", output_dir / "lgs" / "sweeps" / "lgs_runtime.csv", target_latency)
-    monolithic_path = first_existing(monolithic_candidates)
+    lgs_csv = first_existing([
+        root / "output" / f"grok_n{node_count}" / "lgs" / "sweeps" / "lgs_runtime.csv"
+        for root in roots
+    ])
+    if lgs_csv is None:
+        for root in roots:
+            candidate = lgs_curve_from_stats(
+                root / "output" / f"grok_n{node_count}",
+                node_count,
+                args.out_dir / "derived_lgs",
+            )
+            if candidate is not None:
+                lgs_csv = candidate
+                break
+    add_curve(row, "lgs", lgs_csv, target_latency)
+    monolithic_path = None if args.exclude_monolithic else first_existing(monolithic_candidates)
     add_curve(row, "monolithic_lp", monolithic_path, target_latency)
     add_monolithic_metadata(row, monolithic_path)
     return row
@@ -394,6 +461,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--scratch-root", type=Path, default=Path("/mnt/scratch/GrokStudy/repo"),
                     help="Root containing Grok workspaces/output from the high-RAM run.")
+    ap.add_argument("--extra-scratch-root", action="append", type=Path,
+                    default=[Path("/mnt/scratch/GrokStudyCodex/Traces_Compression")],
+                    help="Additional root containing Grok workspaces/output. Can be repeated.")
     ap.add_argument("--out-dir", type=Path, default=ROOT / "results" / "revalidation" / "grok_node_scaling")
     ap.add_argument("--target-latency", type=float, default=4000.0,
                     help="Latency point in ns for the node-scaling plot.")
@@ -407,6 +477,8 @@ def main() -> int:
     ap.add_argument("--include-legacy-monolithic", action="store_true",
                     help="Allow fallback to older scratch monolithic outputs. "
                          "Default excludes them because earlier logs lacked comm_dep.")
+    ap.add_argument("--exclude-monolithic", action="store_true",
+                    help="Do not load or plot Monolithic-LP outputs, even if prior outputs exist.")
     ap.add_argument("--gpus-per-node", type=int, default=4)
     args = ap.parse_args()
 

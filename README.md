@@ -232,25 +232,44 @@ python pipeline/run_nccl_composite.py \
   --clear-cache --parallel-solve --max-workers 8
 ```
 
-For Grok, this was validated end-to-end for N4, N8, N16, N32, and N64 against the
-existing scratch Composite-LP baselines. The maximum relative curve difference
-was at most `0.014%` over the full `L=0..1e6 ns` sweep.
+By default this wrapper uses each row's NCCL communicator size
+(`--rank-count-mode row-nranks`). This matches the newer Grok replay driver and
+avoids a legacy shortcut where one global `nranks` value was accidentally reused
+for all collective motifs. The legacy behavior is still available with
+`--rank-count-mode first-row` when comparing against old scratch outputs.
+
+For Grok, the cleaned wrapper has been validated through N256 using copied
+per-motif caches from the development replay outputs. N8, N16, N32, N64, N128,
+and N256 reproduce those replay Composite-LP curves exactly over
+`L=0..1e6 ns`. N4 has two usable paths: the old replay cache is a legacy
+16-rank/global-rank run, while the cleaned default regenerates 4-rank row-nranks
+motifs from the metadata.
+
+N256 was also regenerated from a cold cache on the high-RAM machine:
+16 Composite signatures solved in 31m36s wall time with 8.0 GiB peak RSS from
+`/usr/bin/time`, matching the development replay curve within 0.0023% max
+relative difference.
 
 The high-RAM Grok node-scaling aggregation used during revalidation is:
 
 ```bash
 python scripts/grok_node_scaling.py \
   --scratch-root /mnt/scratch/GrokStudy/repo \
+  --extra-scratch-root /mnt/scratch/GrokStudyCodex/Traces_Compression \
   --out-dir results/revalidation/grok_node_scaling \
-  --target-latency 4000 \
-  --target-latencies 0 4000 10000
+  --nodes 4 8 16 32 64 128 256 \
+  --target-latency 0 \
+  --target-latencies 0 4000 10000 250000 500000 1000000 \
+  --no-packaged-large \
+  --exclude-monolithic
 ```
 
 It combines hardware wall times from `collective_instances.csv`, regenerated
-Composite-LP curves under `data/revalidation/` where available, existing
-scratch Composite-LP and LGS curves for larger scales, regenerated
-Monolithic-LP points under `data/revalidation/`, and packaged N512/N1024
-Composite-LP summaries. The multi-latency mode writes per-latency CSV/JSON summaries plus
+Composite-LP curves under `data/revalidation/` where available, existing LGS
+curves or `stats/lgs_L*.json` points, and Monolithic-LP points only where they
+already exist. The command above intentionally excludes packaged N512/N1024
+rows and does not launch any Monolithic-LP solves. The multi-latency mode writes
+per-latency CSV/JSON summaries plus
 `grok_node_scaling_multi_latency.{png,pdf}`.
 
 ## Tier D: Optional Raw NSYS SQLite to GOAL
