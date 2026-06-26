@@ -46,6 +46,7 @@ def require_files():
         "pipeline/run_lgs_sweep.py",
         "pipeline/run_monolithic_lp.py",
         "pipeline/run_monolithic_points.py",
+        "pipeline/run_nccl_bw_sensitivity.py",
         "pipeline/run_nccl_composite.py",
         "pipeline/run_nccl_generator.py",
         "pipeline/reproduce_fig5_from_nsys.sh",
@@ -84,6 +85,7 @@ def main():
     run([sys.executable, "pipeline/run_lgs_sweep.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_monolithic_lp.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_monolithic_points.py", "--help"], args.timeout)
+    run([sys.executable, "pipeline/run_nccl_bw_sensitivity.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_nccl_composite.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_nccl_generator.py", "--help"], args.timeout)
     run([sys.executable, "scripts/compare_csv.py", "--help"], args.timeout)

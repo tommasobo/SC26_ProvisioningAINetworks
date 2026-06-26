@@ -152,6 +152,13 @@ python pipeline/generate_comm_dep_from_goal.py \
 
 The fallback is useful for diagnostics and validated on the demo, Grok N4, and a local Llama7B N2 trace, but it is not universally safe. For vLLM Llama70B N2, tag-only FIFO matching produces a cyclic LP graph even though every send/recv is paired; the trace needs true upstream match/dependency information.
 
+For V2 NCCL generator inputs, the expected flow is regenerable: one GOAL rank
+per GPU plus metadata sidecars are produced from NSYS SQLite by
+`pipeline/run_nccl_generator.py`, and the LP `comm_dep.csv` can then be emitted
+from that GOAL by patched LogGOPSim. If only a public GOAL is available and its
+matching V2 metadata/raw SQLite is missing, the fallback matcher may not be
+correct enough for Monolithic-LP.
+
 For most data-level regeneration tasks, use the orchestration driver instead of chaining the lower-level scripts manually. From an existing GOAL:
 
 ```bash
@@ -256,6 +263,24 @@ This cold-cache run completed in 19m26s on `bigmem` and reproduced
 within 0.0276% max relative difference. Without `--nic-per-rank`, the same
 metadata regenerates a different lower-cost motif family and is not comparable
 to the packaged paper curve.
+
+The fixed-latency bandwidth-sensitivity companion for the Llama7B N32 figure is:
+
+```bash
+/usr/bin/time -v timeout 7200 python pipeline/run_nccl_bw_sensitivity.py \
+  --analysis-dir data/workspaces/llama7b_n32_spcl_20260407/analysis \
+  --out data/revalidation/figures_end_to_end/llama7b_n32_bw_full/bandwidth_sensitivity.csv \
+  --cache-dir data/revalidation/figures_end_to_end/llama7b_n32_bw_full/fixed_l_cache \
+  --clear-cache --fixed-l-ns 4000 \
+  --min-bw-gbps 10 --max-bw-gbps 1600 --num-points 20 --spacing log \
+  --max-workers 8 --node-map-mode rank-block --force-sequential --nic-per-rank
+```
+
+This cold-cache run completed in 31m22s on `bigmem`, solving 20 bandwidth
+points from the metadata sidecars. It reproduces the packaged bandwidth curve
+within 0.6335% max relative difference and 0.0588% mean relative difference.
+The remaining drift is concentrated at the high-bandwidth asymptote and is
+documented as historical-driver/model provenance, not a cached-data shortcut.
 
 Figure-level end-to-end evidence and the commands used are summarized in
 `results/revalidation/figures_end_to_end/figure_end_to_end_summary.md`.
@@ -421,6 +446,7 @@ During the `clean_version` cleanup pass:
 - Real downloaded GOAL traces for Grok N4/GPU16 and vLLM N2/GPU8 replay through LogGOPSim.
 - Real Monolithic-LP regeneration succeeded for Grok N4/GPU16 and a local Llama7B N2/GPU8 trace when a valid `comm_dep` sidecar was generated.
 - Real NCCL metadata-sidecar Composite-LP regeneration succeeded for Grok through N512. Corrected row-nranks cold-cache runs are available for N64, N256, and N512; N4-N512 scaling plots use real metadata, not packaged-large rows.
+- Llama7B N32 Composite-LP latency and fixed-L bandwidth curves are regenerable from packaged V2 metadata sidecars; latency matches within 0.0276% max relative difference and bandwidth within 0.6335%.
 - LGS/LP numeric comparisons were saved under `results/revalidation/`.
 - The `comm_dep` issue is root-caused for vLLM N2: GOAL-only matching is insufficient for that trace and the patched LogGOPSim sidecar writer emits an empty file.
 

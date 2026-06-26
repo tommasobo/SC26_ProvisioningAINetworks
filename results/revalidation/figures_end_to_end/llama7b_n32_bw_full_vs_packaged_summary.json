@@ -1,0 +1,13 @@
+{
+  "actual": "data/revalidation/figures_end_to_end/llama7b_n32_bw_full/bandwidth_sensitivity.csv",
+  "expected": "data/workspaces/llama7b_n32_spcl_20260407/output/bw_sensitivity_l4us_composition_exact_goal/bandwidth_sensitivity.csv",
+  "label": "llama7b_n32_bw_full_vs_packaged",
+  "max_L": 1600.0,
+  "max_abs_diff_ns": 1461179.1253456771,
+  "max_abs_rel_diff_pct": 0.6334748113378921,
+  "mean_abs_diff_ns": 144207.94714729636,
+  "mean_abs_rel_diff_pct": 0.058793399894683,
+  "min_L": 10.0,
+  "n_points": 20,
+  "points": "actual"
+}

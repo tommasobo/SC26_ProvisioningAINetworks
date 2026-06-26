@@ -33,6 +33,7 @@ def test_expected_packaged_inputs_exist():
         "pipeline/demo.py",
         "pipeline/regenerate_from_inputs.py",
         "pipeline/run_monolithic_points.py",
+        "pipeline/run_nccl_bw_sensitivity.py",
         "pipeline/reproduce_fig5_from_nsys.sh",
         "scripts/grok_node_scaling.py",
     ]
