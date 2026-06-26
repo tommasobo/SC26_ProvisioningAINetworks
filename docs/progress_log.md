@@ -466,3 +466,38 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Warm-cache comparison result: 201 points, exact match; max absolute difference 0 ns and max relative difference 0%.
 - Updated plot command: `python3 scripts/grok_node_scaling.py --out-dir new_results --nodes 4 8 16 32 64 128 256 512 --target-latency 0 --target-latencies 0 4000 10000 250000 500000 1000000 --no-packaged-large --exclude-monolithic`.
 - Updated plot status: `new_results/` and `results/revalidation/grok_node_scaling/` now include N512. LGS for N512 is derived from `/mnt/scratch/GrokStudyCodex/Traces_Compression/output/grok_n512/stats/lgs_L*.json`. Monolithic-LP remains excluded.
+
+### 2026-06-25: Grok N512 Cold-Cache Composite Validation
+
+- User request: after finishing the corrected N64/N256 work and excluding Monolithic-LP, use the high-RAM machine to try N512.
+- Command: `/usr/bin/time -v timeout 21600 python3 pipeline/run_nccl_composite.py --analysis-dir /mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N512/analysis --out data/revalidation/grok_N512_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv --cache-dir data/revalidation/grok_N512_composite_row_nranks_regen/collective_cache --clear-cache --parallel-solve --max-workers 4`.
+- Output: `data/revalidation/grok_N512_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv` and `summary.json`; per-motif cache under `data/revalidation/grok_N512_composite_row_nranks_regen/collective_cache`.
+- Result: success; solved 16/16 uncached row-nranks Composite signatures; no failed signatures.
+- Runtime: 2 hours 31 minutes 43 seconds wall clock from `/usr/bin/time`; script wall time 9102.65s.
+- Peak memory: 32,024,880 KiB max RSS from `/usr/bin/time`; script parent peak RSS 244.5 MiB, which excludes child worker RSS.
+- Model totals: 84,463,632 unique LP variables and 210,829,264 unique LP constraints across the 16 signatures.
+- Curve values: `L=0` 7554.210 ms and `L=1e6 ns` 18649.485 ms.
+- Comparison command: `python3 scripts/compare_csv.py --expected /mnt/scratch/GrokStudyCodex/Traces_Compression/output/grok_n512/comp/sweeps/composed_runtime.csv --actual data/revalidation/grok_N512_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv --out-dir results/revalidation/grok_N512_composite_row_nranks_regen --label grok_N512_cold_regen_vs_codex --points actual`.
+- Comparison result: 201 points; max absolute difference 131,447 ns; max relative difference 0.001735%; mean relative difference 0.001076%.
+- Additional comparison: the same max/mean differences were observed against the repo-local warm replay output in `data/revalidation/grok_N512_composite_row_nranks_warm/`.
+
+### 2026-06-25: Grok N64 Corrected Cold-Cache Composite Validation
+
+- Reason: N64 was the suspicious point in the earlier global-rank Composite run, so a fresh-cache corrected row-nranks run was added after N512 completed.
+- Command: `/usr/bin/time -v timeout 7200 python3 pipeline/run_nccl_composite.py --analysis-dir /mnt/scratch/GrokStudy/repo/workspaces/grok/N64/analysis_new --out data/revalidation/grok_N64_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv --cache-dir data/revalidation/grok_N64_composite_row_nranks_regen/collective_cache --clear-cache --parallel-solve --max-workers 4`.
+- Output: `data/revalidation/grok_N64_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv` and `summary.json`; per-motif cache under `data/revalidation/grok_N64_composite_row_nranks_regen/collective_cache`.
+- Result: success; solved 16/16 uncached row-nranks Composite signatures; no failed signatures.
+- Runtime: 47 minutes 13.02 seconds wall clock from `/usr/bin/time`; script wall time 2832.56s.
+- Peak memory: 1,678,996 KiB max RSS from `/usr/bin/time`.
+- Model totals: 3,279,648 unique LP variables and 7,200,224 unique LP constraints.
+- Curve values: `L=0` 8600.009 ms and `L=1e6 ns` 9985.039 ms.
+- Comparison command: `python3 scripts/compare_csv.py --expected /mnt/scratch/GrokStudyCodex/Traces_Compression/output/grok_n64/comp/sweeps/composed_runtime.csv --actual data/revalidation/grok_N64_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv --out-dir results/revalidation/grok_N64_composite_row_nranks_regen --label grok_N64_cold_regen_vs_codex --points actual`.
+- Comparison result: 201 points; max absolute difference 5160.16 ns; max relative difference 0.00005996%; mean relative difference 0.00005563%.
+
+### 2026-06-25: Final Grok N4-N512 No-Monolithic Plot Refresh
+
+- Script fix: updated `scripts/grok_node_scaling.py` so generated reports no longer claim N512/N1024 use packaged Composite summaries when `--no-packaged-large` is selected and real local metadata rows are used.
+- Command: `python3 scripts/grok_node_scaling.py --out-dir new_results --nodes 4 8 16 32 64 128 256 512 --target-latency 0 --target-latencies 0 4000 10000 250000 500000 1000000 --no-packaged-large --exclude-monolithic`.
+- Command: `python3 scripts/grok_node_scaling.py --out-dir results/revalidation/grok_node_scaling --nodes 4 8 16 32 64 128 256 512 --target-latency 0 --target-latencies 0 4000 10000 250000 500000 1000000 --no-packaged-large --exclude-monolithic`.
+- Outputs: refreshed `grok_node_scaling_multi_latency.{png,pdf}`, per-latency plots, CSV/JSON summaries, and Markdown reports in both `new_results/` and `results/revalidation/grok_node_scaling/`.
+- Plot data sources: hardware log points from local metadata; Composite-LP from corrected row-nranks outputs, using fresh-cache outputs for N64, N256, and N512; LGS from existing local LGS CSVs and `stats/lgs_L*.json`; Monolithic-LP intentionally excluded.

@@ -1,0 +1,13 @@
+{
+  "actual": "data/revalidation/grok_N512_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv",
+  "expected": "data/revalidation/grok_N512_composite_row_nranks_warm/comp/sweeps/composed_runtime.csv",
+  "label": "grok_N512_cold_regen_vs_warm",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 131447.0,
+  "max_abs_rel_diff_pct": 0.0017349883266926467,
+  "mean_abs_diff_ns": 131102.48785188305,
+  "mean_abs_rel_diff_pct": 0.001075512834341354,
+  "min_L": 0.0,
+  "n_points": 201,
+  "points": "actual"
+}

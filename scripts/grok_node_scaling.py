@@ -345,7 +345,10 @@ def write_report(df: pd.DataFrame, out_dir: Path, target_latency: float, filenam
         f.write("\n\n## Availability Matrix\n\n")
         f.write(markdown_table(availability))
         f.write("\n\n")
-        f.write("Rows N512/N1024 use packaged Composite-LP summaries only; no GOAL/LGS/Monolithic inputs are bundled for those scales.\n")
+        if (df["input_class"] == "packaged_large_composite_only").any():
+            f.write("Rows marked `packaged_large_composite_only` use packaged Composite-LP summaries only; no GOAL/LGS/Monolithic inputs are bundled for those scales.\n")
+        else:
+            f.write("Rows in this report are assembled from local metadata, hardware logs, regenerated Composite-LP curves, and available LGS outputs; no packaged-large summary rows are included.\n")
 
 
 def plot(df: pd.DataFrame, out_dir: Path, target_latency: float) -> None:

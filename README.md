@@ -245,10 +245,12 @@ N256, and N512 reproduce those replay Composite-LP curves exactly over
 16-rank/global-rank run, while the cleaned default regenerates 4-rank row-nranks
 motifs from the metadata.
 
-N256 was also regenerated from a cold cache on the high-RAM machine:
-16 Composite signatures solved in 31m36s wall time with 8.0 GiB peak RSS from
-`/usr/bin/time`, matching the development replay curve within 0.0023% max
-relative difference.
+N64, N256, and N512 were also regenerated from cold caches on the high-RAM
+machine. N64 solved 16 signatures in 47m13s with 1.60 GiB peak RSS and matched
+the development replay curve within 0.000060% max relative difference. N256
+solved 16 signatures in 31m36s with 8.0 GiB peak RSS and matched within
+0.0023%. N512 solved 16 signatures in 2h31m43s with 30.5 GiB peak RSS and
+matched within 0.0018%.
 
 The high-RAM Grok node-scaling aggregation used during revalidation is:
 
@@ -265,11 +267,11 @@ python scripts/grok_node_scaling.py \
 ```
 
 It combines hardware wall times from `collective_instances.csv`, regenerated
-Composite-LP curves under `data/revalidation/` where available, existing LGS
-curves or `stats/lgs_L*.json` points, and Monolithic-LP points only where they
-already exist. The command above intentionally excludes packaged N512/N1024
-rows; with the development replay workspace available, N512 is included from
-real metadata instead. The command does not launch any Monolithic-LP solves. The multi-latency mode writes
+Composite-LP curves under `data/revalidation/` where available, and existing
+LGS curves or `stats/lgs_L*.json` points. The command above intentionally
+excludes packaged N512/N1024 rows and excludes Monolithic-LP points; with the
+development replay workspace available, N512 is included from real metadata
+instead. The command does not launch any Monolithic-LP solves. The multi-latency mode writes
 per-latency CSV/JSON summaries plus
 `grok_node_scaling_multi_latency.{png,pdf}`.
 
@@ -338,7 +340,7 @@ During the `clean_version` cleanup pass:
 - Vendored LogGOPSim builds on the current GCC toolchain.
 - Real downloaded GOAL traces for Grok N4/GPU16 and vLLM N2/GPU8 replay through LogGOPSim.
 - Real Monolithic-LP regeneration succeeded for Grok N4/GPU16 and a local Llama7B N2/GPU8 trace when a valid `comm_dep` sidecar was generated.
-- Real NCCL metadata-sidecar Composite-LP regeneration succeeded for Grok N4, N8, N16, N32, and N64; regenerated curves match existing scratch baselines within `0.014%` max relative difference.
+- Real NCCL metadata-sidecar Composite-LP regeneration succeeded for Grok through N512. Corrected row-nranks cold-cache runs are available for N64, N256, and N512; N4-N512 scaling plots use real metadata, not packaged-large rows.
 - LGS/LP numeric comparisons were saved under `results/revalidation/`.
 - The `comm_dep` issue is root-caused for vLLM N2: GOAL-only matching is insufficient for that trace and the patched LogGOPSim sidecar writer emits an empty file.
 

@@ -10,10 +10,10 @@ Target network latency: `250000 ns`.
 | 8 | 5257.040 | 4921.701 | 5087.804 |  |
 | 16 | 9961.441 | 9424.150 | 9623.090 |  |
 | 32 | 9459.765 | 8504.538 | 9555.376 |  |
-| 64 | 9562.007 | 8945.534 | 9787.489 |  |
+| 64 | 9562.007 | 8945.539 | 9787.489 |  |
 | 128 | 8530.951 | 8794.723 |  |  |
 | 256 | 8809.187 | 8753.338 | 9783.941 |  |
-| 512 | 8824.133 | 10218.117 | 10941.378 |  |
+| 512 | 8824.133 | 10217.985 | 10941.378 |  |
 
 ## Availability Matrix
 
@@ -28,4 +28,4 @@ Target network latency: `250000 ns`.
 | 256 | True | False | ok | ok | missing | scratch_real_grok |
 | 512 | True | False | ok | ok | missing | scratch_real_grok |
 
-Rows N512/N1024 use packaged Composite-LP summaries only; no GOAL/LGS/Monolithic inputs are bundled for those scales.
+Rows in this report are assembled from local metadata, hardware logs, regenerated Composite-LP curves, and available LGS outputs; no packaged-large summary rows are included.
