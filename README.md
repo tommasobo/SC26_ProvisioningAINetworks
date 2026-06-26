@@ -150,12 +150,13 @@ python pipeline/generate_comm_dep_from_goal.py \
   --out path/to/comm_dep.csv
 ```
 
-The fallback is useful for diagnostics and validated on the demo, Grok N4, and a local Llama7B N2 trace, but it is not universally safe. For vLLM Llama70B N2, tag-only FIFO matching produces a cyclic LP graph even though every send/recv is paired; the trace needs true upstream match/dependency information.
+The fallback is useful for diagnostics and validated on the demo, Grok N4, and a local Llama7B N2 trace, but it is not universally safe. For the public prebuilt vLLM Llama70B N2 GOAL, tag-only FIFO matching produces a cyclic LP graph even though every send/recv is paired; that public GOAL needs true upstream match/dependency information for LP.
 
 For V2 NCCL generator inputs, the expected flow is regenerable: one GOAL rank
 per GPU plus metadata sidecars are produced from NSYS SQLite by
 `pipeline/run_nccl_generator.py`, and the LP `comm_dep.csv` can then be emitted
-from that GOAL by patched LogGOPSim. If only a public GOAL is available and its
+from that GOAL by patched LogGOPSim. This has been validated end-to-end on the
+online vLLM Llama70B N2 NSYS reports. If only a public GOAL is available and its
 matching V2 metadata/raw SQLite is missing, the fallback matcher may not be
 correct enough for Monolithic-LP.
 
@@ -393,6 +394,37 @@ python pipeline/run_nccl_generator.py \
 
 This writes `output.goal`, `collective_instances.csv`, `goal_label_ranges.csv`, `comm_info.csv`, `comm_ring_info.csv`, and related NCCL metadata. It does not write the LP `comm_dep.csv`; generate that from the produced GOAL with `pipeline/run_lgs.py --comm-dep-out`.
 
+The online vLLM Llama70B N2 trace is a concrete raw-NSYS example:
+
+```bash
+mkdir -p /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/{nsys,sqlite,analysis_strict,commdep_strict,lgs_strict,composite_strict,bin_cache}
+cd /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/nsys
+wget -c --progress=dot:giga \
+  http://storage2.spcl.ethz.ch/traces/ai/vllm/Llama_3.1_70B_Instruct_N2_GPU8_TP8_Short_Prompts/nsys_reports/nsys_report_nid006673_57756.nsys-rep \
+  http://storage2.spcl.ethz.ch/traces/ai/vllm/Llama_3.1_70B_Instruct_N2_GPU8_TP8_Short_Prompts/nsys_reports/nsys_report_nid006679_8937.nsys-rep
+
+for rep in /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/nsys/*.nsys-rep; do
+  sqlite=/mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/sqlite/$(basename "${rep%.nsys-rep}.sqlite")
+  nsys export --type=sqlite -o "$sqlite" "$rep"
+done
+
+cd /path/to/SC_Tracing
+python pipeline/run_nccl_generator.py \
+  --sqlite-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/sqlite \
+  --out-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict
+python pipeline/run_lgs.py \
+  --goal /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict/output.goal \
+  --L 4000 --G 0.04 --o 200 \
+  --comm-dep-out /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/commdep_strict/comm_dep.csv
+python pipeline/run_composite_lp.py \
+  --goal /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict/output.goal \
+  --comm-dep /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/commdep_strict/comm_dep.csv \
+  --out /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/composite_strict/composed_runtime.csv \
+  --l-min 0 --l-max 8000 --step 4000 --l-intra 350 --o 200
+```
+
+This validates the online Llama70B N2 path, not the packaged vLLM8B paper curve under `data/output/vllm_llama8b_128tok/`.
+
 For the guarded Fig. 5 NSYS pipeline:
 
 ```bash
@@ -447,7 +479,8 @@ During the `clean_version` cleanup pass:
 - Real Monolithic-LP regeneration succeeded for Grok N4/GPU16 and a local Llama7B N2/GPU8 trace when a valid `comm_dep` sidecar was generated.
 - Real NCCL metadata-sidecar Composite-LP regeneration succeeded for Grok through N512. Corrected row-nranks cold-cache runs are available for N64, N256, and N512; N4-N512 scaling plots use real metadata, not packaged-large rows.
 - Llama7B N32 Composite-LP latency and fixed-L bandwidth curves are regenerable from packaged V2 metadata sidecars; latency matches within 0.0276% max relative difference and bandwidth within 0.6335%.
+- Online vLLM Llama70B N2 NSYS reports regenerate through NSYS export, V2 GOAL generation, LGS sidecar emission, and Composite-LP; Composite-LP matches LGS within about 0.19% on sampled points.
 - LGS/LP numeric comparisons were saved under `results/revalidation/`.
-- The `comm_dep` issue is root-caused for vLLM N2: GOAL-only matching is insufficient for that trace and the patched LogGOPSim sidecar writer emits an empty file.
+- The remaining vLLM gap is the packaged vLLM8B paper curve: the available online raw trace is Llama70B N2 and does not numerically match `data/output/vllm_llama8b_128tok/`.
 
 See `docs/progress_log.md` for commands and `docs/revalidation_report.md` for the workload matrix and detailed sidecar analysis.

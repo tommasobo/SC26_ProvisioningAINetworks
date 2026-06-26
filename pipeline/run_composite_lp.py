@@ -13,6 +13,7 @@ Usage:
         --l-min 0 --l-max 1000000 --step 50000
 """
 import argparse
+import shutil
 import subprocess
 import sys
 import time
@@ -102,10 +103,21 @@ def main() -> int:
         print(f"[composite-lp] FAILED after {dt:.1f}s", file=sys.stderr)
         return r.returncode
 
-    # The solver writes its CSV with a fixed name; move it into place.
-    produced = out.parent / "net_lat_sen.csv"
-    if produced.exists() and produced.resolve() != out:
-        produced.rename(out)
+    # The solver has used different fixed filenames across revisions.  Keep the
+    # solver's native files for debugging and copy the runtime CSV to --out.
+    produced = None
+    for candidate in [out.parent / "net_lat_sen.csv", out.parent / "tmp_runtime.csv"]:
+        if candidate.exists():
+            produced = candidate
+            break
+    if produced is None:
+        print(
+            f"[composite-lp] solver completed but no runtime CSV was found in {out.parent}",
+            file=sys.stderr,
+        )
+        return 1
+    if produced.resolve() != out:
+        shutil.copy2(produced, out)
     print(f"[composite-lp] wrote {out} ({dt:.1f}s)")
     return 0
 

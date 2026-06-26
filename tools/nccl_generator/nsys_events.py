@@ -218,6 +218,7 @@ def get_event_info(data: pd.DataFrame, comm_info: pd.DataFrame = None,
     # Fallback for vLLM/inference traces: ncclLaunchKernel() is a range event
     # that wraps one collective (like ncclGroupStart/End but in a single NVTX range).
     # If no ncclGroupStart/End found, use ncclLaunchKernel ranges instead.
+    using_launch_kernel_groups = False
     launch_kernel_pattern = NVTX_PATTERNS.get("launch_kernel")
     if len(kernel_group_start_info) == 0 and launch_kernel_pattern is not None:
         lk_mask = data["text"].str.match(launch_kernel_pattern, na=False)
@@ -239,6 +240,7 @@ def get_event_info(data: pd.DataFrame, comm_info: pd.DataFrame = None,
             kernel_group_start_info = lk_starts
             kernel_group_end_info = lk_ends
             data = data[~lk_mask]
+            using_launch_kernel_groups = True
 
     kernel_group_start_info["pid"] = (
         kernel_group_start_info["pid"]
@@ -463,7 +465,15 @@ def get_event_info(data: pd.DataFrame, comm_info: pd.DataFrame = None,
         coll_kernels = coll_kernels.sort_values(by="start").reset_index(drop=True)
 
         comm_starts = coll_comm["start"].to_numpy()
-        comm_ends = np.concatenate([comm_starts[1:], np.array([np.iinfo(np.int64).max])])
+        if using_launch_kernel_groups:
+            # In vLLM/inference traces without ncclGroupStart/End, there may be
+            # long gaps and unmatched kernel streams between NCCL API ranges.
+            # Associating until the next comm start can pull unrelated kernel
+            # metadata into the preceding collective; use the actual API event
+            # interval instead.
+            comm_ends = coll_comm["end"].fillna(coll_comm["start"] + 1).to_numpy()
+        else:
+            comm_ends = np.concatenate([comm_starts[1:], np.array([np.iinfo(np.int64).max])])
 
         coll_info_starts = coll_infos["start"].to_numpy()
         coll_infos["association"] = _associate_events(
@@ -494,7 +504,10 @@ def get_event_info(data: pd.DataFrame, comm_info: pd.DataFrame = None,
             curr_p2p_comm = p2p_comm[p2p_comm["collective"] == p2p_type].sort_values(by="start").reset_index(drop=True)
             curr_p2p_kernels = p2p_kernels[p2p_kernels["p2pType"] == type_id].sort_values(by="start").reset_index(drop=True).copy()
             comm_starts = curr_p2p_comm["start"].to_numpy()
-            comm_ends = np.concatenate([comm_starts[1:], np.array([np.iinfo(np.int64).max])])
+            if using_launch_kernel_groups:
+                comm_ends = curr_p2p_comm["end"].fillna(curr_p2p_comm["start"] + 1).to_numpy()
+            else:
+                comm_ends = np.concatenate([comm_starts[1:], np.array([np.iinfo(np.int64).max])])
             p2p_kernel_starts = curr_p2p_kernels["start"].to_numpy()
             curr_p2p_kernels["association"] = _associate_events(
                 comm_starts,

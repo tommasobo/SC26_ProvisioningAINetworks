@@ -115,8 +115,8 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--allow-goal-fallback", action="store_true",
                     help="Allow GOAL-only FIFO matching if LogGOPSim sidecar "
                          "generation fails or emits an empty file. This is not "
-                         "universally correct; vLLM Llama70B N2 is a known "
-                         "counterexample.")
+                         "universally correct; the public prebuilt vLLM "
+                         "Llama70B N2 GOAL is a known counterexample.")
     ap.add_argument("--npkit-simple", type=Path, default=None,
                     help="Override NPKit simple calibration JSON for SQLite input.")
     ap.add_argument("--npkit-ll", type=Path, default=None,

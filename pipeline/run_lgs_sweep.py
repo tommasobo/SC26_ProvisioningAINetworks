@@ -28,6 +28,10 @@ def main() -> int:
                     help="Overhead, ns (default: 200)")
     ap.add_argument("--g", type=int, default=5,
                     help="Gap, ns (default: 5)")
+    ap.add_argument("--normalize-tags", choices=("auto", "always", "never"), default="auto",
+                    help="Forwarded to run_lgs.py.")
+    ap.add_argument("--bin-cache-dir", type=Path, default=None,
+                    help="Optional local cache directory for txt2bin output.")
     args = ap.parse_args()
 
     if not args.goal.exists():
@@ -38,7 +42,15 @@ def main() -> int:
     rows = []
     for latency in args.latencies:
         t0 = time.perf_counter()
-        runtime_ns = run_lgs(args.goal, latency, args.G, args.o, args.g)
+        runtime_ns = run_lgs(
+            args.goal,
+            latency,
+            args.G,
+            args.o,
+            args.g,
+            normalize_tags=args.normalize_tags,
+            bin_cache_dir=args.bin_cache_dir,
+        )
         elapsed_s = time.perf_counter() - t0
         rows.append({
             "L_ns": latency,

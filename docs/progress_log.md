@@ -221,7 +221,7 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 
 - Command: `python3 pipeline/generate_comm_dep_from_goal.py --goal data/external/vllm_llama70b_N2/vllm_llama_N2_GPU8_PP8.goal --out data/revalidation/vllm_llama70b_N2_commdep_goalmatch_cpu/comm_dep.csv --include-cpu`
 - Result: failure with 160,088 unmatched sends and 160,088 unmatched receives.
-- Conclusion: GOAL-only matching is trace-dependent. It is valid for demo/Grok N4/Llama7B N2, but not sufficient evidence for vLLM.
+- Conclusion: GOAL-only matching is trace-dependent. It is valid for demo/Grok N4/Llama7B N2, but not sufficient evidence for the public prebuilt vLLM GOAL.
 
 ### 2026-06-24: Real GOAL Plus Sidecar LP Regeneration
 
@@ -252,7 +252,7 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Peak memory: 1.87 GiB RSS.
 - Graph: 2,317,668 vertices, 3,642,044 edges, 2 ranks; graph build 64.10 seconds.
 - Result: failed with `graph has cycles; topological sorting is only possible in acyclic graphs`.
-- Conclusion: the GOAL-only fallback sidecar is not correct for this trace. vLLM needs true upstream dependency/match metadata.
+- Conclusion: the GOAL-only fallback sidecar is not correct for the public prebuilt vLLM GOAL. That input needs true upstream dependency/match metadata for LP.
 
 ### 2026-06-24: Numeric Comparisons
 
@@ -551,3 +551,28 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Comparison command: `python3 scripts/compare_csv.py --expected data/workspaces/llama7b_n32_spcl_20260407/output/bw_sensitivity_l4us_composition_exact_goal/bandwidth_sensitivity.csv --actual data/revalidation/figures_end_to_end/llama7b_n32_bw_full/bandwidth_sensitivity.csv --out-dir results/revalidation/figures_end_to_end --label llama7b_n32_bw_full_vs_packaged --expected-x-col bw_gbps --actual-x-col bw_gbps --expected-y-col runtime_ns --actual-y-col runtime_ns --points actual`.
 - Comparison result: 20 points; max absolute difference 1,461,179 ns; max relative difference 0.633475%; mean relative difference 0.058793%. The drift is concentrated at the high-bandwidth asymptote.
 - Provenance check: the vendored generator differs from the historical `/mnt/scratch/LLAMA/Traces_Compression/tools/nccl_generator_v2_hwfix` in ring-position handling, tag/message-id scoping, allgather byte sizing, and slice-size behavior. A two-point compatibility run with `--generator-dir /mnt/scratch/LLAMA/Traces_Compression/tools/nccl_generator_v2_hwfix` still differed from packaged by up to 0.651512%, while NPKit JSONs were byte-identical. Conclusion: the repo-local bandwidth wrapper is an end-to-end regeneration path; bit-exact packaged reproduction would require the full historical driver/model environment, not just the old generator module.
+
+### 2026-06-26: Online vLLM Llama70B NSYS End-to-End Regeneration
+
+- Online input check: `http://storage2.spcl.ethz.ch/traces/ai/vllm/Llama_3.1_70B_Instruct_N2_GPU8_TP8_Short_Prompts/` contains both the public prebuilt GOAL and raw `nsys_reports/`.
+- Download command: `/usr/bin/time -v bash -lc 'cd /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/nsys && wget -c --progress=dot:giga http://storage2.spcl.ethz.ch/traces/ai/vllm/Llama_3.1_70B_Instruct_N2_GPU8_TP8_Short_Prompts/nsys_reports/nsys_report_nid006673_57756.nsys-rep http://storage2.spcl.ethz.ch/traces/ai/vllm/Llama_3.1_70B_Instruct_N2_GPU8_TP8_Short_Prompts/nsys_reports/nsys_report_nid006679_8937.nsys-rep'`.
+- Download result: success; 301 MiB downloaded in 4.0s.
+- Export command: `/usr/bin/time -v bash -lc 'set -euo pipefail; for rep in /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/nsys/*.nsys-rep; do sqlite=/mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/sqlite/$(basename "${rep%.nsys-rep}.sqlite"); if [ -f "$sqlite" ]; then echo "[skip] $sqlite exists"; else echo "[export] $rep -> $sqlite"; nsys export --type=sqlite -o "$sqlite" "$rep"; fi; done'`.
+- Export result: success; two SQLite files, 535 MiB and 530 MiB; 42s wall time, 43,264 KiB max RSS.
+- Initial generator command: `/usr/bin/time -v python3 pipeline/run_nccl_generator.py --sqlite-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/sqlite --out-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis`.
+- Initial generator result: failed after 38.48s with `IndexError` in `Broadcast._to_primitives_ring_chnl`; root cause was one tiny 64-byte Broadcast per rank receiving 1289 associated kernel rows although the communicator has 8 ring channels.
+- Root cause: the inference/no-group fallback used `ncclLaunchKernel` ranges but still associated collective kernel metadata from a comm start until the next comm start. In this vLLM trace, unmatched stream-7 kernel metadata appears in the gap and was incorrectly attached to the preceding Broadcast.
+- Fix: updated `tools/nccl_generator/nsys_events.py` so the `ncclLaunchKernel` fallback associates collective and P2P kernel metadata only inside the actual NCCL API event interval. The normal `ncclGroupStart/End` training path is unchanged.
+- Fixed generator command: `/usr/bin/time -v python3 pipeline/run_nccl_generator.py --sqlite-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/sqlite --out-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict`.
+- Fixed generator result: success in 4m09.42s wall time, 1,660,932 KiB max RSS. Output GOAL: `/mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict/output.goal`, 193,457,472 bytes, 6,789,473 lines. Metadata sidecars include 81,992 rows in `collective_instances.csv` and 81,992 rows in `goal_label_ranges.csv`.
+- Association sanity check: every rank has kernel association counts with max 8 and distribution `8:16965`, `1:9224`, `4:966`; no event has more than 8 associated kernel rows.
+- Regenerated GOAL LGS command: `/usr/bin/time -v timeout 1800 python3 pipeline/run_lgs_sweep.py --goal /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict/output.goal --out /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/lgs_strict/lgs_points.csv --latencies 0 4000 10000 --bin-cache-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/bin_cache`.
+- Regenerated GOAL LGS result: success in 7m40.00s wall time, 516,612 KiB max RSS. Runtimes: `L=0` 30,041.022 ms, `L=4000` 30,064.264 ms, `L=10000` 30,116.627 ms.
+- Public prebuilt GOAL rerun command: `/usr/bin/time -v timeout 900 python3 pipeline/run_lgs_sweep.py --goal data/external/vllm_llama70b_N2/vllm_llama_N2_GPU8_PP8.goal --out /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/public_goal_lgs_rerun/lgs_points.csv --latencies 0 4000 10000 --bin-cache-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/public_bin_cache`.
+- Public prebuilt GOAL rerun result: success in 10.81s wall time, 302,408 KiB max RSS. Runtimes remain 261.198 ms at all three points, reproducing the previous public-GOAL result.
+- Interpretation: the online NSYS-derived GOAL and the public prebuilt GOAL are materially different simulation inputs. The regenerated NSYS-derived LGS runtime is about 115x the public prebuilt GOAL LGS runtime and about 9x the packaged vLLM8B paper latency CSV at shared latency points (`L=0` and `L=10000`). This validates the online Llama70B trace path, not the packaged vLLM8B paper curve.
+- Sidecar command: `/usr/bin/time -v timeout 900 python3 pipeline/run_lgs.py --goal /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict/output.goal --L 4000 --G 0.04 --o 200 --bin-cache-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/bin_cache --comm-dep-out /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/commdep_strict/comm_dep.csv`.
+- Sidecar result: success in 2m26.68s wall time, 525,080 KiB max RSS. Output `comm_dep.csv` has 523,768 rows and is non-empty. This shows the LP sidecar is regenerable from the NSYS-derived GOAL via patched LogGOPSim for this trace.
+- Composite-LP command: `/usr/bin/time -v timeout 1800 python3 pipeline/run_composite_lp.py --goal /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict/output.goal --comm-dep /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/commdep_strict/comm_dep.csv --out /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/composite_strict/composed_runtime.csv --l-min 0 --l-max 8000 --step 4000 --l-intra 350 --o 200`.
+- Composite-LP result: success in 4m00.25s wall time, 3,300,036 KiB max RSS. Graph: 3,136,432 vertices, 4,176,792 edges, 8 ranks. The wrapper was fixed to copy the solver's `tmp_runtime.csv` to the requested `--out` path while preserving native solver outputs.
+- Composite-vs-LGS nearest-point comparison for the regenerated NSYS-derived GOAL: `L=0` differs by 0.185628%, `L=4000` differs by 0.146892%, and `L=10000` compared to nearest Composite point `L=8000` differs by 0.189220%.

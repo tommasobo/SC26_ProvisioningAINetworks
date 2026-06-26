@@ -11,6 +11,8 @@ Usage:
         --L 1000 --G 0.04 --o 200
 """
 import argparse
+import hashlib
+import shutil
 import re
 import subprocess
 import sys
@@ -68,6 +70,23 @@ def write_tag_normalized_goal(src: Path, dst: Path) -> int:
     return len(tag_to_id)
 
 
+def bin_cache_path(goal_path: Path, normalize_tags: str, cache_dir: Path) -> Path:
+    """Return a local cache path for txt2bin output.
+
+    This intentionally uses metadata instead of hashing full GOAL contents so
+    large sweeps avoid rereading multi-GB traces at every latency point.
+    """
+    st = goal_path.stat()
+    raw = "|".join([
+        str(goal_path.resolve()),
+        str(st.st_size),
+        str(st.st_mtime_ns),
+        normalize_tags,
+    ])
+    key = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
+    return cache_dir / f"{key}.bin"
+
+
 def run_lgs(
     goal_path: Path,
     L: int,
@@ -76,25 +95,39 @@ def run_lgs(
     g: int = 5,
     comm_dep_out: Optional[Path] = None,
     normalize_tags: str = "auto",
+    bin_cache_dir: Optional[Path] = None,
 ) -> int:
     """Run LGS on a GOAL file and return runtime in ns."""
     ensure_built()
     with tempfile.TemporaryDirectory() as tmp:
-        lgs_goal = goal_path
         if normalize_tags not in {"auto", "always", "never"}:
             raise ValueError("normalize_tags must be one of: auto, always, never")
-        if normalize_tags == "always" or (
-            normalize_tags == "auto" and goal_needs_tag_normalization(goal_path)
-        ):
-            lgs_goal = Path(tmp) / "trace.normalized.goal"
-            n_tags = write_tag_normalized_goal(goal_path, lgs_goal)
-            print(f"[lgs] normalized {n_tags} distinct GOAL tags for LogGOPSim uint32 compatibility")
-
         tmp_bin = Path(tmp) / "trace.bin"
-        subprocess.run(
-            [str(TXT2BIN), "-i", str(lgs_goal), "-o", str(tmp_bin)],
-            check=True,
-        )
+        cache_path = None
+        if bin_cache_dir is not None:
+            bin_cache_dir.mkdir(parents=True, exist_ok=True)
+            cache_path = bin_cache_path(goal_path, normalize_tags, bin_cache_dir)
+        if cache_path is not None and cache_path.exists():
+            shutil.copy2(cache_path, tmp_bin)
+            print(f"[lgs] reused txt2bin cache: {cache_path}")
+        else:
+            lgs_goal = goal_path
+            if normalize_tags == "always" or (
+                normalize_tags == "auto" and goal_needs_tag_normalization(goal_path)
+            ):
+                lgs_goal = Path(tmp) / "trace.normalized.goal"
+                n_tags = write_tag_normalized_goal(goal_path, lgs_goal)
+                print(f"[lgs] normalized {n_tags} distinct GOAL tags for LogGOPSim uint32 compatibility")
+
+            subprocess.run(
+                [str(TXT2BIN), "-i", str(lgs_goal), "-o", str(tmp_bin)],
+                check=True,
+            )
+            if cache_path is not None:
+                tmp_cache = cache_path.with_suffix(".tmp")
+                shutil.copy2(tmp_bin, tmp_cache)
+                tmp_cache.replace(cache_path)
+                print(f"[lgs] wrote txt2bin cache: {cache_path}")
         cmd = [
             str(LGS_BIN),
             "-f", str(tmp_bin),
@@ -135,6 +168,8 @@ def main() -> int:
                     help="Rewrite GOAL tags to compact uint32-safe IDs before "
                          "txt2bin. Default auto only rewrites traces with tags "
                          "larger than LogGOPSim's uint32 tag field.")
+    ap.add_argument("--bin-cache-dir", type=Path, default=None,
+                    help="Optional local cache directory for txt2bin output.")
     args = ap.parse_args()
 
     if not args.goal.exists():
@@ -143,7 +178,7 @@ def main() -> int:
 
     t0 = time.perf_counter()
     rt = run_lgs(args.goal, args.L, args.G, args.o, args.g,
-                 args.comm_dep_out, args.normalize_tags)
+                 args.comm_dep_out, args.normalize_tags, args.bin_cache_dir)
     dt = time.perf_counter() - t0
     print(f"[lgs] runtime = {rt} ns ({rt / 1e6:.3f} ms) "
           f"[L={args.L} G={args.G} o={args.o}, solved in {dt:.2f}s]")
