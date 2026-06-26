@@ -12,7 +12,8 @@ Target network latency: `500000 ns`.
 | 32 | 9459.765 | 8675.038 | 9644.011 |  |
 | 64 | 9562.007 | 9292.034 | 10017.495 |  |
 | 128 | 8530.951 | 9493.223 |  |  |
-| 256 | 8809.187 | 10155.667 | 11018.048 |  |
+| 256 | 8809.187 | 10155.838 | 11018.048 |  |
+| 512 | 8824.133 | 13028.617 | 13706.084 |  |
 
 ## Availability Matrix
 
@@ -25,5 +26,6 @@ Target network latency: `500000 ns`.
 | 64 | True | True | ok | ok | missing | scratch_real_grok |
 | 128 | True | False | nonpositive_curve | ok | missing | scratch_real_grok |
 | 256 | True | False | ok | ok | missing | scratch_real_grok |
+| 512 | True | False | ok | ok | missing | scratch_real_grok |
 
 Rows N512/N1024 use packaged Composite-LP summaries only; no GOAL/LGS/Monolithic inputs are bundled for those scales.

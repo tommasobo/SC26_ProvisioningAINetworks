@@ -238,9 +238,9 @@ avoids a legacy shortcut where one global `nranks` value was accidentally reused
 for all collective motifs. The legacy behavior is still available with
 `--rank-count-mode first-row` when comparing against old scratch outputs.
 
-For Grok, the cleaned wrapper has been validated through N256 using copied
+For Grok, the cleaned wrapper has been validated through N512 using copied
 per-motif caches from the development replay outputs. N8, N16, N32, N64, N128,
-and N256 reproduce those replay Composite-LP curves exactly over
+N256, and N512 reproduce those replay Composite-LP curves exactly over
 `L=0..1e6 ns`. N4 has two usable paths: the old replay cache is a legacy
 16-rank/global-rank run, while the cleaned default regenerates 4-rank row-nranks
 motifs from the metadata.
@@ -257,7 +257,7 @@ python scripts/grok_node_scaling.py \
   --scratch-root /mnt/scratch/GrokStudy/repo \
   --extra-scratch-root /mnt/scratch/GrokStudyCodex/Traces_Compression \
   --out-dir results/revalidation/grok_node_scaling \
-  --nodes 4 8 16 32 64 128 256 \
+  --nodes 4 8 16 32 64 128 256 512 \
   --target-latency 0 \
   --target-latencies 0 4000 10000 250000 500000 1000000 \
   --no-packaged-large \
@@ -268,7 +268,8 @@ It combines hardware wall times from `collective_instances.csv`, regenerated
 Composite-LP curves under `data/revalidation/` where available, existing LGS
 curves or `stats/lgs_L*.json` points, and Monolithic-LP points only where they
 already exist. The command above intentionally excludes packaged N512/N1024
-rows and does not launch any Monolithic-LP solves. The multi-latency mode writes
+rows; with the development replay workspace available, N512 is included from
+real metadata instead. The command does not launch any Monolithic-LP solves. The multi-latency mode writes
 per-latency CSV/JSON summaries plus
 `grok_node_scaling_multi_latency.{png,pdf}`.
 
