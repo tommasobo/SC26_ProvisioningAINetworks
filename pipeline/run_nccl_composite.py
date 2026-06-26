@@ -74,6 +74,8 @@ def _rank_count(ci: pd.DataFrame, mode: str, explicit: int | None) -> int | None
 def _build_topologies(
     ri: pd.DataFrame,
     ranks_per_node: int,
+    node_map_mode: str,
+    ring_duplicate_policy: str,
 ) -> tuple[dict[str, list[RingTopology]], dict[int, RingTopology]]:
     comm_channel_topos: dict[str, list[RingTopology]] = {}
     if "commId" in ri.columns:
@@ -86,17 +88,25 @@ def _build_topologies(
             .sort_values("myRank")
         )
         nranks = int(rank_rows["myRank"].nunique())
-        node_order = list(dict.fromkeys(rank_rows["nodeId"].astype(str)))
-        node_index = {node_id: idx for idx, node_id in enumerate(node_order)}
-        rank_to_node = {
-            int(row.myRank): node_index[str(row.nodeId)]
-            for row in rank_rows.itertuples(index=False)
-        }
+        if node_map_mode == "rank-block":
+            rank_to_node = {
+                int(row.myRank): int(row.myRank) // ranks_per_node
+                for row in rank_rows.itertuples(index=False)
+            }
+        elif node_map_mode == "metadata":
+            node_order = list(dict.fromkeys(rank_rows["nodeId"].astype(str)))
+            node_index = {node_id: idx for idx, node_id in enumerate(node_order)}
+            rank_to_node = {
+                int(row.myRank): node_index[str(row.nodeId)]
+                for row in rank_rows.itertuples(index=False)
+            }
+        else:
+            raise ValueError(f"unknown node-map mode: {node_map_mode}")
         topos: list[RingTopology] = []
         for channel in sorted(ri_comm["channelId"].dropna().unique()):
             ch_ring = (
                 ri_comm[ri_comm["channelId"] == channel]
-                .drop_duplicates(subset=["myRank"], keep="first")
+                .drop_duplicates(subset=["myRank"], keep=ring_duplicate_policy)
                 .sort_values("myRank")
             )
             ring_next = {
@@ -233,6 +243,8 @@ def run_composite(args: argparse.Namespace) -> int:
     os.environ["LLAMP_NPKIT_LL"] = str(args.npkit_ll.resolve())
     if args.disable_intra_node_transfer:
         os.environ["LLAMP_NCCL_ENABLE_INTRA_NODE_TRANSFER"] = "0"
+    if args.nic_per_rank:
+        os.environ["LLAMP_NCCL_NIC_PER_RANK"] = "1"
 
     out_csv = args.out.resolve()
     out_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -253,7 +265,12 @@ def run_composite(args: argparse.Namespace) -> int:
         msg_gap=args.msg_gap,
     )
     l_points = _latency_points(args.l_min, args.l_max, args.step)
-    comm_channel_topos, default_topos = _build_topologies(ri, args.ranks_per_node)
+    comm_channel_topos, default_topos = _build_topologies(
+        ri,
+        args.ranks_per_node,
+        args.node_map_mode,
+        args.ring_duplicate_policy,
+    )
 
     r0 = ci[ci["goal_rank"] == args.program_rank].sort_values("start").copy()
     if args.max_collectives is not None:
@@ -469,6 +486,8 @@ def run_composite(args: argparse.Namespace) -> int:
         },
         "program_rank": args.program_rank,
         "ranks_per_node": args.ranks_per_node,
+        "node_map_mode": args.node_map_mode,
+        "ring_duplicate_policy": args.ring_duplicate_policy,
         "n_collectives": int(len(r0)),
         "n_streams": streams,
         "n_unique_lp_signatures": int(len(signature_rows)),
@@ -486,6 +505,7 @@ def run_composite(args: argparse.Namespace) -> int:
         "wall_time_s": elapsed,
         "peak_rss_mb": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
         "disable_intra_node_transfer": bool(args.disable_intra_node_transfer),
+        "nic_per_rank": bool(args.nic_per_rank),
     }
     summary_path = out_csv.parent / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -524,6 +544,22 @@ def main() -> int:
     parser.add_argument("--max-collectives", type=int, default=None,
                         help="Only compose the first N collectives for debugging.")
     parser.add_argument("--ranks-per-node", type=int, default=4)
+    parser.add_argument("--node-map-mode", choices=("metadata", "rank-block"),
+                        default="metadata",
+                        help=(
+                            "How ring-topology ranks are mapped to nodes. metadata uses "
+                            "nodeId from comm_ring_info.csv and is the cleaned default; "
+                            "rank-block preserves older Llama/Grok scripts that assumed "
+                            "node = rank // ranks_per_node."
+                        ))
+    parser.add_argument("--ring-duplicate-policy", choices=("first", "last"),
+                        default="first",
+                        help=(
+                            "When comm_ring_info.csv has duplicate rows for a rank/channel, "
+                            "choose the first row (cleaned default) or last row. last "
+                            "preserves older dictionary-overwrite behavior used by some "
+                            "development scripts."
+                        ))
     parser.add_argument("--G-inter", type=float, default=0.04)
     parser.add_argument("--G-intra", type=float, default=0.00333)
     parser.add_argument("--L-intra", type=float, default=350)
@@ -538,6 +574,12 @@ def main() -> int:
                         help="Ignore stream IDs and compose all rank operations as one sequence.")
     parser.add_argument("--disable-intra-node-transfer", action="store_true",
                         help="Use legacy 0-byte intra-node notifications plus calc costs in motif GOALs.")
+    parser.add_argument("--nic-per-rank", action="store_true",
+                        help=(
+                            "Use one serialized NIC queue per rank inside motif LPs. This "
+                            "preserves an older Llama bundle setting; the cleaned default "
+                            "uses the LPConverter default per-destination/channel queues."
+                        ))
     args = parser.parse_args()
 
     if args.nranks is not None and args.nranks <= 0:

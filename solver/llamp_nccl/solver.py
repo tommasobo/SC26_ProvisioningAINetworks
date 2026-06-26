@@ -441,11 +441,15 @@ def solve_collective(sig: CollectiveSignature,
         dg = gen.generate(False)
         rnm = {r: int(topo.rank_to_node[r]) for r in range(N)}
 
+        nic_per_rank_env = os.environ.get("LLAMP_NCCL_NIC_PER_RANK", "")
+        nic_per_rank = nic_per_rank_env.strip().lower() in {"1", "true", "yes"}
+
         model = LPConverter(
             dg, o=int(sig.network.o),
             rank_node_map=rnm,
             l_intra=sig.network.L_intra,
             g_intra=sig.network.G_intra,
+            nic_per_rank=nic_per_rank,
         ).convert_to_lp(verbose=False, G=sig.network.G_inter)
 
         # --- Step 3: Sweep and extract piecewise ---

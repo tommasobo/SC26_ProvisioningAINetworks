@@ -238,6 +238,28 @@ avoids a legacy shortcut where one global `nranks` value was accidentally reused
 for all collective motifs. The legacy behavior is still available with
 `--rank-count-mode first-row` when comparing against old scratch outputs.
 
+Some older packaged curves used historical motif-LP settings. The Llama7B N32
+figure bundle is reproduced with one NIC queue per rank and sequential rank-0
+composition:
+
+```bash
+/usr/bin/time -v timeout 7200 python pipeline/run_nccl_composite.py \
+  --analysis-dir data/workspaces/llama7b_n32_spcl_20260407/analysis \
+  --out data/revalidation/figures_end_to_end/llama7b_n32_composite_packaged_mode/comp/sweeps/composed_runtime.csv \
+  --cache-dir data/revalidation/figures_end_to_end/llama7b_n32_composite_packaged_mode/collective_cache \
+  --clear-cache --parallel-solve --max-workers 8 \
+  --node-map-mode rank-block --force-sequential --nic-per-rank
+```
+
+This cold-cache run completed in 19m26s on `bigmem` and reproduced
+`data/workspaces/llama7b_n32_spcl_20260407/output/comp/sweeps/composed_runtime.csv`
+within 0.0276% max relative difference. Without `--nic-per-rank`, the same
+metadata regenerates a different lower-cost motif family and is not comparable
+to the packaged paper curve.
+
+Figure-level end-to-end evidence and the commands used are summarized in
+`results/revalidation/figures_end_to_end/figure_end_to_end_summary.md`.
+
 For Grok, the cleaned wrapper has been validated through N512 using copied
 per-motif caches from the development replay outputs. N8, N16, N32, N64, N128,
 N256, and N512 reproduce those replay Composite-LP curves exactly over

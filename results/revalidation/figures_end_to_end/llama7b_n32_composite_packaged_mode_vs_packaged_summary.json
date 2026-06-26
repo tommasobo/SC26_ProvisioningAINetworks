@@ -1,0 +1,13 @@
+{
+  "actual": "data/revalidation/figures_end_to_end/llama7b_n32_composite_packaged_mode/comp/sweeps/composed_runtime.csv",
+  "expected": "data/workspaces/llama7b_n32_spcl_20260407/output/comp/sweeps/composed_runtime.csv",
+  "label": "llama7b_n32_composite_packaged_mode_vs_packaged",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 263211.2422412634,
+  "max_abs_rel_diff_pct": 0.02753006849000532,
+  "mean_abs_diff_ns": 226568.10894349855,
+  "mean_abs_rel_diff_pct": 0.010732659987884698,
+  "min_L": 0.0,
+  "n_points": 201,
+  "points": "actual"
+}
