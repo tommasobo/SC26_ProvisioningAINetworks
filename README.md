@@ -275,6 +275,64 @@ instead. The command does not launch any Monolithic-LP solves. The multi-latency
 per-latency CSV/JSON summaries plus
 `grok_node_scaling_multi_latency.{png,pdf}`.
 
+### End-to-End Grok Composite Cold Runs
+
+The large per-motif caches are intentionally not required for the artifact. To
+recreate the corrected Composite-LP curves from metadata sidecars, run the
+cold-cache commands below on the high-RAM machine. These do not require the LP
+`comm_dep.csv` sidecar; they require `collective_instances.csv`,
+`comm_ring_info.csv`, and the shipped `data/npkit/` calibration files.
+
+N64 corrected cold run:
+
+```bash
+/usr/bin/time -v timeout 7200 python pipeline/run_nccl_composite.py \
+  --analysis-dir /mnt/scratch/GrokStudy/repo/workspaces/grok/N64/analysis_new \
+  --out data/revalidation/grok_N64_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv \
+  --cache-dir data/revalidation/grok_N64_composite_row_nranks_regen/collective_cache \
+  --clear-cache --parallel-solve --max-workers 4
+```
+
+N256 corrected cold run:
+
+```bash
+/usr/bin/time -v timeout 7200 python pipeline/run_nccl_composite.py \
+  --analysis-dir /mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N256/analysis \
+  --out data/revalidation/grok_N256_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv \
+  --cache-dir data/revalidation/grok_N256_composite_row_nranks_regen/collective_cache \
+  --clear-cache --parallel-solve --max-workers 4
+```
+
+N512 corrected cold run:
+
+```bash
+/usr/bin/time -v timeout 21600 python pipeline/run_nccl_composite.py \
+  --analysis-dir /mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N512/analysis \
+  --out data/revalidation/grok_N512_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv \
+  --cache-dir data/revalidation/grok_N512_composite_row_nranks_regen/collective_cache \
+  --clear-cache --parallel-solve --max-workers 4
+```
+
+The revalidation run completed N64 in 47m13s, N256 in 31m36s, and N512 in
+2h31m43s on `bigmem`. N512 exceeds the two-hour-per-plot budget used for the
+final packaged-plot sweep, so treat it as an optional high-RAM validation run.
+
+Compare regenerated curves numerically:
+
+```bash
+python scripts/compare_csv.py \
+  --expected /mnt/scratch/GrokStudyCodex/Traces_Compression/output/grok_n512/comp/sweeps/composed_runtime.csv \
+  --actual data/revalidation/grok_N512_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv \
+  --out-dir results/revalidation/grok_N512_composite_row_nranks_regen \
+  --label grok_N512_cold_regen_vs_codex \
+  --points actual
+```
+
+N128 Monolithic-LP is intentionally not part of this cleanup pass. N64
+Monolithic-LP already took 2h27m and 184.5 GiB RSS for one latency point; N128
+would be a separate expensive run and is not needed for the final no-monolithic
+Grok scaling plot.
+
 ## Tier D: Optional Raw NSYS SQLite to GOAL
 
 This path is not needed for normal artifact reproduction. It exists to document how raw NSYS SQLite exports can be converted to GOAL plus NCCL metadata sidecars:

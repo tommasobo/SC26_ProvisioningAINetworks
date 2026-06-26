@@ -27,18 +27,18 @@ The key result is that `comm_dep.csv` is LP dependency metadata, not the NCCL me
 Packaged figure reproduction:
 
 ```bash
-/usr/bin/time -v python3 reproduce_all.py
+/usr/bin/time -v timeout 7200 python3 reproduce_all.py
 ```
 
-Result: success in 22.20 seconds wall clock with 189,364 KiB peak RSS. Outputs were written under `figures/`.
+Result on 2026-06-26: success in 22.22 seconds wall clock with 193,900 KiB peak RSS. Outputs were written under `figures/`. The command regenerated the scripted paper figure outputs for figures 1, 3, 4, 5, 6, 7, 8/9, and 10. Checksums and sizes are saved under `results/revalidation/packaged_figures/`.
 
 Packaged pipeline plus demo replay:
 
 ```bash
-/usr/bin/time -v python3 reproduce_all.py --pipeline
+/usr/bin/time -v timeout 7200 python3 reproduce_all.py --pipeline
 ```
 
-Result: success in 22.26 seconds wall clock with 190,868 KiB peak RSS after patching vendored LogGOPSim for the current GCC toolchain. The run generated `data/demo_output/lgs_points.csv` from `data/traces/demo_allreduce_16r_1MiB.goal` and then regenerated packaged figures.
+Result on 2026-06-26: success in 22.34 seconds wall clock with 191,352 KiB peak RSS. The run generated `data/demo_output/lgs_points.csv` from `data/traces/demo_allreduce_16r_1MiB.goal` and then regenerated packaged figures. No packaged figure command approached the 2-hour limit.
 
 Tests:
 

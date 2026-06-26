@@ -501,3 +501,17 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Command: `python3 scripts/grok_node_scaling.py --out-dir results/revalidation/grok_node_scaling --nodes 4 8 16 32 64 128 256 512 --target-latency 0 --target-latencies 0 4000 10000 250000 500000 1000000 --no-packaged-large --exclude-monolithic`.
 - Outputs: refreshed `grok_node_scaling_multi_latency.{png,pdf}`, per-latency plots, CSV/JSON summaries, and Markdown reports in both `new_results/` and `results/revalidation/grok_node_scaling/`.
 - Plot data sources: hardware log points from local metadata; Composite-LP from corrected row-nranks outputs, using fresh-cache outputs for N64, N256, and N512; LGS from existing local LGS CSVs and `stats/lgs_L*.json`; Monolithic-LP intentionally excluded.
+
+### 2026-06-26: Packaged Paper Figure Reproduction Sweep
+
+- User decision: do not pursue N128 Monolithic-LP because it is too expensive. Keep the repository ready for a later push, and reproduce all other paper plots where no single plot command takes more than 2 hours.
+- Command: `/usr/bin/time -v timeout 7200 python3 reproduce_all.py`.
+- Result: success; regenerated the scripted paper figure outputs for figures 1, 3, 4, 5, 6, 7, 8/9, and 10 under `figures/`.
+- Runtime: 22.22 seconds wall clock.
+- Peak memory: 193,900 KiB RSS.
+- Command: `/usr/bin/time -v timeout 7200 python3 reproduce_all.py --pipeline`.
+- Result: success; ran the demo LogGOPSim sweep on `data/traces/demo_allreduce_16r_1MiB.goal`, wrote `data/demo_output/lgs_points.csv`, and regenerated the packaged figure set.
+- Runtime: 22.34 seconds wall clock.
+- Peak memory: 191,352 KiB RSS.
+- Generated evidence: `results/revalidation/packaged_figures/reproduction_summary.md`, `results/revalidation/packaged_figures/figure_sha256.txt`, and `results/revalidation/packaged_figures/figure_sizes.csv`.
+- No packaged plot or demo-plus-plot command approached the 2-hour limit. The previously completed N512 cold Composite validation took 2h31m43s and is documented as an optional high-RAM data-level run, not part of the sub-2-hour packaged plot sweep.
