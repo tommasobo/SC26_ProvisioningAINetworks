@@ -1,0 +1,13 @@
+{
+  "actual": "/home/hpcuser/SC_Tracing/data/revalidation/fig34_mode_sweep/fig03_auto_rank6_default/comp/sweeps/composed_runtime.csv",
+  "expected": "/home/hpcuser/SC_Tracing/data/output/final_plots/data/ar_128m_16n_auto/latency_compressed_runtime.csv",
+  "label": "fig03_auto_rank6_default",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 1620806.9564800076,
+  "max_abs_rel_diff_pct": 37.004869418741606,
+  "mean_abs_diff_ns": 1509958.8422288555,
+  "mean_abs_rel_diff_pct": 10.752772199262482,
+  "min_L": 0.0,
+  "n_points": 201,
+  "points": "actual"
+}

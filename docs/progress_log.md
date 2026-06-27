@@ -576,3 +576,38 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Composite-LP command: `/usr/bin/time -v timeout 1800 python3 pipeline/run_composite_lp.py --goal /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict/output.goal --comm-dep /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/commdep_strict/comm_dep.csv --out /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/composite_strict/composed_runtime.csv --l-min 0 --l-max 8000 --step 4000 --l-intra 350 --o 200`.
 - Composite-LP result: success in 4m00.25s wall time, 3,300,036 KiB max RSS. Graph: 3,136,432 vertices, 4,176,792 edges, 8 ranks. The wrapper was fixed to copy the solver's `tmp_runtime.csv` to the requested `--out` path while preserving native solver outputs.
 - Composite-vs-LGS nearest-point comparison for the regenerated NSYS-derived GOAL: `L=0` differs by 0.185628%, `L=4000` differs by 0.146892%, and `L=10000` compared to nearest Composite point `L=8000` differs by 0.189220%.
+
+### 2026-06-27: Fresh-Clone, Extended NSYS, Fig. 5, And N128 LGS Validation
+
+- Fresh clone path: `/mnt/scratch/SC_Tracing_cleanclone_validation` at commit `64537b8`.
+- Command: `python3 scripts/check_artifact.py --skip-figure --timeout 120`.
+- Result: success in 3.73s, 103,168 KiB max RSS.
+- Command: `python3 reproduce_all.py --pipeline`.
+- Result: success in 28.55s, 353,572 KiB max RSS.
+- Command: `python3 -m venv .venv && .venv/bin/python -m pip install -q -r requirements-dev.txt && .venv/bin/python -m pytest -q`.
+- Result in clean clone: `13 passed in 7.55s`; full setup/test wall time 38.82s, 212,992 KiB max RSS.
+
+- Consolidated online vLLM driver command: `/usr/bin/time -v timeout 3600 python3 pipeline/regenerate_from_inputs.py --sqlite-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/sqlite --out-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/driver_validation --L-sidecar 4000 --G 0.04 --o 200 --lgs-latencies 0 4000`.
+- Result: success in 12m10.65s, 1,658,308 KiB max RSS. The driver produced `analysis/output.goal`, a 523,768-row `comm_dep.csv`, `lgs_runtime.csv`, and `regeneration_manifest.json`.
+- Follow-up Composite-LP command: `/usr/bin/time -v timeout 1800 python3 pipeline/run_composite_lp.py --goal /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict/output.goal --comm-dep /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/commdep_strict/comm_dep.csv --out /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/composite_strict_0_10000/composed_runtime.csv --l-min 0 --l-max 10000 --step 5000 --l-intra 350 --o 200`.
+- Result: success in 4m14.64s, 3,300,564 KiB max RSS. Nearest-point Composite-LP vs LGS over `L=0,4000,10000 ns`: max relative difference 0.185632%.
+- Code change: added `--bin-cache-dir` to `pipeline/regenerate_from_inputs.py` so sidecar generation and LGS sweeps share txt2bin cache directories.
+
+- Fig. 3/4 mode sweep: ran compatibility variants over `ar_128m_16n_ch1`, `ar_128m_16n_auto`, and `mixed_16n_ch1`.
+- Outputs: `results/revalidation/fig34_mode_sweep/`.
+- Best results: Fig. 3 1-channel max relative difference 11.438023%; Fig. 3 auto max relative difference 18.340441%; Fig. 4 mixed max relative difference 4.974985%. The tested compatibility switches do not recover bit-exact packaged microbenchmark curves.
+
+- Fig. 5 stale URL check: `pipeline/reproduce_fig5_from_nsys.sh --run-lp` initially failed immediately because `http://storage2.spcl.ethz.ch/traces/ai/llama3_3_n4/nsys/` returns HTTP 404.
+- Online replacement found: `http://storage2.spcl.ethz.ch/traces/ai/llama/Llama7B_N4_GPU16_TP1_PP1_DP16_BS32_1iter/raw_nsys/`.
+- Local Fig. 5 command: `/usr/bin/time -v timeout 7200 bash pipeline/reproduce_fig5_from_nsys.sh --skip-download --work /mnt/scratch/SC_Tracing_revalidation/fig5_llama_n4_1iter_local --run-lp`.
+- Result: completed NSYS SQLite -> GOAL, LogGOPSim `comm_dep.csv`, and Monolithic-LP in 9m29.64s, 5,123,260 KiB max RSS. The regenerated Monolithic curve differs from packaged Fig. 5 by 120.638% max relative difference and 74.217% mean relative difference.
+- Additional Fig. 5 Composite command: `/usr/bin/time -v timeout 3600 python3 pipeline/run_nccl_composite.py --analysis-dir /mnt/scratch/SC_Tracing_revalidation/fig5_llama_n4_1iter_local/analysis --out /mnt/scratch/SC_Tracing_revalidation/fig5_llama_n4_1iter_local/composite_default/composed_runtime.csv --cache-dir /mnt/scratch/SC_Tracing_revalidation/fig5_llama_n4_1iter_local/composite_default/cache --clear-cache --parallel-solve --max-workers 8 --l-min 0 --l-max 1000000 --step 5000`.
+- Result: success in 16.30s, 351,440 KiB max RSS. Default Composite differs from packaged Fig. 5 Composite by 23.787% max relative difference; `--force-sequential` warm-cache differs by 22.565% max relative difference. This suggests historical generator/model input differences, not only a Monolithic `comm_dep` issue.
+- Code change: updated the Fig. 5 helper default URL, flattened downloaded files from the current online path, and replaced exact-key comparison with interpolated numeric comparison.
+
+- Grok N128 LGS command: `TMPDIR=/mnt/scratch/SC_Tracing_revalidation/tmp /usr/bin/time -v timeout 7200 python3 pipeline/run_lgs_sweep.py --goal /mnt/scratch/GrokStudy/repo/workspaces/grok/N128/analysis/output.goal --out data/revalidation/grok_N128_lgs_regen/lgs_runtime.csv --latencies 0 4000 10000 250000 500000 1000000 --G 0.04 --o 200 --normalize-tags never --bin-cache-dir /mnt/scratch/SC_Tracing_revalidation/grok_lgs_cache`.
+- Result: success in 1h20m13s, 52,456,464 KiB max RSS. The run used a 9.2 GiB scratch txt2bin cache and produced nonzero N128 LGS runtimes: 8970.109ms at `L=0`, 8986.083ms at `L=4000`, and 11088.151ms at `L=1e6`.
+- Plot refresh command: `python3 scripts/grok_node_scaling.py --out-dir new_results --nodes 4 8 16 32 64 128 256 512 --target-latency 0 --target-latencies 0 4000 10000 250000 500000 1000000 --no-packaged-large --exclude-monolithic`.
+- Mirrored command: same as above with `--out-dir results/revalidation/grok_node_scaling`.
+- Result: both refreshed successfully in about 53s each. The N128 plot row now uses `data/revalidation/grok_N128_lgs_regen/lgs_runtime.csv` instead of the invalid all-zero scratch LGS CSV.
+- Code change: `pipeline/run_lgs_sweep.py` now streams each completed latency row to CSV immediately, so future long sweeps preserve partial results if a timeout or interruption occurs.

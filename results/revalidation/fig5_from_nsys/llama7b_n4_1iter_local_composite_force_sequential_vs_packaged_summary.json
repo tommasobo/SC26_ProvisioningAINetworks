@@ -1,0 +1,13 @@
+{
+  "actual": "/mnt/scratch/SC_Tracing_revalidation/fig5_llama_n4_1iter_local/composite_force_sequential/composed_runtime.csv",
+  "expected": "data/output/llama7b/comp_100pct/sweeps/composed_runtime.csv",
+  "label": "llama7b_n4_1iter_local_composite_force_sequential_vs_packaged",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 297695813.421757,
+  "max_abs_rel_diff_pct": 22.565261111619602,
+  "mean_abs_diff_ns": 227819344.42436925,
+  "mean_abs_rel_diff_pct": 19.706530942825985,
+  "min_L": 0.0,
+  "n_points": 201,
+  "points": "actual"
+}

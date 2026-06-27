@@ -6,12 +6,12 @@ Target network latency: `0 ns`.
 
 | node_count | HW ms | Composite-LP ms | LGS ms | Monolithic-LP ms |
 | --- | --- | --- | --- | --- |
-| 4 | 6202.184 | 6060.226 | 6125.270 |  |
+| 4 | 6202.184 | 6060.226 | 6125.226 |  |
 | 8 | 5257.040 | 4911.808 | 5085.724 |  |
 | 16 | 9961.441 | 9383.580 | 9618.172 |  |
 | 32 | 9459.765 | 8337.437 | 9497.306 |  |
 | 64 | 9562.007 | 8600.009 | 9717.271 |  |
-| 128 | 8530.951 | 8096.343 |  |  |
+| 128 | 8530.951 | 8096.343 | 8970.109 |  |
 | 256 | 8809.187 | 7498.399 | 8894.789 |  |
 | 512 | 8824.133 | 7554.210 | 8958.244 |  |
 
@@ -24,7 +24,7 @@ Target network latency: `0 ns`.
 | 16 | True | True | ok | ok | missing | scratch_real_grok |
 | 32 | True | True | ok | ok | missing | scratch_real_grok |
 | 64 | True | True | ok | ok | missing | scratch_real_grok |
-| 128 | True | False | nonpositive_curve | ok | missing | scratch_real_grok |
+| 128 | True | False | ok | ok | missing | scratch_real_grok |
 | 256 | True | False | ok | ok | missing | scratch_real_grok |
 | 512 | True | False | ok | ok | missing | scratch_real_grok |
 

@@ -246,10 +246,15 @@ def grok_row(node_count: int, args: argparse.Namespace, target_latency: float) -
         row["sidecar_size_mb"] = sidecar.stat().st_size / 1e6
     row.update(hw_reference_ms(analysis_dir))
     add_curve(row, "composite_lp", first_existing(composite_candidates), target_latency)
-    lgs_csv = first_existing([
+    lgs_candidates = [
+        ROOT / "data" / "revalidation" / f"grok_N{node_count}_lgs_regen" / "lgs_runtime.csv",
+        ROOT / "data" / "revalidation" / f"grok_N{node_count}_lgs" / "lgs_points.csv",
+    ]
+    lgs_candidates.extend(
         root / "output" / f"grok_n{node_count}" / "lgs" / "sweeps" / "lgs_runtime.csv"
         for root in roots
-    ])
+    )
+    lgs_csv = first_existing(lgs_candidates)
     if lgs_csv is None:
         for root in roots:
             candidate = lgs_curve_from_stats(

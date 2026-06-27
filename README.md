@@ -167,6 +167,7 @@ python pipeline/regenerate_from_inputs.py \
   --goal path/to/output.goal \
   --out-dir data/revalidation/workload \
   --comm-dep-mode auto \
+  --bin-cache-dir /mnt/scratch/SC_Tracing_lgs_cache \
   --lgs-latencies 0 4000 10000 \
   --monolithic-latencies 0 4000 \
   --ranks-per-node 4 \
@@ -180,6 +181,7 @@ From NSYS-exported SQLite files, use the same driver with `--sqlite-dir`; it fir
 python pipeline/regenerate_from_inputs.py \
   --sqlite-dir path/to/nsys_sqlite_dir \
   --out-dir data/revalidation/workload \
+  --bin-cache-dir /mnt/scratch/SC_Tracing_lgs_cache \
   --lgs-latencies 0 4000 \
   --monolithic-latencies 0 4000
 ```
@@ -315,8 +317,11 @@ python scripts/grok_node_scaling.py \
 ```
 
 It combines hardware wall times from `collective_instances.csv`, regenerated
-Composite-LP curves under `data/revalidation/` where available, and existing
-LGS curves or `stats/lgs_L*.json` points. The command above intentionally
+Composite-LP curves under `data/revalidation/` where available, and regenerated
+or existing LGS curves. N128 now uses
+`data/revalidation/grok_N128_lgs_regen/lgs_runtime.csv`, regenerated from the
+16 GiB GOAL in 1h20m13s with 52.5 GiB peak RSS using a scratch-backed txt2bin
+cache. The command above intentionally
 excludes packaged N512/N1024 rows and excludes Monolithic-LP points; with the
 development replay workspace available, N512 is included from real metadata
 instead. The command does not launch any Monolithic-LP solves. The multi-latency mode writes
@@ -415,6 +420,7 @@ python pipeline/run_nccl_generator.py \
 python pipeline/run_lgs.py \
   --goal /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict/output.goal \
   --L 4000 --G 0.04 --o 200 \
+  --bin-cache-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/bin_cache \
   --comm-dep-out /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/commdep_strict/comm_dep.csv
 python pipeline/run_composite_lp.py \
   --goal /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict/output.goal \
@@ -432,7 +438,12 @@ bash pipeline/reproduce_fig5_from_nsys.sh --dry-run
 bash pipeline/reproduce_fig5_from_nsys.sh --run-lp
 ```
 
-The `--run-lp` mode can take substantial time and requires Gurobi.
+The default URL is the online Llama7B N4/GPU16 one-iteration raw NSYS subtree:
+`http://storage2.spcl.ethz.ch/traces/ai/llama/Llama7B_N4_GPU16_TP1_PP1_DP16_BS32_1iter/raw_nsys/`.
+The `--run-lp` mode can take substantial time and requires Gurobi. On `bigmem`,
+the local-NSYS run completed in 9m30s with 5.1 GiB peak RSS, but did not match
+the packaged Fig. 5 Monolithic curve; see
+`results/revalidation/fig5_from_nsys/summary.md`.
 
 ## Comparing Regenerated CSVs
 
@@ -476,10 +487,12 @@ During the `clean_version` cleanup pass:
 - Packaged figures regenerated successfully from bundled CSVs.
 - Vendored LogGOPSim builds on the current GCC toolchain.
 - Real downloaded GOAL traces for Grok N4/GPU16 and vLLM N2/GPU8 replay through LogGOPSim.
-- Real Monolithic-LP regeneration succeeded for Grok N4/GPU16 and a local Llama7B N2/GPU8 trace when a valid `comm_dep` sidecar was generated.
+- Real Monolithic-LP regeneration succeeded for Grok N4/GPU16, selected local Grok N8/N16/N32/N64 high-RAM points, and a local Llama7B N2/GPU8 trace when valid `comm_dep` sidecars were available or generated.
 - Real NCCL metadata-sidecar Composite-LP regeneration succeeded for Grok through N512. Corrected row-nranks cold-cache runs are available for N64, N256, and N512; N4-N512 scaling plots use real metadata, not packaged-large rows.
+- Grok N128 LogGOPSim was regenerated from the 16 GiB GOAL for the final scaling plot. The run used `--normalize-tags never` and a scratch txt2bin cache, completed in 1h20m13s, and replaced the previous invalid all-zero N128 LGS CSV in the plot inputs.
 - Llama7B N32 Composite-LP latency and fixed-L bandwidth curves are regenerable from packaged V2 metadata sidecars; latency matches within 0.0276% max relative difference and bandwidth within 0.6335%.
-- Online vLLM Llama70B N2 NSYS reports regenerate through NSYS export, V2 GOAL generation, LGS sidecar emission, and Composite-LP; Composite-LP matches LGS within about 0.19% on sampled points.
+- Online vLLM Llama70B N2 NSYS reports regenerate through NSYS export, V2 GOAL generation, LGS sidecar emission, and Composite-LP; Composite-LP matches LGS within about 0.186% on sampled points.
+- The guarded Fig. 5 NSYS-to-GOAL-to-sidecar-to-Monolithic-LP path runs on the online/local Llama7B N4 one-iteration inputs, but the regenerated curve differs from the packaged Fig. 5 Monolithic curve by 120.64% max relative difference.
 - LGS/LP numeric comparisons were saved under `results/revalidation/`.
 - The remaining vLLM gap is the packaged vLLM8B paper curve: the available online raw trace is Llama70B N2 and does not numerically match `data/output/vllm_llama8b_128tok/`.
 

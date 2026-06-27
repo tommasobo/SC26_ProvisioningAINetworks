@@ -1,0 +1,83 @@
+[nccl-composite] solving 1 uncached signatures with 1 workers
+[INFO] Generating dependency graph for LogGP model...
+[WARNING] The number of starting vertices (48832) differs from the number of ranks (64). Connecting all starting vertices to a dummy root.
+[INFO] Rank-to-node map: 64 ranks across 16 nodes
+[INFO] Intra-node parameters: l_intra=350 ns, g_intra=0.00333 ns/byte
+[INFO] Using LogGP, o: 200
+Set parameter WLSAccessID
+Set parameter WLSSecret
+Set parameter LicenseID to value 2718569
+Academic license 2718569 - for non-commercial use only - registered to to___@inf.ethz.ch
+[INFO] Time unit: ns
+Set parameter LogToConsole to value 0
+[nccl-composite] solved 1/1 allreduce_ring_simple_134217728B_64r_8ch: 3 pieces, 81348 vars
+Set parameter WLSAccessID
+Set parameter WLSSecret
+Set parameter LicenseID to value 2718569
+Academic license 2718569 - for non-commercial use only - registered to to___@inf.ethz.ch
+Set parameter LogToConsole to value 0
+{
+  "analysis_dir": "/home/hpcuser/SC_Tracing/data/output/final_plots/data/ar_128m_16n_auto",
+  "cache_dir": "/home/hpcuser/SC_Tracing/data/revalidation/fig34_mode_sweep/fig03_auto_rank6_default/cache",
+  "collective_instances": "/home/hpcuser/SC_Tracing/data/output/final_plots/data/ar_128m_16n_auto/collective_instances.csv",
+  "comm_ring_info": "/home/hpcuser/SC_Tracing/data/output/final_plots/data/ar_128m_16n_auto/comm_ring_info.csv",
+  "disable_intra_node_transfer": false,
+  "generator_dir": "/home/hpcuser/SC_Tracing/tools/nccl_generator",
+  "l_max": 1000000,
+  "l_min": 0,
+  "lp_constrs_unique_total": 226624,
+  "lp_vars_unique_total": 81348,
+  "n_collectives": 1,
+  "n_failed_signatures": 0,
+  "n_fallback_collectives": 0,
+  "n_solved": 1,
+  "n_streams": 1,
+  "n_uncached_at_start": 1,
+  "n_unique_lp_signatures": 1,
+  "nic_per_rank": false,
+  "node_map_mode": "metadata",
+  "npkit_ll": "/home/hpcuser/SC_Tracing/data/npkit/npkit_alps_ll.json",
+  "npkit_simple": "/home/hpcuser/SC_Tracing/data/npkit/npkit_alps_simple.json",
+  "nranks_used": null,
+  "out_csv": "/home/hpcuser/SC_Tracing/data/revalidation/fig34_mode_sweep/fig03_auto_rank6_default/comp/sweeps/composed_runtime.csv",
+  "peak_rss_mb": 84.5,
+  "program_rank": 6,
+  "rank_count_mode": "row-nranks",
+  "ranks_per_node": 4,
+  "ring_duplicate_policy": "first",
+  "row_nranks_counts": {
+    "64": 1
+  },
+  "row_nranks_unique": [
+    64
+  ],
+  "step": 5000,
+  "t0_ms": 2.495774640320003,
+  "t_end_ms": 34.140410950719996,
+  "wall_time_s": 21.92291492410004
+}
+[nccl-composite] wrote /home/hpcuser/SC_Tracing/data/revalidation/fig34_mode_sweep/fig03_auto_rank6_default/comp/sweeps/composed_runtime.csv
+[nccl-composite] wrote /home/hpcuser/SC_Tracing/data/revalidation/fig34_mode_sweep/fig03_auto_rank6_default/comp/sweeps/summary.json
+	Command being timed: "timeout 7200 python3 pipeline/run_nccl_composite.py --analysis-dir /home/hpcuser/SC_Tracing/data/output/final_plots/data/ar_128m_16n_auto --out /home/hpcuser/SC_Tracing/data/revalidation/fig34_mode_sweep/fig03_auto_rank6_default/comp/sweeps/composed_runtime.csv --cache-dir /home/hpcuser/SC_Tracing/data/revalidation/fig34_mode_sweep/fig03_auto_rank6_default/cache --clear-cache --parallel-solve --max-workers 4 --program-rank 6"
+	User time (seconds): 33.93
+	System time (seconds): 1.05
+	Percent of CPU this job got: 156%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:22.36
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 564656
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 309805
+	Voluntary context switches: 1509
+	Involuntary context switches: 106
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 23712
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

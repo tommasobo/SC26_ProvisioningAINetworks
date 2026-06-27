@@ -1,0 +1,15 @@
+{
+  "actual": "/home/hpcuser/SC_Tracing/data/revalidation/fig34_mode_sweep/fig04_mixed_rank_block/comp/sweeps/composed_runtime.csv",
+  "expected": "/home/hpcuser/SC_Tracing/data/output/final_plots/data/mixed_16n_ch1/latency_full_runtime.csv",
+  "label": "fig04_mixed_rank_block",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 18583012.546888232,
+  "max_abs_rel_diff_pct": 5.131940641631791,
+  "mean_abs_diff_ns": 14260425.99467012,
+  "mean_abs_rel_diff_pct": 4.237962896638077,
+  "min_L": 0.0,
+  "n_points": 201,
+  "points": "actual"
+}
+[compare-csv] wrote /home/hpcuser/SC_Tracing/results/revalidation/fig34_mode_sweep/fig04_mixed_rank_block/fig04_mixed_rank_block_detail.csv
+[compare-csv] wrote /home/hpcuser/SC_Tracing/results/revalidation/fig34_mode_sweep/fig04_mixed_rank_block/fig04_mixed_rank_block_summary.json

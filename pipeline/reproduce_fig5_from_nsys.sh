@@ -2,7 +2,7 @@
 # Optional reproduction of paper Figure 5 starting from raw nsys captures.
 #
 # Stages:
-#   1. Download 4 nsys-rep files for Llama 3.3 @ 16 GPUs from A2.
+#   1. Download 4 nsys-rep files for Llama7B N4/GPU16 from the trace server.
 #   2. nsys export --type=sqlite   (needs NVIDIA Nsight Systems)
 #   3. tools/nccl_generator        (SQLite -> output.goal + metadata sidecars)
 #   4. patched LogGOPSim           (GOAL -> comm_dep.csv)
@@ -26,7 +26,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 
 WORK="${WORK:-$ROOT/tier_c_fig5}"
-A2_NSYS="${A2_NSYS:-http://storage2.spcl.ethz.ch/traces/ai/llama3_3_n4/nsys/}"
+A2_NSYS="${A2_NSYS:-http://storage2.spcl.ethz.ch/traces/ai/llama/Llama7B_N4_GPU16_TP1_PP1_DP16_BS32_1iter/raw_nsys/}"
 RUN_LP=0
 DRY_RUN=0
 SKIP_DOWNLOAD=0
@@ -41,12 +41,12 @@ Options:
                      the script stops after GOAL generation.
   --skip-download    Use existing files under WORK/nsys instead of running wget.
   --work DIR         Working directory (default: \$WORK or $ROOT/tier_c_fig5).
-  --a2-nsys URL      A2 nsys URL (default: $A2_NSYS).
+  --a2-nsys URL      nsys URL (default: $A2_NSYS).
   -h, --help         Show this help.
 
 This script is intentionally not part of the default local reproduction path.
-It downloads only the selected Fig. 5 nsys subtree, never the full A2 archive,
-and requires --run-lp before launching the expensive Gurobi LP stage.
+It downloads only the selected Fig. 5 nsys subtree, never the full trace
+archive, and requires --run-lp before launching the expensive Gurobi LP stage.
 EOF
 }
 
@@ -113,7 +113,7 @@ print_plan() {
     cat <<EOF
 Tier C plan:
   work directory : $WORK
-  A2 nsys URL    : $A2_NSYS
+  nsys URL       : $A2_NSYS
   skip download  : $SKIP_DOWNLOAD
   run LP         : $RUN_LP
 
@@ -173,7 +173,13 @@ mkdir -p "$WORK"/{nsys,sqlite,analysis,out}
 
 echo "=== [1/5] Prepare nsys-rep files ==="
 if [ "$SKIP_DOWNLOAD" -eq 0 ]; then
-    wget -nc -r -np -nH --cut-dirs=4 -A '*.nsys-rep' -P "$WORK/nsys" "$A2_NSYS"
+    wget -nc -r -np -nH --cut-dirs=5 -A '*.nsys-rep' -P "$WORK/nsys" "$A2_NSYS"
+    while IFS= read -r rep; do
+        flat="$WORK/nsys/$(basename "$rep")"
+        if [ "$rep" != "$flat" ] && [ ! -e "$flat" ]; then
+            ln -s "$rep" "$flat"
+        fi
+    done < <(find "$WORK/nsys" -mindepth 2 -type f -name '*.nsys-rep')
 else
     echo "  [skip] --skip-download set; using existing files under $WORK/nsys"
 fi
@@ -232,22 +238,49 @@ SHIPPED="$ROOT/data/output/llama7b/partial_100pct/sweeps/full_runtime.csv"
 MY="$WORK/out/full_runtime.csv"
 
 python3 - <<PY
-import pandas as pd, sys
+import json
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import sys
+
 shipped = pd.read_csv("$SHIPPED")
 mine    = pd.read_csv("$MY")
-merged  = shipped.merge(mine, on="L", suffixes=("_shipped", "_mine"))
-diff    = (merged["runtime_shipped"] - merged["runtime_mine"]).abs()
-rel     = diff / merged["runtime_shipped"]
-print(f"{'L [ns]':<12} {'shipped':<14} {'mine':<14} {'abs diff':<14} {'rel':>7}")
-for _, r in merged.iterrows():
-    print(f"{int(r['L']):<12} {r['runtime_shipped']:<14.1f} "
-          f"{r['runtime_mine']:<14.1f} "
-          f"{abs(r['runtime_shipped']-r['runtime_mine']):<14.3f} "
-          f"{rel[_]*100:>6.3f}%")
-if (rel.max() < 1e-3):
+shipped = shipped.sort_values("L")
+mine = mine.sort_values("L")
+actual = mine[(mine["L"] >= shipped["L"].min()) & (mine["L"] <= shipped["L"].max())].copy()
+actual["runtime_shipped_interp"] = np.interp(actual["L"], shipped["L"], shipped["runtime"])
+actual["abs_diff_ns"] = (actual["runtime_shipped_interp"] - actual["runtime"]).abs()
+actual["rel_diff"] = actual["abs_diff_ns"] / actual["runtime_shipped_interp"].abs()
+
+comparison_dir = Path("$WORK/out/comparison")
+comparison_dir.mkdir(parents=True, exist_ok=True)
+detail_path = comparison_dir / "fig5_monolithic_vs_shipped_detail.csv"
+summary_path = comparison_dir / "fig5_monolithic_vs_shipped_summary.json"
+actual.to_csv(detail_path, index=False)
+
+summary = {
+    "expected": "$SHIPPED",
+    "actual": "$MY",
+    "n_points": int(len(actual)),
+    "min_L": float(actual["L"].min()) if len(actual) else None,
+    "max_L": float(actual["L"].max()) if len(actual) else None,
+    "max_abs_diff_ns": float(actual["abs_diff_ns"].max()) if len(actual) else None,
+    "mean_abs_diff_ns": float(actual["abs_diff_ns"].mean()) if len(actual) else None,
+    "max_abs_rel_diff_pct": float(actual["rel_diff"].max() * 100.0) if len(actual) else None,
+    "mean_abs_rel_diff_pct": float(actual["rel_diff"].mean() * 100.0) if len(actual) else None,
+    "detail_csv": str(detail_path),
+}
+summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+
+print(json.dumps(summary, indent=2))
+print(f"comparison detail: {detail_path}")
+print(f"comparison summary: {summary_path}")
+if len(actual) and actual["rel_diff"].max() < 1e-3:
     print("\\nPASS: regenerated CSV matches shipped within 0.1%.")
     sys.exit(0)
-print("\\nWARN: max relative error", f"{rel.max()*100:.2f}%")
+print("\\nWARN: regenerated CSV differs from shipped by more than 0.1%.")
 sys.exit(1)
 PY
 

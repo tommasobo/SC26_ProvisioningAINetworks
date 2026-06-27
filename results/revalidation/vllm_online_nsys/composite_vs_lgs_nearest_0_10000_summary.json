@@ -1,0 +1,31 @@
+{
+  "comparison": "vllm_online_nsys_composite_0_10000_vs_lgs_nearest",
+  "rows": [
+    {
+      "lgs_L_ns": 0.0,
+      "composite_L_ns": -0.4340026474001206,
+      "lgs_runtime_ns": 30041022281.0,
+      "composite_runtime_ns": 29985256478.81289,
+      "abs_diff_ns": -55765802.1871109,
+      "rel_diff": 0.0018563217211945884
+    },
+    {
+      "lgs_L_ns": 4000.0,
+      "composite_L_ns": 4999.5659973526,
+      "lgs_runtime_ns": 30064263935.0,
+      "composite_runtime_ns": 30029777468.653965,
+      "abs_diff_ns": -34486466.346035,
+      "rel_diff": 0.0011470916574108038
+    },
+    {
+      "lgs_L_ns": 10000.0,
+      "composite_L_ns": 10000.0,
+      "lgs_runtime_ns": 30116627049.0,
+      "composite_runtime_ns": 30079873072.324722,
+      "abs_diff_ns": -36753976.67527771,
+      "rel_diff": 0.0012203882133108295
+    }
+  ],
+  "max_rel_diff": 0.0018563217211945884,
+  "max_abs_diff_ns": 55765802.1871109
+}

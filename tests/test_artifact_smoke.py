@@ -90,7 +90,7 @@ def test_tier_c_wrappers_have_safe_dry_runs(tmp_path):
         "--dry-run",
         "--allow-tag-match",
     )
-    run_cmd(
+    regen_result = run_cmd(
         sys.executable,
         "pipeline/regenerate_from_inputs.py",
         "--goal",
@@ -105,8 +105,11 @@ def test_tier_c_wrappers_have_safe_dry_runs(tmp_path):
         "--monolithic-latencies",
         "0",
         "4000",
+        "--bin-cache-dir",
+        tmp_path / "bin_cache",
         "--dry-run",
     )
+    assert '"bin_cache_dir":' in regen_result.stdout
 
     sqlite_dir = tmp_path / "sqlite"
     sqlite_dir.mkdir()

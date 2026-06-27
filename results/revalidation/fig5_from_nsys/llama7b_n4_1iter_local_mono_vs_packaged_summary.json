@@ -1,0 +1,13 @@
+{
+  "actual": "/mnt/scratch/SC_Tracing_revalidation/fig5_llama_n4_1iter_local/out/full_runtime.csv",
+  "expected": "data/output/llama7b/partial_100pct/sweeps/full_runtime.csv",
+  "label": "llama7b_n4_1iter_local_mono_vs_packaged",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 1900034584.1852877,
+  "max_abs_rel_diff_pct": 120.6383216954824,
+  "mean_abs_diff_ns": 958642209.5663425,
+  "mean_abs_rel_diff_pct": 74.21660753979762,
+  "min_L": 31855.926000099164,
+  "n_points": 21,
+  "points": "actual"
+}

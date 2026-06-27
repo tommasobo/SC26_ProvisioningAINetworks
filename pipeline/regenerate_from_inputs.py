@@ -123,6 +123,9 @@ def parse_args() -> argparse.Namespace:
                     help="Override NPKit LL calibration JSON for SQLite input.")
     ap.add_argument("--generator-parallel", action="store_true",
                     help="Forward --parallel to run_nccl_generator.py.")
+    ap.add_argument("--bin-cache-dir", type=Path, default=None,
+                    help="Optional local txt2bin cache directory forwarded to "
+                         "LogGOPSim sidecar generation and LGS sweeps.")
     ap.add_argument("--lgs-latencies", nargs="+", type=int, default=None,
                     help="If set, run a LogGOPSim latency sweep at these L values.")
     ap.add_argument("--monolithic-latencies", nargs="+", type=float, default=None,
@@ -173,6 +176,7 @@ def main() -> int:
 
     if not args.dry_run:
         args.out_dir.mkdir(parents=True, exist_ok=True)
+    bin_cache_dir = args.bin_cache_dir.resolve() if args.bin_cache_dir is not None else None
 
     try:
         if args.sqlite_dir is not None:
@@ -226,6 +230,8 @@ def main() -> int:
                 "--g", str(args.g),
                 "--comm-dep-out", str(comm_dep),
             ]
+            if bin_cache_dir is not None:
+                cmd += ["--bin-cache-dir", str(bin_cache_dir)]
             try:
                 commands.append(run_cmd(cmd, dry_run=args.dry_run, cwd=ROOT))
                 if not args.dry_run:
@@ -262,6 +268,8 @@ def main() -> int:
                 "--o", str(args.o),
                 "--g", str(args.g),
             ]
+            if bin_cache_dir is not None:
+                cmd += ["--bin-cache-dir", str(bin_cache_dir)]
             commands.append(run_cmd(cmd, dry_run=args.dry_run, cwd=ROOT))
             outputs["lgs_runtime"] = file_info(lgs_out)
 
@@ -318,6 +326,7 @@ def main() -> int:
             "comm_dep_mode": args.comm_dep_mode,
             "resolved_comm_dep_mode": mode,
             "allow_goal_fallback": args.allow_goal_fallback,
+            "bin_cache_dir": str(bin_cache_dir) if bin_cache_dir is not None else None,
             "commands": commands,
             "outputs": outputs,
         }

@@ -12,7 +12,8 @@ Key results:
 - Generated metadata: 81,992 `collective_instances.csv` rows and 81,992 `goal_label_ranges.csv` rows.
 - LogGOPSim sweep: 7m40.00s wall time, 516,612 KiB max RSS.
 - `comm_dep.csv`: 523,768 rows, emitted by patched LogGOPSim in 2m26.68s.
-- Composite-LP: 4m00.25s wall time, 3,300,036 KiB max RSS, 3,136,432 vertices, 4,176,792 edges.
-- Composite-LP vs LGS on nearest sampled points: max relative difference 0.189220%.
+- Composite-LP short sweep: 4m00.25s wall time, 3,300,036 KiB max RSS, 3,136,432 vertices, 4,176,792 edges.
+- Composite-LP extended sweep (`L=0..10000 ns`): 4m14.64s wall time, 3,300,564 KiB max RSS.
+- Composite-LP vs LGS on nearest sampled points over `L=0,4000,10000 ns`: max relative difference 0.185632%.
 
 This validates the online Llama70B N2 path. It does not reproduce the packaged vLLM8B paper curve under `data/output/vllm_llama8b_128tok/`; the regenerated online trace gives about 30.0s runtime, the public prebuilt Llama70B GOAL gives 261.198ms, and the packaged vLLM8B curve is about 3.03s at `L=0`.

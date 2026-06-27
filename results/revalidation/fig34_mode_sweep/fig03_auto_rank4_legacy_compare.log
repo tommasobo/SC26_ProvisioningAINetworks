@@ -1,0 +1,15 @@
+{
+  "actual": "/home/hpcuser/SC_Tracing/data/revalidation/fig34_mode_sweep/fig03_auto_rank4_legacy/comp/sweeps/composed_runtime.csv",
+  "expected": "/home/hpcuser/SC_Tracing/data/output/final_plots/data/ar_128m_16n_auto/latency_compressed_runtime.csv",
+  "label": "fig03_auto_rank4_legacy",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 1413927.8707200177,
+  "max_abs_rel_diff_pct": 18.389828416419714,
+  "mean_abs_diff_ns": 1321964.5313114568,
+  "mean_abs_rel_diff_pct": 8.467490691610493,
+  "min_L": 0.0,
+  "n_points": 201,
+  "points": "actual"
+}
+[compare-csv] wrote /home/hpcuser/SC_Tracing/results/revalidation/fig34_mode_sweep/fig03_auto_rank4_legacy/fig03_auto_rank4_legacy_detail.csv
+[compare-csv] wrote /home/hpcuser/SC_Tracing/results/revalidation/fig34_mode_sweep/fig03_auto_rank4_legacy/fig03_auto_rank4_legacy_summary.json

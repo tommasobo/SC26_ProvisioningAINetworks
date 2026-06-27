@@ -39,37 +39,44 @@ def main() -> int:
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
 
-    rows = []
-    for latency in args.latencies:
-        t0 = time.perf_counter()
-        runtime_ns = run_lgs(
-            args.goal,
-            latency,
-            args.G,
-            args.o,
-            args.g,
-            normalize_tags=args.normalize_tags,
-            bin_cache_dir=args.bin_cache_dir,
-        )
-        elapsed_s = time.perf_counter() - t0
-        rows.append({
-            "L_ns": latency,
-            "runtime_ns": runtime_ns,
-            "runtime_ms": runtime_ns / 1e6,
-            "elapsed_s": elapsed_s,
-            "G_ns_per_byte": args.G,
-            "o_ns": args.o,
-            "g_ns": args.g,
-        })
-        print(
-            f"[lgs-sweep] L={latency} ns runtime={runtime_ns} ns "
-            f"({runtime_ns / 1e6:.3f} ms), elapsed={elapsed_s:.2f}s"
-        )
-
+    fieldnames = [
+        "L_ns",
+        "runtime_ns",
+        "runtime_ms",
+        "elapsed_s",
+        "G_ns_per_byte",
+        "o_ns",
+        "g_ns",
+    ]
     with args.out.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=rows[0].keys())
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(rows)
+        for latency in args.latencies:
+            t0 = time.perf_counter()
+            runtime_ns = run_lgs(
+                args.goal,
+                latency,
+                args.G,
+                args.o,
+                args.g,
+                normalize_tags=args.normalize_tags,
+                bin_cache_dir=args.bin_cache_dir,
+            )
+            elapsed_s = time.perf_counter() - t0
+            writer.writerow({
+                "L_ns": latency,
+                "runtime_ns": runtime_ns,
+                "runtime_ms": runtime_ns / 1e6,
+                "elapsed_s": elapsed_s,
+                "G_ns_per_byte": args.G,
+                "o_ns": args.o,
+                "g_ns": args.g,
+            })
+            f.flush()
+            print(
+                f"[lgs-sweep] L={latency} ns runtime={runtime_ns} ns "
+                f"({runtime_ns / 1e6:.3f} ms), elapsed={elapsed_s:.2f}s"
+            )
 
     print(f"[lgs-sweep] wrote {args.out}")
     return 0
