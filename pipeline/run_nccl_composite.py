@@ -228,6 +228,33 @@ def _write_curve(path: Path, l_points: list[int], runtimes: list[float]) -> None
             writer.writerow({"L": latency, "runtime": runtime})
 
 
+def _overlap_stats(df: pd.DataFrame) -> tuple[float, int]:
+    """Return total overlap duration and max concurrent collectives."""
+    if "start" not in df.columns or "end" not in df.columns or df.empty:
+        return 0.0, 0
+    events: list[tuple[float, int]] = []
+    for row in df.itertuples(index=False):
+        start = float(getattr(row, "start"))
+        end = float(getattr(row, "end"))
+        if end <= start:
+            continue
+        events.append((start, 1))
+        events.append((end, -1))
+    events.sort(key=lambda item: (item[0], item[1]))
+
+    active = 0
+    max_active = 0
+    overlap_ns = 0.0
+    prev_t: float | None = None
+    for timestamp, delta in events:
+        if prev_t is not None and active > 1:
+            overlap_ns += max(0.0, timestamp - prev_t)
+        active += delta
+        max_active = max(max_active, active)
+        prev_t = timestamp
+    return overlap_ns, max_active
+
+
 def run_composite(args: argparse.Namespace) -> int:
     analysis_dir = args.analysis_dir.resolve()
     ci_path = analysis_dir / "collective_instances.csv"
@@ -378,7 +405,13 @@ def run_composite(args: argparse.Namespace) -> int:
         )
 
     streams = int(r0["stream"].nunique()) if "stream" in r0.columns else 1
-    if streams > 1 and not args.force_sequential:
+    overlap_ns, max_active_collectives = _overlap_stats(r0)
+    use_parallel_streams = (
+        streams > 1
+        and not args.force_sequential
+        and (overlap_ns > 0 or args.force_parallel_streams)
+    )
+    if use_parallel_streams:
         stream_ops: dict[str, list[ProgramOp]] = {}
         for stream_id in r0["stream"].dropna().unique():
             sr = r0[r0["stream"] == stream_id].sort_values("start")
@@ -490,6 +523,10 @@ def run_composite(args: argparse.Namespace) -> int:
         "ring_duplicate_policy": args.ring_duplicate_policy,
         "n_collectives": int(len(r0)),
         "n_streams": streams,
+        "stream_overlap_ns": float(overlap_ns),
+        "max_active_collectives": int(max_active_collectives),
+        "used_parallel_stream_composition": bool(use_parallel_streams),
+        "force_parallel_streams": bool(args.force_parallel_streams),
         "n_unique_lp_signatures": int(len(signature_rows)),
         "n_uncached_at_start": int(len(unique_uncached)),
         "n_solved": int(solved),
@@ -572,6 +609,14 @@ def main() -> int:
     parser.add_argument("--max-workers", type=int, default=min(8, os.cpu_count() or 1))
     parser.add_argument("--force-sequential", action="store_true",
                         help="Ignore stream IDs and compose all rank operations as one sequence.")
+    parser.add_argument("--force-parallel-streams", action="store_true",
+                        help=(
+                            "Compose one timeline per stream whenever multiple stream IDs "
+                            "are present, even if their timestamp intervals do not overlap. "
+                            "This preserves the earlier cleaned-wrapper behavior for "
+                            "diagnostics; the default only uses parallel stream composition "
+                            "when collectives actually overlap."
+                        ))
     parser.add_argument("--disable-intra-node-transfer", action="store_true",
                         help="Use legacy 0-byte intra-node notifications plus calc costs in motif GOALs.")
     parser.add_argument("--nic-per-rank", action="store_true",

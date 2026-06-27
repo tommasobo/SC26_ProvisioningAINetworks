@@ -248,6 +248,12 @@ avoids a legacy shortcut where one global `nranks` value was accidentally reused
 for all collective motifs. The legacy behavior is still available with
 `--rank-count-mode first-row` when comparing against old scratch outputs.
 
+If a trace has multiple stream IDs, the wrapper now checks whether collective
+time intervals actually overlap before composing per-stream timelines. Multiple
+stream IDs without overlap are composed as one sequential rank timeline. Use
+`--force-parallel-streams` only for diagnostics that intentionally preserve the
+earlier cleaned-wrapper behavior.
+
 Some older packaged curves used historical motif-LP settings. The Llama7B N32
 figure bundle is reproduced with one NIC queue per rank and sequential rank-0
 composition:

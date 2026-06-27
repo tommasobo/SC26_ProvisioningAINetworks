@@ -1,0 +1,13 @@
+{
+  "actual": "results/revalidation/fig5_from_nsys/composite_historical_mode/composed_runtime.csv",
+  "expected": "/mnt/scratch/LLAMA/Traces_Compression/workspaces/llama7b_n4_spcl_20260407/output/comp/sweeps/composed_runtime.csv",
+  "label": "historical_mode_vs_old_dev",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 788011.0,
+  "max_abs_rel_diff_pct": 0.06364155029450978,
+  "mean_abs_diff_ns": 217222.78965175865,
+  "mean_abs_rel_diff_pct": 0.018858429347078393,
+  "min_L": 0.0,
+  "n_points": 201,
+  "points": "actual"
+}

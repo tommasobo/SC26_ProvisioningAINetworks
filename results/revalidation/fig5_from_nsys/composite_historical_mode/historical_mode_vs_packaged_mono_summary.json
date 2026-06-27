@@ -1,0 +1,13 @@
+{
+  "actual": "results/revalidation/fig5_from_nsys/composite_historical_mode/composed_runtime.csv",
+  "expected": "data/output/llama7b/partial_100pct/sweeps/full_runtime.csv",
+  "label": "historical_mode_vs_packaged_mono",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 213090195.1348102,
+  "max_abs_rel_diff_pct": 13.52967136745521,
+  "mean_abs_diff_ns": 103445748.41735396,
+  "mean_abs_rel_diff_pct": 8.240656711820883,
+  "min_L": 0.0,
+  "n_points": 201,
+  "points": "actual"
+}

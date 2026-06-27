@@ -402,7 +402,7 @@ Fresh-cache N512 result: success, 16/16 uncached signatures solved, no failed si
 | Llama7B | N2/GPU8 | Local scratch GOAL at `/mnt/scratch/llamp_eval/workspaces/llama7b_n2_gpu8/v2_goal_sidecars/output.goal` | LGS sidecar 656,012 rows; GOAL fallback exact | Works | Works | Requires full workspace orchestration; wrapper validates sidecar | LGS vs existing scratch max rel diff 1.831%; LP vs existing micro max rel diff 3.208% | LGS sweep 44.98s, 639 MiB RSS; LP 3m45s, 4.39 GiB RSS | Good high-RAM validation from existing intermediate data. |
 | vLLM Llama70B public GOAL | N2/GPU8 | Released GOAL downloaded to `data/external/vllm_llama70b_N2/` | LGS sidecar empty; GOAL fallback pairs all ops but is cyclic | Works | Blocked | Fails early for empty sidecar; cyclic with fallback sidecar | Re-ran public-GOAL LGS exactly: 261.198 ms at `L=0/4000/10000`; LP cannot be trusted | LGS sidecar attempt 11.35s; fallback 10.69s; LP failure after 1m07s, 1.87 GiB RSS | Public GOAL text alone is missing reliable match/dependency metadata for LP. |
 | vLLM Llama70B online NSYS | N2/GPU8 | Online `nsys_reports/` downloaded from SPCL, exported to SQLite, converted to GOAL/metadata under `/mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict` | Patched LGS emits 523,768-row sidecar | Works | Not attempted | Works on regenerated GOAL plus sidecar | Composite-LP vs LGS within 0.185632% over sampled nearest points; regenerated trace does not match packaged vLLM8B paper CSV | NSYS export 42s, generator 4m09s/1.66 GiB, consolidated driver 12m10s/1.66 GiB, sidecar 2m27s/525 MiB, Composite 4m15s/3.30 GiB | Validates raw online Llama70B path, not the packaged vLLM8B figure. |
-| Llama7B Fig. 5 raw/SQLite path | N4/GPU16 | Online/local one-iteration raw NSYS subtree `Llama7B_N4_GPU16_TP1_PP1_DP16_BS32_1iter/raw_nsys/` | Patched LGS emits a 16 MiB LP sidecar | Helper path works | Works for full sweep | Metadata Composite-LP works | Does not match packaged Fig. 5: Monolithic max rel 120.638%; Composite default max rel 23.787%; Composite force-sequential max rel 22.565% | Helper 9m29s, 5.1 GiB RSS; Composite default 16.30s, 351 MiB RSS | The end-to-end mechanics are validated, but the exact historical Fig. 5 input/model assumptions are still different. |
+| Llama7B Fig. 5 raw/SQLite path | N4/GPU16 | Online/local one-iteration raw NSYS subtree `Llama7B_N4_GPU16_TP1_PP1_DP16_BS32_1iter/raw_nsys/` | Patched LGS emits a 16 MiB LP sidecar | Helper path works | Works for full sweep | Metadata Composite-LP works; historical mode reproduces old development curve | Monolithic vs packaged max rel 120.638%; Composite default vs packaged max rel 23.787%; historical Composite vs old development max rel 0.063642%; historical Composite vs packaged max rel 15.952795% | Helper 9m29s, 5.1 GiB RSS; Composite default 16.30s, 351 MiB RSS; historical warm-cache 2.27s, 90 MiB RSS | End-to-end mechanics and the recovered old Composite path are validated. The shipped Fig. 5 CSV still has an unrecovered high-latency slope assumption. |
 | Grok 314B | 4096 GPUs | Packaged outputs only | Not searched as a runnable target | Skipped | Skipped | Skipped | Packaged figure path only | Not run | Intentionally too expensive for cleanup. |
 
 ## Grok Node-Scaling Comparison
@@ -697,9 +697,24 @@ Fig. 5 raw/SQLite path:
   --cache-dir /mnt/scratch/SC_Tracing_revalidation/fig5_llama_n4_1iter_local/composite_default/cache \
   --clear-cache --parallel-solve --max-workers 8 \
   --l-min 0 --l-max 1000000 --step 5000
+
+/usr/bin/time -v timeout 1200 python3 pipeline/run_nccl_composite.py \
+  --analysis-dir /mnt/scratch/SC_Tracing_revalidation/fig5_llama_n4_1iter_local/analysis \
+  --out results/revalidation/fig5_from_nsys/composite_historical_mode/composed_runtime.csv \
+  --cache-dir /mnt/scratch/SC_Tracing_revalidation/fig5_llama_n4_1iter_local/composite_nicperrank_20260627_103906/cache \
+  --generator-dir /mnt/scratch/LLAMA/Traces_Compression/tools/nccl_generator_v2_hwfix \
+  --npkit-simple /mnt/scratch/LLAMA/Traces_Compression/reference_bundle/npkit_results/simple_1ch/npkit_data_summary_Simple_alps.json \
+  --npkit-ll /mnt/scratch/LLAMA/Traces_Compression/reference_bundle/npkit_results/ll_1ch/npkit_data_summary_LL_alps.json \
+  --node-map-mode rank-block --ring-duplicate-policy last \
+  --nic-per-rank --parallel-solve --max-workers 8 \
+  --l-min 0 --l-max 1000000 --step 5000
 ```
 
-Result: the helper completed NSYS SQLite to GOAL, LogGOPSim `comm_dep.csv`, and Monolithic-LP in 9m29.64s with 5,123,260 KiB max RSS. The regenerated Monolithic curve differs from packaged Fig. 5 by 120.638% max relative difference. The metadata Composite rerun completed in 16.30s with 351,440 KiB max RSS and differs from packaged Composite by 23.787% max relative difference; the warm-cache `--force-sequential` variant differs by 22.565%. Details are in `results/revalidation/fig5_from_nsys/summary.md`.
+Result: the helper completed NSYS SQLite to GOAL, LogGOPSim `comm_dep.csv`, and Monolithic-LP in 9m29.64s with 5,123,260 KiB max RSS. The regenerated Monolithic curve differs from packaged Fig. 5 by 120.638% max relative difference. The metadata Composite default rerun completed in 16.30s with 351,440 KiB max RSS and differs from packaged Composite by 23.787% max relative difference.
+
+The root-cause follow-up recovered the old development Composite path. The old script used `nic_per_rank=True` in motif LPs and sequential rank-0 composition because the trace has three stream IDs but no overlapping collective intervals. `pipeline/run_nccl_composite.py` now computes actual stream overlap before selecting parallel stream composition. With `--nic-per-rank`, `--node-map-mode rank-block`, and `--ring-duplicate-policy last`, the cleaned wrapper writes `stream_overlap_ns=0`, `max_active_collectives=1`, and `used_parallel_stream_composition=false`; its output matches `/mnt/scratch/LLAMA/Traces_Compression/workspaces/llama7b_n4_spcl_20260407/output/comp/sweeps/composed_runtime.csv` within 0.063642% max relative difference.
+
+This still does not fully reproduce the shipped Fig. 5 CSV: historical mode gives 841.387 ms at `L=0` and 1361.894 ms at `L=1e6`, while packaged Composite gives 841.780 ms and 1620.392 ms. The remaining mismatch is a steeper packaged high-latency slope that is not explained by `comm_dep`, raw NSYS regeneration, copied cache replay, or the recovered old Composite code path. Details are in `results/revalidation/fig5_from_nsys/summary.md`.
 
 ## Development Repository Inspection
 

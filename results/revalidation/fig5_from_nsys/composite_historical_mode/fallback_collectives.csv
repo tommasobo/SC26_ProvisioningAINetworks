@@ -1,0 +1,7 @@
+collective,reason,data_size,algo,proto
+allreduce,tiny,8,tree,ll
+allreduce,tiny,8,tree,ll
+allreduce,tiny,4,tree,ll
+allreduce,tiny,4,tree,ll
+allreduce,tiny,4,tree,ll
+allgather,tiny,96,ring,ll
