@@ -293,6 +293,8 @@ documented as historical-driver/model provenance, not a cached-data shortcut.
 
 Figure-level end-to-end evidence and the commands used are summarized in
 `results/revalidation/figures_end_to_end/figure_end_to_end_summary.md`.
+For a concise per-figure status table, including which figures are plot-only
+versus data/model regenerated, see `docs/figure_reproduction_status.md`.
 
 For Grok, the cleaned wrapper has been validated through N512 using copied
 per-motif caches from the development replay outputs. N8, N16, N32, N64, N128,
