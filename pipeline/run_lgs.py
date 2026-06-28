@@ -96,10 +96,16 @@ def run_lgs(
     comm_dep_out: Optional[Path] = None,
     normalize_tags: str = "auto",
     bin_cache_dir: Optional[Path] = None,
+    tmp_dir: Optional[Path] = None,
 ) -> int:
     """Run LGS on a GOAL file and return runtime in ns."""
     ensure_built()
-    with tempfile.TemporaryDirectory() as tmp:
+    temp_parent = tmp_dir
+    if temp_parent is None and bin_cache_dir is not None:
+        temp_parent = bin_cache_dir.parent / "_tmp"
+    if temp_parent is not None:
+        temp_parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=temp_parent) as tmp:
         if normalize_tags not in {"auto", "always", "never"}:
             raise ValueError("normalize_tags must be one of: auto, always, never")
         tmp_bin = Path(tmp) / "trace.bin"
@@ -170,6 +176,10 @@ def main() -> int:
                          "larger than LogGOPSim's uint32 tag field.")
     ap.add_argument("--bin-cache-dir", type=Path, default=None,
                     help="Optional local cache directory for txt2bin output.")
+    ap.add_argument("--tmp-dir", type=Path, default=None,
+                    help="Directory for large temporary txt2bin files. "
+                         "Defaults to a sibling of --bin-cache-dir when set, "
+                         "otherwise Python's default temp directory.")
     args = ap.parse_args()
 
     if not args.goal.exists():
@@ -178,7 +188,7 @@ def main() -> int:
 
     t0 = time.perf_counter()
     rt = run_lgs(args.goal, args.L, args.G, args.o, args.g,
-                 args.comm_dep_out, args.normalize_tags, args.bin_cache_dir)
+                 args.comm_dep_out, args.normalize_tags, args.bin_cache_dir, args.tmp_dir)
     dt = time.perf_counter() - t0
     print(f"[lgs] runtime = {rt} ns ({rt / 1e6:.3f} ms) "
           f"[L={args.L} G={args.G} o={args.o}, solved in {dt:.2f}s]")

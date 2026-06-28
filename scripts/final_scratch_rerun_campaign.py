@@ -81,10 +81,10 @@ class Campaign:
     def parse_time_log(self, text: str) -> tuple[int | None, str | None]:
         rss = None
         elapsed = None
-        m = re.search(r"Maximum resident set size \\(kbytes\\):\\s*(\\d+)", text)
+        m = re.search(r"Maximum resident set size \(kbytes\):\s*(\d+)", text)
         if m:
             rss = int(m.group(1))
-        m = re.search(r"Elapsed \\(wall clock\\) time.*:\\s*(.+)", text)
+        m = re.search(r"Elapsed \(wall clock\) time \(h:mm:ss or m:ss\):\s*(.+)", text)
         if m:
             elapsed = m.group(1).strip()
         return rss, elapsed
@@ -564,6 +564,8 @@ def add_grok_lgs_tasks(c: Campaign) -> None:
                 "never",
                 "--bin-cache-dir",
                 str(c.run_root / "bin_cache" / f"grok_lgs_N{node}"),
+                "--tmp-dir",
+                str(c.run_root / "bin_cache" / "_tmp"),
             ],
             21600 if node >= 128 else 7200,
         )
@@ -600,6 +602,9 @@ def add_grok_monolithic_tasks(c: Campaign) -> None:
             target = grok_root / "output" / f"grok_n{node}" / "monolithic" / "sweeps" / "full_runtime.csv"
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(points, target)
+            metadata = points.with_suffix(points.suffix + ".json")
+            if metadata.exists():
+                shutil.copy2(metadata, target.with_suffix(target.suffix + ".json"))
 
 
 def add_grok_plot_task(c: Campaign) -> None:

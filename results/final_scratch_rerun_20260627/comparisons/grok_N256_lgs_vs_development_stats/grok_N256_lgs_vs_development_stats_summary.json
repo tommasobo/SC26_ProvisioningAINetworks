@@ -1,0 +1,13 @@
+{
+  "actual": "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok/output/grok_n256/lgs/sweeps/lgs_runtime.csv",
+  "expected": "results/final_scratch_rerun_20260627/derived/grok_N256_lgs_development_stats.csv",
+  "label": "grok_N256_lgs_vs_development_stats",
+  "max_L": 500000.0,
+  "max_abs_diff_ns": 273552520.0,
+  "max_abs_rel_diff_pct": 3.075424552138427,
+  "mean_abs_diff_ns": 232305992.33333334,
+  "mean_abs_rel_diff_pct": 2.4088192499060086,
+  "min_L": 0.0,
+  "n_points": 3,
+  "points": "expected"
+}

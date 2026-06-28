@@ -100,6 +100,20 @@ python pipeline/run_lgs_sweep.py \
   --G 0.04 --o 200
 ```
 
+For large GOAL files, keep both the txt2bin cache and any temporary binary
+traces on a large scratch filesystem. Otherwise `txt2bin`/LogGOPSim can fail
+with filesystem or `SIGBUS` errors if `/tmp` is small:
+
+```bash
+python pipeline/run_lgs_sweep.py \
+  --goal /mnt/scratch/workspaces/grok/N128/analysis/output.goal \
+  --out results/revalidation/grok_N128_lgs/lgs_runtime.csv \
+  --latencies 0 4000 10000 250000 500000 1000000 \
+  --G 0.04 --o 200 \
+  --bin-cache-dir /mnt/scratch/SC_Tracing_lgs_cache/grok_N128 \
+  --tmp-dir /mnt/scratch/SC_Tracing_lgs_cache/_tmp
+```
+
 Example, vLLM Llama 70B N2/GPU8:
 
 ```bash
@@ -187,6 +201,10 @@ python pipeline/regenerate_from_inputs.py \
 ```
 
 By default, `--comm-dep-mode auto` uses an existing `--comm-dep` if supplied, otherwise patched LogGOPSim. The driver validates that the sidecar is non-empty and has four integer columns. Use `--allow-goal-fallback` only for diagnostics or traces already known to match the LogGOPSim sidecar exactly.
+When `--bin-cache-dir` is provided, lower-level LGS calls place temporary
+conversion files next to that cache by default; pass `--tmp-dir` to
+`pipeline/run_lgs.py` or `pipeline/run_lgs_sweep.py` directly if you need a
+specific scratch location.
 
 Run Monolithic-LP:
 
@@ -468,6 +486,34 @@ python scripts/compare_csv.py \
 
 It writes a detailed CSV and JSON summary with absolute and relative differences.
 
+## Final Scratch Rerun Campaign
+
+The strongest local validation bundle was produced on branch
+`final_scratch_rerun_20260627` from existing GOAL files, NCCL metadata sidecars,
+and NSYS/SQLite inputs. It avoids using packaged scientific CSVs as model
+outputs, while still preserving large scratch artifacts outside git:
+
+```bash
+python3 scripts/final_scratch_rerun_campaign.py --workers 8
+python3 scripts/summarize_final_scratch_rerun.py \
+  --results-dir results/final_scratch_rerun_20260627
+```
+
+Key outputs:
+
+- `results/final_scratch_rerun_20260627/final_scratch_summary.md`
+- `results/final_scratch_rerun_20260627/comparison_summary.csv`
+- `results/final_scratch_rerun_20260627/manual_lgs_summary.csv`
+- `results/final_scratch_rerun_20260627/grok_node_scaling/`
+- `new_results/final_scratch_rerun_20260627/`
+
+The final Grok scaling plot uses fresh scratch outputs where available. At
+`L=4000 ns`, N64 has hardware 9562.007 ms, Composite-LP 8604.782 ms, LGS
+9788.116 ms, and Monolithic-LP 8072.785 ms. N64 Monolithic-LP is the largest
+exact LP point attempted in this pass: 42.8M variables, 99.7M constraints,
+5h11m45s wall time, and 133.4 GiB peak RSS. N128/N256 Monolithic-LP was not
+launched.
+
 ## Expensive Or Skipped Paths
 
 - Do not retrace workloads or recollect GOAL traces as part of normal artifact reproduction.
@@ -503,5 +549,6 @@ During the `clean_version` cleanup pass:
 - The guarded Fig. 5 NSYS-to-GOAL-to-sidecar-to-Monolithic-LP path runs on the online/local Llama7B N4 one-iteration inputs, but the regenerated curve differs from the packaged Fig. 5 Monolithic curve by 120.64% max relative difference.
 - LGS/LP numeric comparisons were saved under `results/revalidation/`.
 - The remaining vLLM gap is the packaged vLLM8B paper curve: the available online raw trace is Llama70B N2 and does not numerically match `data/output/vllm_llama8b_128tok/`.
+- The final scratch rerun results are under `results/final_scratch_rerun_20260627/` and `new_results/final_scratch_rerun_20260627/`. They include fresh-cache Grok Composite-LP through N512, complete manual N128 LGS, partial manual N256 LGS through `L=500000 ns`, and N64 Monolithic-LP at `L=4000 ns`.
 
 See `docs/progress_log.md` for commands and `docs/revalidation_report.md` for the workload matrix and detailed sidecar analysis.

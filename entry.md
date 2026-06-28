@@ -20,6 +20,27 @@ right one.
 
 ## Reproduction Workflows
 
+### Final Scratch Rerun Evidence
+
+Use this when you want the strongest local evidence gathered in the final
+high-RAM pass. It starts from existing GOAL files, NCCL metadata sidecars, and
+NSYS/SQLite inputs, then writes fresh caches and regenerated outputs under
+`/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627`:
+
+```bash
+python3 scripts/final_scratch_rerun_campaign.py --workers 8
+python3 scripts/summarize_final_scratch_rerun.py \
+  --results-dir results/final_scratch_rerun_20260627
+```
+
+Read:
+
+- `results/final_scratch_rerun_20260627/final_scratch_summary.md`
+- `results/final_scratch_rerun_20260627/task_summary.csv`
+- `results/final_scratch_rerun_20260627/comparison_summary.csv`
+- `results/final_scratch_rerun_20260627/grok_node_scaling/`
+- `new_results/final_scratch_rerun_20260627/`
+
 ### Packaged Figure Redraw
 
 Use this when you only want to regenerate the paper plots from shipped CSVs and

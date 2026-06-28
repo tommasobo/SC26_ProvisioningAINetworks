@@ -1,10 +1,10 @@
 # Figure Reproduction Status
 
-Date: 2026-06-27
+Date: 2026-06-28
 
 Repository: `/home/hpcuser/SC_Tracing`
 
-Branch: `clean_version`
+Latest local validation branch: `final_scratch_rerun_20260627`
 
 This document separates two different claims:
 
@@ -25,11 +25,11 @@ Result: success in 22.22s wall time with 193,900 KiB max RSS. The packaged path 
 
 | Figure | Packaged redraw | Data/model regeneration status | Numeric closeness |
 | --- | --- | --- | --- |
-| Fig. 1 sensitivity maps | Yes | Partial. Llama N32 latency and bandwidth inputs are regenerated from NCCL metadata; Grok 4096-GPU and vLLM8B panels remain packaged-output driven. | Llama latency max rel diff 0.027530%; Llama bandwidth max rel diff 0.633475%. Grok 4096-GPU and vLLM8B packaged curves were not regenerated end-to-end. |
-| Fig. 3 AllReduce microbenchmark | Yes | Composite-LP from packaged metadata works for 16-node 128MiB 1-channel and auto-channel cases. | Best compatibility sweep: 1-channel max rel diff 11.438023%; auto-channel max rel diff 18.340441%. Reproducible, but not numerically matching. |
-| Fig. 4 mixed collectives | Yes | Composite-LP from packaged metadata works for the mixed 16-node case. | Best compatibility sweep: max rel diff 4.974985%. Close in shape, not bit-exact. |
-| Fig. 5 Llama7B iteration | Yes | Raw/SQLite to GOAL to `comm_dep.csv` to Monolithic-LP works on the current online/local N4 one-iteration trace. Metadata Composite-LP also works. Historical Composite mode reproduces the old development curve. | Monolithic vs packaged max rel diff 120.638%. Historical Composite vs old development max rel diff 0.063642%, but historical Composite vs packaged max rel diff 15.952795%. The shipped Fig. 5 high-latency slope is still not fully recovered. |
-| Fig. 6 3x3 sensitivity grid | Yes | Partial. Llama N32 latency and bandwidth panels have end-to-end metadata regeneration. Grok 4096-GPU and vLLM8B panels remain packaged-output driven. | Same validated Llama inputs as Fig. 1: 0.027530% latency max rel diff and 0.633475% bandwidth max rel diff. Grok 4096-GPU and vLLM8B panel inputs were not regenerated end-to-end. |
+| Fig. 1 sensitivity maps | Yes | Partial. Llama N32 latency and bandwidth inputs were regenerated from NCCL metadata in the final scratch pass; Grok 4096-GPU and vLLM8B panels remain packaged-output driven. | Final scratch: Llama latency max rel diff 0.118992%; Llama bandwidth max rel diff 0.639316%. Earlier best Llama latency compatibility run was 0.027530%. Grok 4096-GPU and vLLM8B packaged curves were not regenerated end-to-end. |
+| Fig. 3 AllReduce microbenchmark | Yes | Composite-LP from packaged metadata works for 16-node 128MiB 1-channel and auto-channel cases. | Final scratch: 1-channel max rel diff 11.962891%; auto-channel max rel diff 17.601333%. Reproducible, but not numerically matching. |
+| Fig. 4 mixed collectives | Yes | Composite-LP from packaged metadata works for the mixed 16-node case. | Final scratch max rel diff 5.094390%. Close in shape, not bit-exact. |
+| Fig. 5 Llama7B iteration | Yes | Raw/SQLite to GOAL to `comm_dep.csv` to Monolithic-LP works on the current online/local N4 one-iteration trace. Metadata Composite-LP also works. Historical Composite mode reproduces the old development curve. | Final scratch: Monolithic vs packaged max rel diff 120.622541%; historical Composite vs old development max rel diff 0.063448%, but historical Composite vs packaged max rel diff 15.898682%. The shipped Fig. 5 high-latency slope is still not fully recovered. |
+| Fig. 6 3x3 sensitivity grid | Yes | Partial. Llama N32 latency and bandwidth panels have end-to-end metadata regeneration. Grok 4096-GPU and vLLM8B panels remain packaged-output driven. | Same final scratch Llama inputs as Fig. 1: 0.118992% latency max rel diff and 0.639316% bandwidth max rel diff. Grok 4096-GPU and vLLM8B panel inputs were not regenerated end-to-end. |
 | Fig. 7 memory scaling | Yes | Plot-only. The script encodes recorded/extrapolated memory values; no upstream LP sweep is rerun. | Reproduces from shipped constants. No independent numeric regeneration claim. |
 | Fig. 8/9 cluster and cost | Yes | Plot-only. The script uses hardcoded derived latency, bandwidth, and cost arrays. | Reproduces from shipped constants. No independent numeric regeneration claim. |
 | Fig. 10 jitter | Yes | Plot-only. The script uses two hardcoded Grok N1024 Composition values and interpolates jitter impact. | Reproduces from shipped constants. No upstream jitter sweep rerun. |
@@ -38,11 +38,12 @@ Result: success in 22.22s wall time with 193,900 KiB max RSS. The packaged path 
 
 The requested Grok node-count scaling plot is not one of the original paper figure scripts, but it now has stronger data-level evidence than the paper-scale Grok figures:
 
-- Outputs: `new_results/` and `results/revalidation/grok_node_scaling/`.
+- Outputs: `new_results/final_scratch_rerun_20260627/` and `results/final_scratch_rerun_20260627/grok_node_scaling/`.
 - Scope: N4, N8, N16, N32, N64, N128, N256, and N512.
-- Methods included: hardware points, LGS where available or regenerated, and Composite-LP. Monolithic-LP is intentionally excluded beyond already completed smaller points.
-- Fresh-cache Composite-LP was validated for N64, N256, and N512. N64 max rel diff vs development replay is 0.00005996%; N256 max rel diff is 0.002275%; N512 max rel diff is 0.001735%.
-- N128 LGS was regenerated and replaced the previous invalid all-zero row.
+- Methods included: hardware points, fresh scratch LGS where available, fresh scratch Composite-LP where available, and Monolithic-LP through N64 only.
+- Fresh-cache Composite-LP in the final scratch pass matched development replay within 0.000151% for N64, 0.000599% for N256, and 0.000933% for N512.
+- N128 LGS was regenerated completely. N256 LGS produced 5/6 requested latency points before the 6-hour timeout; the missing point is `L=1e6 ns`.
+- N64 Monolithic-LP completed one fresh `L=4000 ns` point: 8,072.785 ms, 42.8M LP variables, 99.7M constraints, 5h11m45s wall time, and 133.4 GiB peak RSS.
 
 ## Publishable Small Grok Artifact Guidance
 

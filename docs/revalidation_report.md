@@ -745,6 +745,69 @@ The previous side branch `clean_version_local` was pushed before this continuati
 
 GitHub authentication was rechecked during the cleanup with `gh auth status`; the account `tommasobo` is authenticated for HTTPS git operations. The consolidated cleanup branch is `clean_version`; final push status is recorded in the terminal output and final status message for the run.
 
+## Final Scratch Rerun Addendum
+
+Date: 2026-06-28
+
+Local branch: `final_scratch_rerun_20260627`
+
+The final scratch pass was run from the current repository without relying on packaged scientific CSVs as model outputs. The campaign started from existing GOAL files, NCCL metadata sidecars, and NSYS/SQLite inputs, then wrote fresh caches, `comm_dep.csv` sidecars, LGS binary caches, LP outputs, and plots under `/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627`.
+
+Main command:
+
+```bash
+python3 scripts/final_scratch_rerun_campaign.py --workers 8
+python3 scripts/summarize_final_scratch_rerun.py \
+  --results-dir results/final_scratch_rerun_20260627
+```
+
+Compact outputs:
+
+- `results/final_scratch_rerun_20260627/final_scratch_summary.md`
+- `results/final_scratch_rerun_20260627/task_summary.csv`
+- `results/final_scratch_rerun_20260627/comparison_summary.csv`
+- `results/final_scratch_rerun_20260627/manual_lgs_summary.csv`
+- `results/final_scratch_rerun_20260627/grok_node_scaling/`
+- `new_results/final_scratch_rerun_20260627/`
+
+Campaign outcome: 51 recorded tasks, 46 OK and 5 non-OK. The non-OK records are evidence, not infrastructure failures: Fig. 5 exits nonzero because regenerated data does not match the packaged baseline; N128 Composite hit the configured 2-hour timeout; and the original in-campaign N128/N256 LGS attempts failed before the scratch `--tmp-dir` fix. The patched manual N128/N256 LGS reruns are recorded separately.
+
+Final figure-level comparisons from the scratch pass:
+
+| Workload or figure | Regeneration path | Comparison |
+| --- | --- | --- |
+| Llama N32 latency | NCCL metadata to Composite-LP, cold cache | 201 points; max relative difference vs packaged 0.118992%; mean 0.0469613%. |
+| Llama N32 bandwidth | NCCL metadata to fixed-L bandwidth sweep, cold cache | 20 points; max relative difference vs packaged 0.639316%; mean 0.0631953%. |
+| Fig. 3 AllReduce 1-channel | NCCL metadata to Composite-LP | Max relative difference vs packaged 11.962891%. |
+| Fig. 3 AllReduce auto-channel | NCCL metadata to Composite-LP | Max relative difference vs packaged 17.601333%. |
+| Fig. 4 mixed collectives | NCCL metadata to Composite-LP | Max relative difference vs packaged 5.094390%. |
+| Fig. 5 Monolithic | NSYS/SQLite to GOAL to `comm_dep.csv` to Monolithic-LP | Max relative difference vs packaged Monolithic 120.622541%. |
+| Fig. 5 historical Composite | NSYS/SQLite metadata with recovered historical Composite settings | Max relative difference vs old development output 0.063448%; vs packaged Composite 15.898682%. |
+
+Grok final scratch revalidation:
+
+| Scale | Composite-LP | LGS | Monolithic-LP | Notes |
+| --- | --- | --- | --- | --- |
+| N4 | Fresh scratch run completed | Fresh scratch run completed | Fresh scratch exact point completed | Composite differs from development by 9.475% because the local development N4 reference uses a legacy baseline. |
+| N8 | Fresh scratch run completed | Fresh scratch run completed | Fresh scratch exact point completed | Composite max relative difference vs development 0.000503%. |
+| N16 | Fresh scratch run completed | Fresh scratch run completed | Fresh scratch exact point completed | Composite max relative difference vs development 0.000265%. |
+| N32 | Fresh scratch run completed | Fresh scratch run completed | Fresh scratch exact point completed | Composite max relative difference vs development 0.000226%. |
+| N64 | Fresh scratch run completed | Fresh scratch run completed | Fresh scratch exact point completed | Composite max relative difference 0.000150%; Monolithic `L=4000 ns` runtime 8,072.785 ms. |
+| N128 | 2-hour cold-cache campaign timed out; development Composite fallback used in plot | Manual patched LGS completed 6/6 points | Not attempted | LGS wall time 1h36m38s, peak RSS 50.0 GiB. |
+| N256 | Fresh scratch run completed | Manual patched LGS completed 5/6 points | Not attempted | Composite max relative difference 0.000599%; LGS timed out at 6h on `L=1e6 ns`, peak RSS 191.9 GiB. |
+| N512 | Fresh scratch run completed | Development stats-derived LGS curve used | Not attempted | Composite max relative difference 0.000933%; cold Composite wall time 2h28m34s, peak RSS 30.5 GiB. |
+
+The final Grok scaling plot uses node count on the x-axis and runtime in milliseconds on the y-axis. `scripts/grok_node_scaling.py` now prioritizes the explicit scratch root over older `data/revalidation` fallbacks for LGS, Composite-LP, and Monolithic-LP, so the final plot uses fresh scratch outputs wherever present. At `L=4000 ns`, the final values are:
+
+| Node count | Hardware ms | Composite-LP ms | LGS ms | Monolithic-LP ms |
+| ---: | ---: | ---: | ---: | ---: |
+| 64 | 9562.007 | 8604.782 | 9788.116 | 8072.785 |
+| 128 | 8530.951 | 8107.423 | 8973.763 | |
+| 256 | 8809.187 | 7498.383 | 9174.943 | |
+| 512 | 8824.133 | 7554.133 | 8989.975 | |
+
+N64 Monolithic-LP was the largest exact LP point attempted in this pass. It generated a 536 MB `comm_dep.csv`, built a graph with 114,000,750 vertices and 170,878,182 edges, built a 42,824,828-variable and 99,703,792-constraint LP model, and completed in 5h11m45s with 133.4 GiB peak RSS. This supports the decision not to launch N128/N256 Monolithic-LP without a separate discussion.
+
 ## Remaining TODOs Ranked By Importance
 
 1. Locate or publish the exact raw/intermediate inputs behind the packaged `data/output/vllm_llama8b_128tok/` paper curves. The online Llama70B N2 NSYS path now works end-to-end, but it is not the vLLM8B figure dataset.

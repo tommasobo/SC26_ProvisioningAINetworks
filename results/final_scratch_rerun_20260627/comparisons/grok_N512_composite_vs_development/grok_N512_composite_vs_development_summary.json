@@ -1,0 +1,13 @@
+{
+  "actual": "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok/output/grok_n512/comp/sweeps/composed_runtime.csv",
+  "expected": "/mnt/scratch/GrokStudyCodex/Traces_Compression/output/grok_n512/comp/sweeps/composed_runtime.csv",
+  "label": "grok_N512_composite_vs_development",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 70672.0,
+  "max_abs_rel_diff_pct": 0.0009328101441951716,
+  "mean_abs_diff_ns": 70091.78635934573,
+  "mean_abs_rel_diff_pct": 0.0005730167638535935,
+  "min_L": 0.0,
+  "n_points": 201,
+  "points": "actual"
+}

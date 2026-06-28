@@ -212,21 +212,23 @@ def grok_row(node_count: int, args: argparse.Namespace, target_latency: float) -
         ROOT / "data" / "revalidation" / f"grok_N{node_count}_commdep_goalmatch" / "comm_dep.csv",
     ]
     monolithic_candidates = [
+        root / "output" / f"grok_n{node_count}" / "monolithic" / "sweeps" / "full_runtime.csv"
+        for root in roots
+    ]
+    monolithic_candidates.extend([
         ROOT / "data" / "revalidation" / f"grok_node_scaling/monolithic_N{node_count}_points/full_runtime.csv",
         ROOT / "data" / "revalidation" / f"grok_node_scaling/monolithic_N{node_count}/sweeps/full_runtime.csv",
         ROOT / "data" / "revalidation" / f"grok_N{node_count}_lp/full_runtime.csv",
-    ]
+    ])
     composite_candidates = [
+        root / "output" / f"grok_n{node_count}" / "comp" / "sweeps" / "composed_runtime.csv"
+        for root in roots
+    ]
+    composite_candidates.extend([
         ROOT / "data" / "revalidation" / f"grok_N{node_count}_composite_row_nranks_regen" / "comp" / "sweeps" / "composed_runtime.csv",
         ROOT / "data" / "revalidation" / f"grok_N{node_count}_composite_row_nranks_warm" / "comp" / "sweeps" / "composed_runtime.csv",
         ROOT / "data" / "revalidation" / f"grok_N{node_count}_composite_regen" / "comp" / "sweeps" / "composed_runtime.csv",
-    ]
-    composite_candidates.extend(
-        root / "output" / f"grok_n{node_count}" / "comp" / "sweeps" / "composed_runtime.csv"
-        for root in roots
-    )
-    if args.include_legacy_monolithic:
-        monolithic_candidates.append(output_dir / "monolithic" / "sweeps" / "full_runtime.csv")
+    ])
 
     row: dict[str, Any] = {
         "node_count": node_count,
@@ -247,13 +249,13 @@ def grok_row(node_count: int, args: argparse.Namespace, target_latency: float) -
     row.update(hw_reference_ms(analysis_dir))
     add_curve(row, "composite_lp", first_existing(composite_candidates), target_latency)
     lgs_candidates = [
-        ROOT / "data" / "revalidation" / f"grok_N{node_count}_lgs_regen" / "lgs_runtime.csv",
-        ROOT / "data" / "revalidation" / f"grok_N{node_count}_lgs" / "lgs_points.csv",
-    ]
-    lgs_candidates.extend(
         root / "output" / f"grok_n{node_count}" / "lgs" / "sweeps" / "lgs_runtime.csv"
         for root in roots
-    )
+    ]
+    lgs_candidates.extend([
+        ROOT / "data" / "revalidation" / f"grok_N{node_count}_lgs_regen" / "lgs_runtime.csv",
+        ROOT / "data" / "revalidation" / f"grok_N{node_count}_lgs" / "lgs_points.csv",
+    ])
     lgs_csv = first_existing(lgs_candidates)
     if lgs_csv is None:
         for root in roots:

@@ -1,0 +1,13 @@
+{
+  "actual": "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/llama_n32/bandwidth/bandwidth_sensitivity.csv",
+  "expected": "/home/hpcuser/SC_Tracing/data/workspaces/llama7b_n32_spcl_20260407/output/bw_sensitivity_l4us_composition_exact_goal/bandwidth_sensitivity.csv",
+  "label": "llama_n32_bandwidth_vs_packaged",
+  "max_L": 1600.0,
+  "max_abs_diff_ns": 1466749.646399945,
+  "max_abs_rel_diff_pct": 0.6393161956115159,
+  "mean_abs_diff_ns": 152168.94527221023,
+  "mean_abs_rel_diff_pct": 0.06319531195499328,
+  "min_L": 10.0,
+  "n_points": 20,
+  "points": "actual"
+}

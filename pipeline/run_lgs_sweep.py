@@ -32,6 +32,10 @@ def main() -> int:
                     help="Forwarded to run_lgs.py.")
     ap.add_argument("--bin-cache-dir", type=Path, default=None,
                     help="Optional local cache directory for txt2bin output.")
+    ap.add_argument("--tmp-dir", type=Path, default=None,
+                    help="Directory for large temporary txt2bin files. "
+                         "Defaults to a sibling of --bin-cache-dir when set, "
+                         "otherwise Python's default temp directory.")
     args = ap.parse_args()
 
     if not args.goal.exists():
@@ -61,6 +65,7 @@ def main() -> int:
                 args.g,
                 normalize_tags=args.normalize_tags,
                 bin_cache_dir=args.bin_cache_dir,
+                tmp_dir=args.tmp_dir,
             )
             elapsed_s = time.perf_counter() - t0
             writer.writerow({
