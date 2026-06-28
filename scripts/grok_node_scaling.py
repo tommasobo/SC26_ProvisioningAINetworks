@@ -437,9 +437,20 @@ def plot_multi_latency(long_df: pd.DataFrame, out_dir: Path) -> None:
         ax.set_ylabel("Runtime (ms)")
     for ax in axes.flat[len(latencies):]:
         ax.axis("off")
-    handles, labels = axes.flat[0].get_legend_handles_labels()
-    if handles:
-        fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.5, 0.925), ncol=4, frameon=False)
+    legend_items = {}
+    for ax in axes.flat[: len(latencies)]:
+        handles, labels = ax.get_legend_handles_labels()
+        for handle, label in zip(handles, labels):
+            legend_items.setdefault(label, handle)
+    if legend_items:
+        fig.legend(
+            list(legend_items.values()),
+            list(legend_items),
+            loc="upper center",
+            bbox_to_anchor=(0.5, 0.925),
+            ncol=min(4, len(legend_items)),
+            frameon=False,
+        )
     fig.suptitle("Grok scaling across latency assumptions", y=0.985)
     fig.tight_layout(rect=(0, 0, 1, 0.86))
     fig.savefig(out_dir / "grok_node_scaling_multi_latency.png", dpi=240)
