@@ -1,0 +1,45 @@
+{
+  "goal": "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok/workspaces/grok/N64/analysis/output.goal",
+  "comm_dep": "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok/output/grok_n64/monolithic_regen/comm_dep.csv",
+  "latencies_ns": [
+    0.0,
+    4000.0,
+    10000.0,
+    250000.0,
+    500000.0
+  ],
+  "requested_latencies_ns": [
+    0.0,
+    4000.0,
+    10000.0,
+    250000.0,
+    500000.0,
+    1000000.0
+  ],
+  "missing_latencies_ns": [
+    1000000.0
+  ],
+  "partial": true,
+  "interrupted": true,
+  "interruption_reason": "SIGTERM after N64 L=1000000 ns made no visible progress for about 2.6h; solved rows were recovered from the run log.",
+  "source_log": "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/logs/grok_N64_monolithic_multi_latency.log",
+  "rank_node_map": null,
+  "ranks_per_node": null,
+  "l_intra": 350,
+  "g_intra": null,
+  "G": 0.04,
+  "o": 200.0,
+  "add_barriers": false,
+  "nic_per_rank": false,
+  "nics_per_node": 1,
+  "num_vertices": 114000750,
+  "num_edges": 170878182,
+  "num_ranks": 256,
+  "num_vars": 42824828,
+  "num_constraints": 99703792,
+  "graph_s": 3175.9,
+  "model_build_s": 7138.7,
+  "wall_s": 25281.0,
+  "rss_mb": 165677.9765625,
+  "created_utc": "2026-06-29T18:42:36Z"
+}

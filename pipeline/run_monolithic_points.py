@@ -85,6 +85,14 @@ def rss_mb() -> float | None:
         return None
 
 
+def write_rows(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["L", "runtime", "status", "solve_s"])
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--goal", required=True, type=Path, help="Input GOAL trace.")
@@ -194,12 +202,7 @@ def main() -> int:
             "status": status,
             "solve_s": solve_s,
         })
-
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    with args.out.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["L", "runtime", "status", "solve_s"])
-        writer.writeheader()
-        writer.writerows(rows)
+        write_rows(args.out, rows)
 
     metadata = {
         "goal": str(args.goal),

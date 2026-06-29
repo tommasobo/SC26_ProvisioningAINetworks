@@ -212,9 +212,13 @@ def grok_row(node_count: int, args: argparse.Namespace, target_latency: float) -
         ROOT / "data" / "revalidation" / f"grok_N{node_count}_commdep_goalmatch" / "comm_dep.csv",
     ]
     monolithic_candidates = [
-        root / "output" / f"grok_n{node_count}" / "monolithic" / "sweeps" / "full_runtime.csv"
+        root / "output" / f"grok_n{node_count}" / "monolithic_multi_latency" / "sweeps" / "full_runtime.csv"
         for root in roots
     ]
+    monolithic_candidates.extend([
+        root / "output" / f"grok_n{node_count}" / "monolithic" / "sweeps" / "full_runtime.csv"
+        for root in roots
+    ])
     monolithic_candidates.extend([
         ROOT / "data" / "revalidation" / f"grok_node_scaling/monolithic_N{node_count}_points/full_runtime.csv",
         ROOT / "data" / "revalidation" / f"grok_node_scaling/monolithic_N{node_count}/sweeps/full_runtime.csv",

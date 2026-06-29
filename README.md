@@ -232,6 +232,10 @@ python pipeline/run_monolithic_points.py \
   --o 200 --G 0.04 --add-barriers
 ```
 
+The exact-point runner writes the output CSV after each solved latency. This is
+important for large runs because late high-latency points can take much longer
+than the model build and earlier solves.
+
 Run the GOAL-level LP sensitivity wrapper when the GOAL and LP sidecar are
 available. This path builds a dependency graph from the full GOAL trace and
 therefore requires `comm_dep.csv` for real NCCL traces:
@@ -507,14 +511,18 @@ Key outputs:
 - `results/final_scratch_rerun_20260627/grok_node_scaling/`
 - `new_results/final_scratch_rerun_20260627/`
 
-The final Grok scaling plot uses fresh scratch outputs where available. At
-`L=4000 ns`, N64 has hardware 9562.007 ms, Composite-LP 8604.782 ms, LGS
-9788.116 ms, and Monolithic-LP 8072.785 ms. N128 now also has an exact
-Monolithic-LP point at `L=4000 ns`: hardware 8530.951 ms, Composite-LP
-8107.423 ms, LGS 8973.763 ms, and Monolithic-LP 7137.090 ms. N128 is the
-largest exact LP point attempted in this pass: 80.6M variables, 200.8M
-constraints, 11h17m46s wall time, and 266.7 GiB peak RSS. N256 Monolithic-LP
-was not launched.
+The final Grok scaling plot uses fresh scratch outputs where available.
+Monolithic-LP now has multi-latency exact points for N4, N8, N16, N32, and N64
+at `L=0`, `4000`, `10000`, `250000`, and `500000 ns`; N4-N32 also completed
+`L=1000000 ns`. The N64 `L=1000000 ns` solve was stopped after the model had
+run for about 7h01m and the final point made no visible progress for roughly
+2.6h, so the plot leaves that one Monolithic-LP point blank. At `L=4000 ns`,
+N64 has hardware 9562.007 ms, Composite-LP 8604.782 ms, LGS 9788.116 ms, and
+Monolithic-LP 8072.785 ms. N128 still has one exact Monolithic-LP point at
+`L=4000 ns`: hardware 8530.951 ms, Composite-LP 8107.423 ms, LGS 8973.763 ms,
+and Monolithic-LP 7137.090 ms. N128 is the largest exact LP scale attempted in
+this pass: 80.6M variables, 200.8M constraints, 11h17m46s wall time, and
+266.7 GiB peak RSS. N256 Monolithic-LP was not launched.
 
 ## Expensive Or Skipped Paths
 
@@ -551,6 +559,6 @@ During the `clean_version` cleanup pass:
 - The guarded Fig. 5 NSYS-to-GOAL-to-sidecar-to-Monolithic-LP path runs on the online/local Llama7B N4 one-iteration inputs, but the regenerated curve differs from the packaged Fig. 5 Monolithic curve by 120.64% max relative difference.
 - LGS/LP numeric comparisons were saved under `results/revalidation/`.
 - The remaining vLLM gap is the packaged vLLM8B paper curve: the available online raw trace is Llama70B N2 and does not numerically match `data/output/vllm_llama8b_128tok/`.
-- The final scratch rerun results are under `results/final_scratch_rerun_20260627/` and `new_results/final_scratch_rerun_20260627/`. They include fresh-cache Grok Composite-LP through N512, complete manual N128 LGS, partial manual N256 LGS through `L=500000 ns`, and exact Grok Monolithic-LP points through N128 at `L=4000 ns`.
+- The final scratch rerun results are under `results/final_scratch_rerun_20260627/` and `new_results/final_scratch_rerun_20260627/`. They include fresh-cache Grok Composite-LP through N512, complete manual N128 LGS, partial manual N256 LGS through `L=500000 ns`, Grok Monolithic-LP multi-latency points through N64 except the interrupted `N64@L=1000000 ns`, and the earlier N128 Monolithic-LP `L=4000 ns` exact point.
 
 See `docs/progress_log.md` for commands and `docs/revalidation_report.md` for the workload matrix and detailed sidecar analysis.

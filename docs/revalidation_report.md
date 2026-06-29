@@ -792,12 +792,12 @@ Grok final scratch revalidation:
 | N8 | Fresh scratch run completed | Fresh scratch run completed | Fresh scratch exact point completed | Composite max relative difference vs development 0.000503%. |
 | N16 | Fresh scratch run completed | Fresh scratch run completed | Fresh scratch exact point completed | Composite max relative difference vs development 0.000265%. |
 | N32 | Fresh scratch run completed | Fresh scratch run completed | Fresh scratch exact point completed | Composite max relative difference vs development 0.000226%. |
-| N64 | Fresh scratch run completed | Fresh scratch run completed | Fresh scratch exact point completed | Composite max relative difference 0.000150%; Monolithic `L=4000 ns` runtime 8,072.785 ms. |
+| N64 | Fresh scratch run completed | Fresh scratch run completed | Fresh scratch exact points completed for 5/6 requested latencies | Composite max relative difference 0.000150%; Monolithic completed `L=0`, `4000`, `10000`, `250000`, and `500000 ns`; `L=1000000 ns` was interrupted after no visible progress. |
 | N128 | 2-hour cold-cache campaign timed out; development Composite fallback used in plot | Manual patched LGS completed 6/6 points | Fresh exact point completed after the campaign | LGS wall time 1h36m38s, peak RSS 50.0 GiB. Monolithic sidecar + LP took 11h17m46s, peak RSS 266.7 GiB, and produced `L=4000 ns` runtime 7,137.090 ms. |
 | N256 | Fresh scratch run completed | Manual patched LGS completed 5/6 points | Not attempted | Composite max relative difference 0.000599%; LGS timed out at 6h on `L=1e6 ns`, peak RSS 191.9 GiB. |
 | N512 | Fresh scratch run completed | Development stats-derived LGS curve used | Not attempted | Composite max relative difference 0.000933%; cold Composite wall time 2h28m34s, peak RSS 30.5 GiB. |
 
-The final Grok scaling plot uses node count on the x-axis and runtime in milliseconds on the y-axis. `scripts/grok_node_scaling.py` now prioritizes the explicit scratch root over older `data/revalidation` fallbacks for LGS, Composite-LP, and Monolithic-LP, so the final plot uses fresh scratch outputs wherever present. At `L=4000 ns`, the final values are:
+The final Grok scaling plot uses node count on the x-axis and runtime in milliseconds on the y-axis. `scripts/grok_node_scaling.py` now prioritizes the explicit scratch root over older `data/revalidation` fallbacks for LGS, Composite-LP, and Monolithic-LP, and prefers `monolithic_multi_latency` over the earlier one-point `monolithic` scratch directories. At `L=4000 ns`, the final values are:
 
 | Node count | Hardware ms | Composite-LP ms | LGS ms | Monolithic-LP ms |
 | ---: | ---: | ---: | ---: | ---: |
@@ -806,12 +806,14 @@ The final Grok scaling plot uses node count on the x-axis and runtime in millise
 | 256 | 8809.187 | 7498.383 | 9174.943 | |
 | 512 | 8824.133 | 7554.133 | 8989.975 | |
 
-N128 Monolithic-LP is now the largest exact LP point attempted in this pass. It generated a 1.23 GB `comm_dep.csv` with 58,648,508 rows, built a graph with 223,332,206 vertices and 343,542,502 edges, built an 80,570,748-variable and 200,784,112-constraint LP model, and completed in 11h17m46s with 266.7 GiB peak RSS. This supports keeping N256 Monolithic-LP as a separate decision rather than launching it by default.
+After the follow-up multi-latency run, Monolithic-LP covers N4, N8, N16, N32, and N64 at `L=0`, `4000`, `10000`, `250000`, and `500000 ns`. N4-N32 also cover `L=1000000 ns`; N64 `L=1000000 ns` was stopped after the process had run about 7h01m and the final solve showed no visible progress for roughly 2.6h. The preserved N64 partial metadata marks `missing_latencies_ns=[1000000.0]`.
+
+N128 Monolithic-LP is still the largest exact LP scale attempted in this pass. It generated a 1.23 GB `comm_dep.csv` with 58,648,508 rows, built a graph with 223,332,206 vertices and 343,542,502 edges, built an 80,570,748-variable and 200,784,112-constraint LP model, and completed in 11h17m46s with 266.7 GiB peak RSS for `L=4000 ns`. This supports keeping N256 Monolithic-LP as a separate decision rather than launching it by default.
 
 ## Remaining TODOs Ranked By Importance
 
 1. Locate or publish the exact raw/intermediate inputs behind the packaged `data/output/vllm_llama8b_128tok/` paper curves. The online Llama70B N2 NSYS path now works end-to-end, but it is not the vLLM8B figure dataset.
 2. Promote the local Grok scratch baselines and sidecars into a release asset, or document their download location, so future users can reproduce the node-scaling comparison without `/mnt/scratch`.
 3. Root-cause the exact historical Fig. 5 input/model assumptions if bit-exact Fig. 5 regeneration is required. The current raw/SQLite N4 path runs end-to-end but does not match the packaged CSVs.
-4. Decide whether to attempt N256 Monolithic-LP after reviewing the N128 cost; N128 completed but took 11h17m46s and 266.7 GiB peak RSS for one latency point.
+4. Decide whether to attempt N256 Monolithic-LP after reviewing the N128 cost and the N64 multi-latency behavior; N128 completed but took 11h17m46s and 266.7 GiB peak RSS for one latency point, while N64 `L=1000000 ns` did not finish in the follow-up run.
 5. If larger LGS grids become a supported workflow, keep using `--bin-cache-dir` and scratch-backed `TMPDIR`; N128 showed that root `/tmp` can fill during `txt2bin` conversion without those settings.
