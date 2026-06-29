@@ -24,7 +24,7 @@ Target network latency: `10000 ns`.
 | 16 | True | False | ok | ok | target_outside_range_4000_4000 | scratch_real_grok |
 | 32 | True | False | ok | ok | target_outside_range_4000_4000 | scratch_real_grok |
 | 64 | True | True | ok | ok | target_outside_range_4000_4000 | scratch_real_grok |
-| 128 | True | False | ok | ok | missing | scratch_real_grok |
+| 128 | True | False | ok | ok | target_outside_range_4000_4000 | scratch_real_grok |
 | 256 | True | False | ok | ok | missing | scratch_real_grok |
 | 512 | True | False | ok | ok | missing | scratch_real_grok |
 

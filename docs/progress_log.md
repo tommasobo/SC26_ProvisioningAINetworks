@@ -331,8 +331,8 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Command: `.venv/bin/python scripts/grok_node_scaling.py --scratch-root /mnt/scratch/GrokStudy/repo --out-dir results/revalidation/grok_node_scaling`
 - Outputs: `results/revalidation/grok_node_scaling/grok_node_scaling_summary.csv`, `.json`, `.md`, `.png`, and `.pdf`.
 - Result at `L=4000 ns`: Monolithic-LP is available through N32; Composite-LP and hardware references are available through N128 plus packaged N512/N1024; LGS is usable through N64; N128 LGS is excluded because its curve is all zero.
-- Stopping point: N64/N128 Monolithic-LP was not attempted because no matching four-column LP `comm_dep` sidecar was found for those scales. This is a sidecar/input boundary, not a RAM boundary.
-- Superseded note: the later 2026-06-25 N64 sidecar probe generated a valid N64 sidecar and completed one N64 Monolithic-LP point at `L=4000 ns`. N128 remains unattempted.
+- Historical stopping point at that time: N64/N128 Monolithic-LP was not attempted because no matching four-column LP `comm_dep` sidecar was found for those scales. This was later superseded by generated N64 and N128 sidecars.
+- Superseded note: the later 2026-06-25 N64 sidecar probe generated a valid N64 sidecar and completed one N64 Monolithic-LP point at `L=4000 ns`. The still later final-scratch continuation generated N128 sidecar + Monolithic-LP at `L=4000 ns`; see the 2026-06-28 final scratch section below.
 
 - Command: `.venv/bin/python scripts/check_artifact.py --skip-figure`
 - Result: success.
@@ -504,7 +504,7 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 
 ### 2026-06-26: Packaged Paper Figure Reproduction Sweep
 
-- User decision: do not pursue N128 Monolithic-LP because it is too expensive. Keep the repository ready for a later push, and reproduce all other paper plots where no single plot command takes more than 2 hours.
+- User decision at that point: do not pursue N128 Monolithic-LP because it appeared too expensive. This was later superseded by the explicit 24-hour-budget N128 attempt recorded in the final scratch section.
 - Command: `/usr/bin/time -v timeout 7200 python3 reproduce_all.py`.
 - Result: success; regenerated the scripted paper figure outputs for figures 1, 3, 4, 5, 6, 7, 8/9, and 10 under `figures/`.
 - Runtime: 22.22 seconds wall clock.
@@ -623,7 +623,7 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Scratch root: `/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627`.
 - Compact results: `results/final_scratch_rerun_20260627/`.
 - Plot mirror: `new_results/final_scratch_rerun_20260627/`.
-- Scope: reran packaged redraws, demo pipeline, tests, Llama N32 Composite and bandwidth sensitivity from metadata, Fig. 3/4 Composite from metadata, Fig. 5 NSYS-to-GOAL-to-sidecar-to-Monolithic path, online vLLM NSYS-to-GOAL-to-sidecar-to-Composite path, Grok Composite cold runs through N512, Grok LGS through N64 in-campaign, manual patched Grok LGS for N128/N256, and Grok Monolithic exact points through N64.
+- Scope: reran packaged redraws, demo pipeline, tests, Llama N32 Composite and bandwidth sensitivity from metadata, Fig. 3/4 Composite from metadata, Fig. 5 NSYS-to-GOAL-to-sidecar-to-Monolithic path, online vLLM NSYS-to-GOAL-to-sidecar-to-Composite path, Grok Composite cold runs through N512, Grok LGS through N64 in-campaign, manual patched Grok LGS for N128/N256, and Grok Monolithic exact points through N128.
 - Campaign result: 51 tasks recorded, 46 OK and 5 non-OK. Non-OK tasks were expected evidence items: Fig. 5 mismatch guard, N128 Composite 2-hour timeout, N128 comparison after timeout, and the original pre-`--tmp-dir` N128/N256 LGS attempts.
 
 - Final scratch Llama N32 Composite comparison: `llama_n32_composite_vs_packaged`, 201 points, max relative difference 0.118992%, mean relative difference 0.0469613%.
@@ -638,9 +638,12 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Grok N256 manual patched LGS result: partial 5/6 latency points; `L=1e6 ns` timed out. Wall time 6h00m00s, peak RSS 191.9 GiB. Completed runtimes: 9168.341 ms at `L=0`, 9174.943 ms at `L=4000`, 9215.187 ms at `L=10000`, 10053.471 ms at `L=250000`, and 11171.884 ms at `L=500000`. Shared-point comparison vs development stats over `L=0,250000,500000` has 3.075425% max relative difference.
 - Grok N64 Monolithic command was launched by the campaign via `pipeline/regenerate_from_inputs.py --goal /mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N64/analysis/output.goal --out-dir /mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok/output/grok_n64/monolithic_regen --L-sidecar 4000 --G 0.04 --o 200 --monolithic-latencies 4000 --bin-cache-dir /mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/bin_cache/grok_mono_N64`.
 - Grok N64 Monolithic result: success in 5h11m45s with 133.4 GiB peak RSS. Patched LogGOPSim generated a 536 MB `comm_dep.csv`; Monolithic graph had 114,000,750 vertices and 170,878,182 edges; the LP model had 42,824,828 variables and 99,703,792 constraints. The `L=4000 ns` runtime is 8,072.785 ms with Gurobi status 2.
+- Grok N128 Monolithic command: `/usr/bin/time -v timeout 86400 python3 pipeline/regenerate_from_inputs.py --goal /mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N128/analysis/output.goal --out-dir /mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok/output/grok_n128/monolithic_regen --L-sidecar 4000 --G 0.04 --o 200 --monolithic-latencies 4000 --bin-cache-dir /mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/bin_cache/grok_mono_N128`.
+- Grok N128 Monolithic result: success in 11h17m46s with 266.7 GiB peak RSS. Patched LogGOPSim generated a 1.23 GB `comm_dep.csv` with 58,648,508 rows; Monolithic graph had 223,332,206 vertices and 343,542,502 edges; the LP model had 80,570,748 variables and 200,784,112 constraints. The `L=4000 ns` runtime is 7,137.090 ms with Gurobi status 2.
+- Small preserved artifacts: `results/final_scratch_rerun_20260627/grok_node_scaling/monolithic_N128_regen/` contains the point CSV, metadata JSON, regeneration manifest, and 24-hour-budget run log. The 1.23 GB `comm_dep.csv` sidecar remains on scratch and is not versioned.
 
 - Final Grok plot command: `python3 scripts/grok_node_scaling.py --scratch-root /mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok --extra-scratch-root /mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok --out-dir results/final_scratch_rerun_20260627/grok_node_scaling --nodes 4 8 16 32 64 128 256 512 --target-latency 0 --target-latencies 0 4000 10000 250000 500000 1000000 --no-packaged-large --include-legacy-monolithic`.
 - Plot source-priority fix: `scripts/grok_node_scaling.py` now prefers explicit scratch-root outputs over older `data/revalidation` fallbacks for LGS, Composite-LP, and Monolithic-LP. This ensures the final scratch plot uses fresh outputs where they exist.
-- Final `L=4000 ns` Grok plot values: N64 hardware 9562.007 ms, Composite-LP 8604.782 ms, LGS 9788.116 ms, Monolithic-LP 8072.785 ms; N128 hardware 8530.951 ms, Composite-LP 8107.423 ms, LGS 8973.763 ms; N256 hardware 8809.187 ms, Composite-LP 7498.383 ms, LGS 9174.943 ms.
+- Final `L=4000 ns` Grok plot values: N64 hardware 9562.007 ms, Composite-LP 8604.782 ms, LGS 9788.116 ms, Monolithic-LP 8072.785 ms; N128 hardware 8530.951 ms, Composite-LP 8107.423 ms, LGS 8973.763 ms, Monolithic-LP 7137.090 ms; N256 hardware 8809.187 ms, Composite-LP 7498.383 ms, LGS 9174.943 ms.
 - Summary command: `python3 scripts/summarize_final_scratch_rerun.py --results-dir results/final_scratch_rerun_20260627`.
 - Summary outputs: `results/final_scratch_rerun_20260627/final_scratch_summary.md`, `task_summary.csv`, `comparison_summary.csv`, and `manual_lgs_summary.csv`.

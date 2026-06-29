@@ -407,10 +407,10 @@ python scripts/compare_csv.py \
   --points actual
 ```
 
-N128 Monolithic-LP is intentionally not part of this cleanup pass. N64
-Monolithic-LP already took 2h27m and 184.5 GiB RSS for one latency point; N128
-would be a separate expensive run and is not needed for the final no-monolithic
-Grok scaling plot.
+N128 Monolithic-LP is intentionally optional and expensive. The final scratch
+continuation did run one N128 point at `L=4000 ns`; it took 11h17m46s wall time
+and 266.7 GiB peak RSS. Treat N256+ Monolithic-LP as a separate high-RAM
+decision, not part of the default artifact workflow.
 
 ## Tier D: Optional Raw NSYS SQLite to GOAL
 
@@ -509,10 +509,12 @@ Key outputs:
 
 The final Grok scaling plot uses fresh scratch outputs where available. At
 `L=4000 ns`, N64 has hardware 9562.007 ms, Composite-LP 8604.782 ms, LGS
-9788.116 ms, and Monolithic-LP 8072.785 ms. N64 Monolithic-LP is the largest
-exact LP point attempted in this pass: 42.8M variables, 99.7M constraints,
-5h11m45s wall time, and 133.4 GiB peak RSS. N128/N256 Monolithic-LP was not
-launched.
+9788.116 ms, and Monolithic-LP 8072.785 ms. N128 now also has an exact
+Monolithic-LP point at `L=4000 ns`: hardware 8530.951 ms, Composite-LP
+8107.423 ms, LGS 8973.763 ms, and Monolithic-LP 7137.090 ms. N128 is the
+largest exact LP point attempted in this pass: 80.6M variables, 200.8M
+constraints, 11h17m46s wall time, and 266.7 GiB peak RSS. N256 Monolithic-LP
+was not launched.
 
 ## Expensive Or Skipped Paths
 
@@ -549,6 +551,6 @@ During the `clean_version` cleanup pass:
 - The guarded Fig. 5 NSYS-to-GOAL-to-sidecar-to-Monolithic-LP path runs on the online/local Llama7B N4 one-iteration inputs, but the regenerated curve differs from the packaged Fig. 5 Monolithic curve by 120.64% max relative difference.
 - LGS/LP numeric comparisons were saved under `results/revalidation/`.
 - The remaining vLLM gap is the packaged vLLM8B paper curve: the available online raw trace is Llama70B N2 and does not numerically match `data/output/vllm_llama8b_128tok/`.
-- The final scratch rerun results are under `results/final_scratch_rerun_20260627/` and `new_results/final_scratch_rerun_20260627/`. They include fresh-cache Grok Composite-LP through N512, complete manual N128 LGS, partial manual N256 LGS through `L=500000 ns`, and N64 Monolithic-LP at `L=4000 ns`.
+- The final scratch rerun results are under `results/final_scratch_rerun_20260627/` and `new_results/final_scratch_rerun_20260627/`. They include fresh-cache Grok Composite-LP through N512, complete manual N128 LGS, partial manual N256 LGS through `L=500000 ns`, and exact Grok Monolithic-LP points through N128 at `L=4000 ns`.
 
 See `docs/progress_log.md` for commands and `docs/revalidation_report.md` for the workload matrix and detailed sidecar analysis.

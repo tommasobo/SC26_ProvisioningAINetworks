@@ -1,0 +1,98 @@
+{
+  "created_utc": "2026-06-29T05:31:34Z",
+  "dry_run": false,
+  "goal_input": "/mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N128/analysis/output.goal",
+  "sqlite_dir_input": null,
+  "out_dir": "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok/output/grok_n128/monolithic_regen",
+  "comm_dep_mode": "auto",
+  "resolved_comm_dep_mode": "lgs",
+  "allow_goal_fallback": false,
+  "bin_cache_dir": "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/bin_cache/grok_mono_N128",
+  "commands": [
+    {
+      "cmd": [
+        "/usr/bin/python3",
+        "/home/hpcuser/SC_Tracing/pipeline/run_lgs.py",
+        "--goal",
+        "/mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N128/analysis/output.goal",
+        "--L",
+        "4000",
+        "--G",
+        "0.04",
+        "--o",
+        "200",
+        "--g",
+        "5",
+        "--comm-dep-out",
+        "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok/output/grok_n128/monolithic_regen/comm_dep.csv",
+        "--bin-cache-dir",
+        "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/bin_cache/grok_mono_N128"
+      ],
+      "cwd": "/home/hpcuser/SC_Tracing",
+      "returncode": 0,
+      "elapsed_s": 24511.287530580536,
+      "dry_run": false
+    },
+    {
+      "cmd": [
+        "/usr/bin/python3",
+        "/home/hpcuser/SC_Tracing/pipeline/run_monolithic_points.py",
+        "--goal",
+        "/mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N128/analysis/output.goal",
+        "--comm-dep",
+        "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok/output/grok_n128/monolithic_regen/comm_dep.csv",
+        "--l-intra",
+        "350",
+        "--o",
+        "200",
+        "--G",
+        "0.04",
+        "--out",
+        "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok/output/grok_n128/monolithic_regen/monolithic_points.csv",
+        "--latencies",
+        "4000.0"
+      ],
+      "cwd": "/home/hpcuser/SC_Tracing",
+      "returncode": 0,
+      "elapsed_s": 15969.262312689796,
+      "dry_run": false
+    }
+  ],
+  "outputs": {
+    "goal": {
+      "path": "/mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N128/analysis/output.goal",
+      "exists": true,
+      "bytes": 16985969401
+    },
+    "comm_dep": {
+      "path": "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok/output/grok_n128/monolithic_regen/comm_dep.csv",
+      "bytes": 1233057854,
+      "rows": 58648508,
+      "first_rows": [
+        [
+          409,
+          605,
+          411,
+          614
+        ],
+        [
+          408,
+          183592,
+          239,
+          183675
+        ],
+        [
+          50,
+          183592,
+          314,
+          183675
+        ]
+      ]
+    },
+    "monolithic_points": {
+      "path": "/mnt/scratch/SC_Tracing_final_scratch_rerun_20260627/grok/output/grok_n128/monolithic_regen/monolithic_points.csv",
+      "exists": true,
+      "bytes": 73
+    }
+  }
+}

@@ -40,10 +40,11 @@ The requested Grok node-count scaling plot is not one of the original paper figu
 
 - Outputs: `new_results/final_scratch_rerun_20260627/` and `results/final_scratch_rerun_20260627/grok_node_scaling/`.
 - Scope: N4, N8, N16, N32, N64, N128, N256, and N512.
-- Methods included: hardware points, fresh scratch LGS where available, fresh scratch Composite-LP where available, and Monolithic-LP through N64 only.
+- Methods included: hardware points, fresh scratch LGS where available, fresh scratch Composite-LP where available, and exact Monolithic-LP points through N128 at `L=4000 ns`.
 - Fresh-cache Composite-LP in the final scratch pass matched development replay within 0.000151% for N64, 0.000599% for N256, and 0.000933% for N512.
 - N128 LGS was regenerated completely. N256 LGS produced 5/6 requested latency points before the 6-hour timeout; the missing point is `L=1e6 ns`.
 - N64 Monolithic-LP completed one fresh `L=4000 ns` point: 8,072.785 ms, 42.8M LP variables, 99.7M constraints, 5h11m45s wall time, and 133.4 GiB peak RSS.
+- N128 Monolithic-LP completed one fresh `L=4000 ns` point: 7,137.090 ms, 80.6M LP variables, 200.8M constraints, 11h17m46s wall time, and 266.7 GiB peak RSS.
 
 ## Publishable Small Grok Artifact Guidance
 

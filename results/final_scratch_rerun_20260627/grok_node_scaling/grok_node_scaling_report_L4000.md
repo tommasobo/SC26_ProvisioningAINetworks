@@ -11,7 +11,7 @@ Target network latency: `4000 ns`.
 | 16.000 | 9961.441 | 9383.626 | 9613.792 | 8236.869 |
 | 32.000 | 9459.765 | 8338.154 | 9551.556 | 8095.967 |
 | 64.000 | 9562.007 | 8604.782 | 9788.116 | 8072.785 |
-| 128.000 | 8530.951 | 8107.423 | 8973.763 |  |
+| 128.000 | 8530.951 | 8107.423 | 8973.763 | 7137.090 |
 | 256.000 | 8809.187 | 7498.383 | 9174.943 |  |
 | 512.000 | 8824.133 | 7554.133 | 8989.975 |  |
 
@@ -24,7 +24,7 @@ Target network latency: `4000 ns`.
 | 16 | True | False | ok | ok | ok | scratch_real_grok |
 | 32 | True | False | ok | ok | ok | scratch_real_grok |
 | 64 | True | True | ok | ok | ok | scratch_real_grok |
-| 128 | True | False | ok | ok | missing | scratch_real_grok |
+| 128 | True | False | ok | ok | ok | scratch_real_grok |
 | 256 | True | False | ok | ok | missing | scratch_real_grok |
 | 512 | True | False | ok | ok | missing | scratch_real_grok |
 
