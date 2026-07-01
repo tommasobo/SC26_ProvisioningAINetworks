@@ -653,3 +653,16 @@ This log records the cleanup/revalidation pass on the artifact repository. Comma
 - Multi-latency Monolithic-LP coverage after the update: `L=0`, `4000`, `10000`, `250000`, and `500000 ns` have Monolithic-LP through N64; `L=1000000 ns` has Monolithic-LP through N32 only; N128 remains `L=4000 ns` only.
 - Summary command: `python3 scripts/summarize_final_scratch_rerun.py --results-dir results/final_scratch_rerun_20260627`.
 - Summary outputs: `results/final_scratch_rerun_20260627/final_scratch_summary.md`, `task_summary.csv`, `comparison_summary.csv`, and `manual_lgs_summary.csv`.
+
+### 2026-07-01: Fig. 5 Mismatch Control
+
+- Goal: determine whether the remaining Fig. 5 mismatch is caused by regenerated GOAL drift, missing sidecars, or unrecovered packaged CSV provenance.
+- Sanity check: `data/output/llama7b/partial_100pct/sweeps/full_runtime.csv` and `compressed_runtime.csv` are not byte-identical but are numerically identical to floating-point roundoff: max absolute difference `7.4e-6 ns` over 201 shared points.
+- Input comparison: old and regenerated one-iteration Llama N4 metadata sidecars have identical SHA-256 hashes for `collective_instances.csv`, `comm_info.csv`, `comm_ring_info.csv`, `comm_tree_info.csv`, and `profiling_interval.csv`. The old `output.goal` is 310,993,826 bytes and the regenerated `output.goal` is 254,943,181 bytes.
+- Historical-GOAL sidecar command: `/usr/bin/time -v timeout 7200 python3 pipeline/run_lgs.py --goal /mnt/scratch/LLAMA/Traces_Compression/workspaces/llama7b_n4_spcl_20260407/analysis/output.goal --L 1000 --G 0.04 --o 200 --comm-dep-out /mnt/scratch/SC_Tracing_revalidation/fig5_old_goal_mono_control/comm_dep.csv`.
+- Historical-GOAL sidecar result: success in 33.27s; generated 891,270 LP dependency rows.
+- Historical-GOAL Monolithic command: `/usr/bin/time -v timeout 7200 python3 pipeline/run_monolithic_lp.py --goal /mnt/scratch/LLAMA/Traces_Compression/workspaces/llama7b_n4_spcl_20260407/analysis/output.goal --comm-dep /mnt/scratch/SC_Tracing_revalidation/fig5_old_goal_mono_control/comm_dep.csv --out /mnt/scratch/SC_Tracing_revalidation/fig5_old_goal_mono_control/full_runtime.csv --l-min 0 --l-max 1000000 --step 50000 --l-intra 350 --o 200 --G 0.04`.
+- Historical-GOAL Monolithic result: success in 7m03.49s, 5,661,144 KiB max RSS. Solver graph: 5,002,127 vertices, 6,840,787 edges, 16 ranks.
+- Numeric control comparisons: old-GOAL Monolithic vs regenerated-GOAL Monolithic max relative difference 1.668328%, mean 1.177322%; old-GOAL Monolithic vs packaged Fig. 5 Monolithic max relative difference 124.319294%, mean 76.730142%.
+- Local provenance search: exact matches for shipped Fig. 5 CSVs were found only in artifact-repository clones under `/home/hpcuser/SC_Tracing` and `/mnt/scratch/SC_Tracing_cleanclone_validation`. The recovered development workspace only contains the lower-slope Composite curve reproduced by historical mode.
+- Interpretation: the Fig. 5 mismatch is not primarily due to regenerated GOAL drift or missing `comm_dep.csv`. The end-to-end mechanics are validated, but the exact shipped Fig. 5 Monolithic/Composite CSVs appear to come from an unrecovered historical model/input or postprocessing path.

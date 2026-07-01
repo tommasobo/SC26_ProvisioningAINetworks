@@ -1,0 +1,13 @@
+{
+  "actual": "/mnt/scratch/SC_Tracing_revalidation/fig5_old_goal_mono_control/full_runtime.csv",
+  "expected": "data/output/llama7b/partial_100pct/sweeps/full_runtime.csv",
+  "label": "old_goal_mono_vs_packaged",
+  "max_L": 1000000.0,
+  "max_abs_diff_ns": 1958009311.5851872,
+  "max_abs_rel_diff_pct": 124.31929354330585,
+  "mean_abs_diff_ns": 989513175.0076673,
+  "mean_abs_rel_diff_pct": 76.73014159501294,
+  "min_L": 36735.74999999045,
+  "n_points": 21,
+  "points": "actual"
+}
