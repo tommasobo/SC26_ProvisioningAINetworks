@@ -20,7 +20,7 @@ Usage: ./reproduce_full.sh [options]
 Options:
   --local                  Run tasks sequentially on the current machine (default).
   --slurm                  Submit tasks as separate Slurm jobs.
-  --scratch DIR            Large-output and cache directory.
+  --scratch DIR            Working directory for large outputs.
   --workers N              Solver workers per task (default: 4).
   --account NAME           Slurm account (default: $SLURM_ACCOUNT or a-g200).
   --partition NAME         Slurm partition (default: $SLURM_PARTITION or normal).
@@ -30,7 +30,9 @@ Options:
   -h, --help               Show this help.
 
 The default run never executes Grok 4096-GPU experiments. Those tasks require
-both --expensive_run and an explicit --grok-analysis-dir.
+both --expensive_run and an explicit --grok-analysis-dir. The complete Grok
+latency and bandwidth analysis should be run on a large-memory node with at
+least 512 GB of RAM and may require approximately 3 to 5 days.
 EOF
 }
 
@@ -87,6 +89,12 @@ if [[ "$EXPENSIVE" -eq 0 && -n "$GROK_ANALYSIS_DIR" ]]; then
     echo "error: --grok-analysis-dir is accepted only with --expensive_run" >&2
     exit 2
 fi
+if [[ "$EXPENSIVE" -eq 1 ]]; then
+    cat >&2 <<'EOF'
+warning: Grok 4096-GPU analysis is a multi-day workload.
+         Allocate at least 512 GB RAM and approximately 3 to 5 days.
+EOF
+fi
 
 if [[ -n "${ARTIFACT_PYTHON:-}" ]]; then
     PYTHON_BIN="$ARTIFACT_PYTHON"
@@ -135,9 +143,12 @@ else
     for task in "${tasks[@]}"; do
         time_limit="01:00:00"
         memory="96G"
-        if [[ "$task" == grok4096-* ]]; then
-            time_limit="12:00:00"
-            memory="256G"
+        if [[ "$task" == grok4096-latency ]]; then
+            time_limit="1-00:00:00"
+            memory="512G"
+        elif [[ "$task" == grok4096-bandwidth ]]; then
+            time_limit="4-00:00:00"
+            memory="512G"
         fi
         export_spec="ALL,ARTIFACT_ROOT=$ROOT,ARTIFACT_TASK=$task"
         export_spec+=",ARTIFACT_SCRATCH=$SCRATCH_DIR,ARTIFACT_WORKERS=$WORKERS"

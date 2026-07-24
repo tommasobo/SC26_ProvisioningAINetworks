@@ -86,11 +86,15 @@ enough memory, compute time, and scratch space are available:
 
 ```bash
 ./reproduce_full.sh --slurm --expensive_run \
+  --partition <large-memory-partition> \
   --grok-analysis-dir /scratch/path/to/grok/N1024/analysis \
   --scratch /scratch/path/to/output
 ```
 
-Allow several additional hours for this option.
+Plan for at least 512 GB of RAM and allow approximately 3 to 5 days for the
+complete latency and bandwidth analysis. Actual requirements depend on the
+solver configuration and available parallelism. Check the selected
+partition's memory and wall-time limits before submission.
 
 ## Repository contents
 

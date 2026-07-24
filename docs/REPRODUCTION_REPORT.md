@@ -195,6 +195,11 @@ metadata run only behind `--expensive_run` and an explicit N1024 analysis
 directory. The historical latency solve took about 4.4 hours. It was not run
 for this freeze.
 
+The complete optional latency and bandwidth analysis should be treated as a
+multi-day workload. We recommend a large-memory node with at least 512 GB of
+RAM and approximately 3 to 5 days of wall time, depending on solver
+parallelism.
+
 ## Figure 7
 
 `scripts/fig07_memory_scaling.py` redraws the memory-scaling result from the

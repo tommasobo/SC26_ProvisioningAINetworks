@@ -22,5 +22,7 @@ The Makefile runs `pdflatex` three times, as in the official template.
 The appendix documents `./reproduce_quick.sh` and `./reproduce_full.sh`.
 The full script runs locally by default and supports Slurm. Grok 4k and the
 other high-cost stages remain disabled unless `--expensive_run` is supplied.
+The full Grok 4k analysis should be allocated at least 512 GB of RAM and
+approximately 3 to 5 days.
 
 No DOI, release, or archive was created while preparing these files.
