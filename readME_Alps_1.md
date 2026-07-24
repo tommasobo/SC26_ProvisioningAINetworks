@@ -18,10 +18,12 @@ The most important distinction is:
 - Figure 6 Llama can be regenerated from metadata committed to the
   repository, but that is a metadata-level regeneration rather than a raw
   NSYS regeneration.
-- Stock LLAMP is now shown wherever a packaged CSV is present (Figures 3,
-  4, and 5). These gray dashed curves are parsed from committed CSVs and
-  explicitly labelled `Stock LLAMP (packaged CSV)`; they are not claimed as
-  fresh stock-LLAMP executions.
+- Stock LLAMP is shown only in Figure 3, matching the original paper. Its
+  gray dashed curves are parsed from committed CSVs and explicitly labelled
+  `Stock LLAMP (packaged CSV)`; they are not claimed as fresh stock-LLAMP
+  executions. Packaged stock-runtime CSVs also exist for Figures 4 and 5,
+  but the presentation intentionally does not plot them because the original
+  paper figures do not.
 - The exact Figure 5 paper input and Figure 6 vLLM 8B input are still
   missing. The repository alone cannot independently reproduce those panels.
 
@@ -60,7 +62,8 @@ that convention was necessary for the Figure 3 automatic-channel result.
 | Fig. 5 | historical `llama7b_n4` metadata sidecars plus `/iopsstor/scratch/cscs/btommaso/orderedchaos_ae/inputs/llama7b_n4/llama.bin` | BIN 241,872,936 B | Related Llama 7B inputs only. Neither is the proven paper input; paper says 8B |
 | Fig. 6 Llama | `data/workspaces/llama7b_n32_spcl_20260407/analysis/` | packaged metadata, 128 ranks | Derived metadata only. It identifies Llama 7B N32/GPU128/DP128, while the paper says 70B |
 | Fig. 6 vLLM | none | — | Exact Llama-3.1-8B N2/GPU8/128-token input expired; not reproduced and no 70B substitute was used |
-| Stock LLAMP overlays | committed `*_stock_runtime.csv` files listed below | 7 CSVs; 987 data rows | Derived/packaged solver outputs only. Parsed for plot context, not regenerated from original inputs |
+| Fig. 3 Stock LLAMP overlays | committed Figure 3 `*_stock_runtime.csv` files listed below | 4 CSVs; 524 data rows | Derived/packaged solver outputs only. Parsed for Figure 3 context, not regenerated from original inputs |
+| Unplotted stock-runtime caches | committed Figure 4/5 stock CSVs listed below | 3 CSVs; 463 data rows | Retained as provenance, but omitted from the presentation to match the original paper |
 
 Source-container hashes:
 
@@ -223,32 +226,33 @@ python pipeline/run_nccl_bw_sensitivity.py \
 This is fully regenerable from repository data, but remains a
 metadata-level check with a 7B/70B identity conflict.
 
-### 6. Parse the packaged stock-LLAMP CSVs
+### 6. Parse the packaged Figure 3 stock-LLAMP CSVs
 
-The side-by-side presentation parses the following committed files directly
-with `pandas.read_csv`:
+The side-by-side presentation parses the four Figure 3 files directly with
+`pandas.read_csv`. The repository also contains three Figure 4/5 stock
+runtime CSVs, which are catalogued here but deliberately not plotted because
+Stock LLAMP does not appear in the original Figures 4 or 5.
 
-| Figure | CSV | Rows | SHA-256 |
-| --- | --- | ---: | --- |
-| 3 ch1 latency | `data/output/final_plots/data/ar_128m_16n_ch1/latency_stock_runtime.csv` | 201 | `27ca9a8efc941ce0868fca8b3c3790876a2d506e0ee1585190ac2b645739b494` |
-| 3 ch1 bandwidth | `data/output/final_plots/data/ar_128m_16n_ch1/bw_stock_runtime.csv` | 61 | `504546c55c7dce68a6c44a06ae3303ea460e726b450496bdca8d0078c5cb2363` |
-| 3 auto latency | `data/output/final_plots/data/ar_128m_16n_auto/latency_stock_runtime.csv` | 201 | `fdaf4184465ab2258fb77356338260c872fcb19e8d462635816d4fece377b74a` |
-| 3 auto bandwidth | `data/output/final_plots/data/ar_128m_16n_auto/bw_stock_runtime.csv` | 61 | `108e57096f9fa1bb23476ba2266d996f793e8621383351f5e4a1f7f8a8f12b76` |
-| 4 latency | `data/output/final_plots/data/mixed_16n_ch1/latency_stock_runtime.csv` | 201 | `5310b3f0551b7649330794720cf53337ea1ac4484428865192fd90195d5cafa0` |
-| 4 bandwidth (retained, not needed by the current Figure 4 page) | `data/output/final_plots/data/mixed_16n_ch1/bw_stock_runtime.csv` | 61 | `569b11fb47d64bcd95b4ac0ea36d16fc5225b010e26bad0673147a4e4aef292b` |
-| 5 latency | `data/output/llama7b/partial_100pct/sweeps/stock_runtime.csv` | 201 | `fa352e764dabc83ec72cc4c14c2e1fee2ce7c067cb212fc09e383f1ee7208ff7` |
+| Figure | CSV | Rows | Presentation treatment | SHA-256 |
+| --- | --- | ---: | --- | --- |
+| 3 ch1 latency | `data/output/final_plots/data/ar_128m_16n_ch1/latency_stock_runtime.csv` | 201 | Plotted | `27ca9a8efc941ce0868fca8b3c3790876a2d506e0ee1585190ac2b645739b494` |
+| 3 ch1 bandwidth | `data/output/final_plots/data/ar_128m_16n_ch1/bw_stock_runtime.csv` | 61 | Plotted | `504546c55c7dce68a6c44a06ae3303ea460e726b450496bdca8d0078c5cb2363` |
+| 3 auto latency | `data/output/final_plots/data/ar_128m_16n_auto/latency_stock_runtime.csv` | 201 | Plotted | `fdaf4184465ab2258fb77356338260c872fcb19e8d462635816d4fece377b74a` |
+| 3 auto bandwidth | `data/output/final_plots/data/ar_128m_16n_auto/bw_stock_runtime.csv` | 61 | Plotted | `108e57096f9fa1bb23476ba2266d996f793e8621383351f5e4a1f7f8a8f12b76` |
+| 4 latency | `data/output/final_plots/data/mixed_16n_ch1/latency_stock_runtime.csv` | 201 | Not plotted | `5310b3f0551b7649330794720cf53337ea1ac4484428865192fd90195d5cafa0` |
+| 4 bandwidth | `data/output/final_plots/data/mixed_16n_ch1/bw_stock_runtime.csv` | 61 | Not plotted | `569b11fb47d64bcd95b4ac0ea36d16fc5225b010e26bad0673147a4e4aef292b` |
+| 5 latency | `data/output/llama7b/partial_100pct/sweeps/stock_runtime.csv` | 201 | Not plotted | `fa352e764dabc83ec72cc4c14c2e1fee2ce7c067cb212fc09e383f1ee7208ff7` |
 
 Latency CSVs use `L` in nanoseconds and `runtime` in nanoseconds; the plot
 converts them to microseconds and milliseconds. Bandwidth CSVs use `G` in
 nanoseconds per byte and `runtime` in nanoseconds; the plot converts
-`G > 0` to `BW = 8/G` Gbps and runtime to milliseconds. The Figure 4 page
-contains only a latency panel, so its packaged bandwidth CSV is documented
-but not plotted. No stock-LLAMP CSV exists for Figure 6.
+`G > 0` to `BW = 8/G` Gbps and runtime to milliseconds. No stock-LLAMP CSV
+exists for Figure 6.
 
-These curves have zero parsing/redraw difference from their own source CSVs
-by construction. That is not an accuracy measurement and must not be
-reported as a successful stock-LLAMP reproduction. Restoring and validating
-the original stock-LLAMP executable path remains future work.
+The four plotted Figure 3 curves have zero parsing/redraw difference from
+their own source CSVs by construction. That is not an accuracy measurement
+and must not be reported as a successful stock-LLAMP reproduction. Restoring
+and validating the original stock-LLAMP executable path remains future work.
 
 ### 7. Error calculation
 
@@ -364,9 +368,11 @@ figures/SC26_paper_vs_reproduction_clariden-ln004.pdf
 ```
 
 The PDF has paper/reference plots on the left and fresh results on the right.
-Gray dashed paper-reference and Stock LLAMP curves, plus red hardware stars,
-come from packaged paper data and are marked as context. Solid/marker
-reproduction curves and their lower-panel derivatives are freshly generated.
+Gray dashed paper-reference curves and red hardware stars come from packaged
+paper data and are marked as context. Figure 3 additionally includes the
+packaged Stock LLAMP curve, matching the paper; Figures 4 and 5 do not.
+Solid/marker reproduction curves and their lower-panel derivatives are
+freshly generated.
 
 ## Verification
 

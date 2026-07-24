@@ -341,8 +341,8 @@ def summary_page(pdf: PdfPages, repo: Path, out: Path, host: str):
         0.10,
         "Left-hand plots on later pages are regenerated from the artifact's packaged paper data. "
         "They are references, not independent reruns. Right-hand plots combine outputs generated during this run "
-        "with explicitly labelled packaged reference CSVs. Gray dashed curves are CSV-derived context, including "
-        "Stock LLAMP where a packaged CSV exists; they are not fresh solver runs.",
+        "with explicitly labelled packaged reference CSVs. Gray dashed curves are CSV-derived context; Stock LLAMP "
+        "is included only in Figure 3, where it appears in the original paper, and is not a fresh solver run.",
         fontsize=9,
         wrap=True,
     )
@@ -434,7 +434,6 @@ def figure4_page(pdf: PdfPages, repo: Path, out: Path):
         work / "lgs_topology/lgs_runtime.csv",
         prefer_monolithic(work),
         "Fresh end-to-end reproduction — job 1808340",
-        stock=paper_dir / "latency_stock_runtime.csv",
         sensitivity_ax=ax_sens,
         hw=hw,
         hw_error=hw_error,
@@ -467,8 +466,8 @@ def figure4_page(pdf: PdfPages, repo: Path, out: Path):
     page_footer(
         fig,
         "End-to-end path for job 1808340: 64 original NSYS → fresh SQLite → fresh GOAL/metadata "
-        "→ fresh LGS/Composite/Monolithic solves → this plot. Packaged CSVs supply the dashed "
-        "paper-reference and Stock LLAMP curves; packaged timestamps supply the red measured-HW star.",
+        "→ fresh LGS/Composite/Monolithic solves → this plot. The packaged paper-reference CSV supplies "
+        "the dashed comparison curve; packaged timestamps supply the red measured-HW star.",
     )
     pdf.savefig(fig)
     plt.close(fig)
@@ -491,18 +490,7 @@ def figure5_page(pdf: PdfPages, repo: Path, out: Path):
     mx, my = curve(old_meta, "L", "runtime", 1e-3, 1e-6)
     paper_comp = repo / "data/output/llama7b/comp_100pct/sweeps/composed_runtime.csv"
     px, py = curve(paper_comp, "L", "runtime", 1e-3, 1e-6)
-    stock = repo / "data/output/llama7b/partial_100pct/sweeps/stock_runtime.csv"
-    sx, sy = curve(stock, "L", "runtime", 1e-3, 1e-6)
     ax.plot(px, py, color=C_PAPER, ls="--", lw=1.1, label="paper reference")
-    if len(sx):
-        ax.plot(
-            sx,
-            sy,
-            color=C_STOCK,
-            ls=(0, (5, 2)),
-            lw=1.35,
-            label="Stock LLAMP (packaged CSV)",
-        )
     if len(mx):
         ax.plot(mx, my, color=C_COMP, lw=1.6, label="Composite LP (old metadata)")
     if len(lx):
@@ -527,7 +515,7 @@ def figure5_page(pdf: PdfPages, repo: Path, out: Path):
         va="top", fontsize=8,
         bbox=dict(boxstyle="round", facecolor="#f7f7f7", edgecolor="#bbbbbb"),
     )
-    page_footer(fig, "The fresh old-metadata Composite starts at the same baseline as the paper but differs by 10.038% mean over the full curve. The public-V2 static BIN runs at roughly 2.1–3.3 s and is related provenance only. Stock LLAMP is parsed from the packaged CSV and is not a fresh run. Neither candidate is promoted to exact.")
+    page_footer(fig, "The fresh old-metadata Composite starts at the same baseline as the paper but differs by 10.038% mean over the full curve. The public-V2 static BIN runs at roughly 2.1–3.3 s and is related provenance only. Neither candidate is promoted to exact. Stock LLAMP is omitted, matching the original Figure 5.")
     pdf.savefig(fig)
     plt.close(fig)
 
