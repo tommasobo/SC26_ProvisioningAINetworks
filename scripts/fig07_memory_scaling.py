@@ -87,7 +87,10 @@ ax.annotate(
 
 ax.grid(True, linestyle=":", axis="y")
 
-fig.savefig(OUT / "fig6_grok_memory.pdf")
+fig.savefig(
+    OUT / "fig6_grok_memory.pdf",
+    metadata={"CreationDate": None, "ModDate": None},
+)
 fig.savefig(OUT / "fig6_grok_memory.png", dpi=300)
 print(f"Saved {OUT / 'fig6_grok_memory.pdf'}")
 plt.close()
