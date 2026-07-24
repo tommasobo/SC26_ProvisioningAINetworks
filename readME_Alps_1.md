@@ -72,6 +72,15 @@ The Figure 4 corrected bundle also contains
 It was tested as provenance evidence but was not called an exact 64-rank
 input.
 
+Job 1808340 is an end-to-end downstream reproduction, not a redraw of its
+packaged runtime CSV: its 64 recovered NSYS reports were freshly exported to
+SQLite, converted to a new GOAL and metadata set, replayed through LGS, used
+to regenerate `comm_dep.csv`, and freshly solved through Monolithic and
+Composite LP. The packaged Figure 4 CSV appears only as the dashed comparison
+curve. This distinction is why job 1808340 is the primary Figure 4 panel in
+the side-by-side PDF even though its message sizes conflict with the written
+paper configuration.
+
 ## Process used
 
 ### 1. Export raw NSYS reports

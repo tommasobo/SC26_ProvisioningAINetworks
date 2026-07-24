@@ -21,6 +21,20 @@ import pandas as pd
 from matplotlib.backends.backend_pdf import PdfPages
 
 
+plt.rcParams.update({
+    "font.size": 8,
+    "axes.labelsize": 7.5,
+    "axes.titlesize": 8.5,
+    "legend.fontsize": 6,
+    "xtick.labelsize": 6.5,
+    "ytick.labelsize": 6.5,
+    "lines.linewidth": 1.4,
+    "lines.markersize": 3,
+    "axes.linewidth": 0.6,
+    "grid.linewidth": 0.3,
+    "grid.alpha": 0.3,
+})
+
 C_PAPER = "#777777"
 C_COMP = "#D6604D"
 C_LGS = "#4DAF4A"
@@ -66,11 +80,11 @@ def prefer_monolithic(work: Path) -> Path:
 
 
 def panel_style(ax, title: str, xlabel: str, ylabel: str):
-    ax.set_title(title, fontsize=9)
-    ax.set_xlabel(xlabel, fontsize=8)
-    ax.set_ylabel(ylabel, fontsize=8)
+    ax.set_title(title, fontsize=8.5, pad=3)
+    ax.set_xlabel(xlabel, fontsize=7.5)
+    ax.set_ylabel(ylabel, fontsize=7.5)
     ax.grid(True, ls=":", alpha=0.35)
-    ax.tick_params(labelsize=7)
+    ax.tick_params(labelsize=6.5)
 
 
 def hardware_stats(ci_path: Path, *, first_collective: bool, scale: float = 1e6):
@@ -137,7 +151,7 @@ def plot_lambda(ax, x_us, runtime, *, runtime_unit: str, color=C_COMP):
         values = np.divide(np.diff(y) * runtime_to_ns, dx_ns,
                            out=np.zeros_like(dx_ns), where=dx_ns > 0)
         ax.plot((x[:-1] + x[1:]) / 2, values, color=color, lw=1.1)
-    ax.set_xlabel("inter-node latency L [µs]", fontsize=7)
+    ax.set_xlabel(r"$L$ [$\mu$s]", fontsize=7)
     ax.set_ylabel(r"$\lambda_L$", fontsize=8)
     ax.grid(True, ls=":", alpha=0.35)
     ax.tick_params(labelsize=6)
@@ -160,7 +174,7 @@ def plot_mu(ax, bw_gbps, runtime, *, runtime_unit: str, output_unit: str, color=
         bw_mid = 8.0 / gap_mid
         values = mu_mb / 1e3 if output_unit == "GB" else mu_mb
         ax.plot(bw_mid, values, color=color, lw=1.1)
-    ax.set_xlabel("bandwidth [Gbps]", fontsize=7)
+    ax.set_xlabel("BW [Gbps]", fontsize=7)
     ax.set_ylabel(rf"$\mu_G$ [{output_unit}]", fontsize=8)
     ax.grid(True, ls=":", alpha=0.35)
     ax.tick_params(labelsize=6)
@@ -183,17 +197,17 @@ def plot_latency(ax, paper: Path, comp: Path, lgs: Path, mono: Path, title: str,
     lx, ly = curve(lgs, "L_ns", "runtime_ns", 1e-3, 1e-6)
     mx, my = curve(mono, "L", "runtime", 1e-3, 1e-6)
     if len(px):
-        ax.plot(px, py, color=C_PAPER, ls="--", lw=1.0, alpha=0.7, label="paper CSV (context)")
+        ax.plot(px, py, color=C_PAPER, ls="--", lw=1.1, alpha=0.72, label="paper reference")
     if len(cx):
-        ax.plot(cx, cy, color=C_COMP, lw=1.6, label="fresh Composite LP")
+        ax.plot(cx, cy, color=C_COMP, lw=1.6, label="Composite LP")
     if len(lx):
-        ax.plot(lx, ly, "s:", color=C_LGS, ms=3, label="fresh LGS")
+        ax.plot(lx, ly, "s-.", color=C_LGS, lw=1.2, ms=3, label="LGS")
     if len(mx):
-        ax.plot(mx, my, "o-", color=C_MONO, ms=3, lw=1.0, label="fresh Monolithic points")
+        ax.plot(mx, my, "-", color=C_MONO, lw=1.6, label="Monolithic LP")
     if not any(map(len, (cx, lx, mx))):
         ax.text(0.5, 0.5, "No fresh model output", transform=ax.transAxes, ha="center", va="center")
     add_hw_star(ax, hw, hw_error, x=4.0)
-    panel_style(ax, title, "" if sensitivity_ax is not None else "inter-node latency L [µs]", "runtime [ms]")
+    panel_style(ax, title, "" if sensitivity_ax is not None else r"$L$ [$\mu$s]", r"$T(L)$ [ms]")
     add_latency_regions(ax)
     if sensitivity_ax is not None:
         plt.setp(ax.get_xticklabels(), visible=False)
@@ -229,11 +243,11 @@ def plot_bandwidth(ax, paper: Path, paper_lgs: Path, comp: Path, lgs: Path, mono
     lx, ly = bandwidth_curve(lgs)
     mx, my = bandwidth_curve(mono)
     for x, y, style, color, label in (
-        (px, py, "--", C_MONO, "paper LP (context)"),
-        (plx, ply, "--", C_LGS, "paper LGS (context)"),
-        (cx, cy, "-", C_COMP, "fresh Composite LP"),
-        (lx, ly, "s:", C_LGS, "fresh LGS"),
-        (mx, my, "o-", C_MONO, "fresh Monolithic points"),
+        (px, py, "--", C_PAPER, "paper LP reference"),
+        (plx, ply, ":", C_PAPER, "paper LGS reference"),
+        (cx, cy, "-", C_COMP, "Composite LP"),
+        (lx, ly, "s-.", C_LGS, "LGS"),
+        (mx, my, "-", C_MONO, "Monolithic LP"),
     ):
         if len(x):
             order = np.argsort(x)
@@ -241,7 +255,7 @@ def plot_bandwidth(ax, paper: Path, paper_lgs: Path, comp: Path, lgs: Path, mono
     if not any(map(len, (cx, lx, mx))):
         ax.text(0.5, 0.5, "No fresh bandwidth output", transform=ax.transAxes, ha="center", va="center")
     add_hw_star(ax, hw, hw_error, x=200.0)
-    panel_style(ax, title, "" if sensitivity_ax is not None else "bandwidth [Gbps]", "runtime [ms]")
+    panel_style(ax, title, "" if sensitivity_ax is not None else "BW [Gbps]", r"$T(G)$ [ms]")
     add_bandwidth_regions(ax)
     if sensitivity_ax is not None:
         plt.setp(ax.get_xticklabels(), visible=False)
@@ -367,26 +381,70 @@ def figure3_page(pdf: PdfPages, repo: Path, out: Path):
 
 def figure4_page(pdf: PdfPages, repo: Path, out: Path):
     fig = plt.figure(figsize=(16, 9))
-    page_header(fig, "Figure 4 — mixed collectives", "Paper/reference on the left · both provenance candidates reproduced on the right")
+    page_header(
+        fig,
+        "Figure 4 — mixed collectives",
+        "Paper/reference on the left · fresh end-to-end NSYS reproduction on the right",
+    )
     outer = fig.add_gridspec(1, 2, left=0.03, right=0.98, bottom=0.09, top=0.90, wspace=0.12)
     show_reference(fig.add_subplot(outer[0, 0]), repo / "figures/fig_mixed_16n_ch1.png", "Paper/reference plot")
-    right = outer[0, 1].subgridspec(2, 1, hspace=0.28)
     paper_dir = repo / "data/output/final_plots/data/mixed_16n_ch1"
     paper = paper_dir / "latency_full_runtime.csv"
     hw, hw_error = hardware_stats(paper_dir / "collective_instances.csv", first_collective=False)
-    for row, (name, title) in enumerate([
-        ("fig4_curve_source_job1808340", "Likely published-curve source: job 1808340"),
-        ("fig4_corrected_job1791883", "Corrected raw campaign candidate: job 1791883"),
-    ]):
-        work = out / "fresh" / name
-        cell = right[row, 0].subgridspec(2, 1, height_ratios=[2.5, 1], hspace=0.08)
-        ax = fig.add_subplot(cell[0])
-        ax_sens = fig.add_subplot(cell[1], sharex=ax)
-        plot_latency(ax, paper, work / "composite/composed_runtime.csv",
-                     work / "lgs_topology/lgs_runtime.csv", prefer_monolithic(work), title,
-                     sensitivity_ax=ax_sens, hw=hw, hw_error=hw_error)
-        ax.legend(fontsize=6, ncol=5, loc="upper left")
-    page_footer(fig, "The 64-report raw job 1791883 campaign matches the written Mixed20/16–64 MiB/seed 20262014 configuration, but its preserved static GOAL says num_ranks 16 and is therefore only contradictory evidence. Job 1808340 has strong hash/path evidence as the published curve source but contains a conflicting 0.5–256 MiB size set. They are intentionally not collapsed.")
+
+    # Center one paper-proportioned runtime+sensitivity pair in the right
+    # half.  The primary visual is the end-to-end job 1808340 reproduction;
+    # the corrected written-configuration campaign remains a provenance note
+    # rather than shrinking the successful comparison.
+    right = outer[0, 1].subgridspec(
+        5, 1, height_ratios=[1.0, 2.5, 1.0, 0.18, 1.05], hspace=0.08
+    )
+    fig.add_subplot(right[0]).axis("off")
+    work = out / "fresh/fig4_curve_source_job1808340"
+    ax = fig.add_subplot(right[1])
+    ax_sens = fig.add_subplot(right[2], sharex=ax)
+    plot_latency(
+        ax,
+        paper,
+        work / "composite/composed_runtime.csv",
+        work / "lgs_topology/lgs_runtime.csv",
+        prefer_monolithic(work),
+        "Fresh end-to-end reproduction — job 1808340",
+        sensitivity_ax=ax_sens,
+        hw=hw,
+        hw_error=hw_error,
+    )
+    ax.legend(fontsize=6.5, ncol=3, loc="upper left", framealpha=0.9)
+    fig.add_subplot(right[3]).axis("off")
+    note = fig.add_subplot(right[4])
+    note.axis("off")
+    note.text(
+        0.02,
+        0.92,
+        "Provenance check (kept separate)",
+        fontsize=9,
+        fontweight="bold",
+        va="top",
+    )
+    note.text(
+        0.02,
+        0.68,
+        "Job 1808340 is fully end-to-end from 64 recovered NSYS reports and is the\n"
+        "numerical curve source (Monolithic max error 0.118%). Its 0.5–256 MiB\n"
+        "messages conflict with the paper text. Corrected job 1791883 matches the\n"
+        "written 16–64 MiB/seed 20262014 configuration but is ~3× slower and does\n"
+        "not produce the published curve.",
+        fontsize=8,
+        va="top",
+        linespacing=1.25,
+        bbox=dict(boxstyle="round", facecolor="#f7f7f7", edgecolor="#bbbbbb"),
+    )
+    page_footer(
+        fig,
+        "End-to-end path for job 1808340: 64 original NSYS → fresh SQLite → fresh GOAL/metadata "
+        "→ fresh LGS/Composite/Monolithic solves → this plot. Packaged CSVs are used only for "
+        "the dashed reference and red measured-HW star.",
+    )
     pdf.savefig(fig)
     plt.close(fig)
 
@@ -396,36 +454,42 @@ def figure5_page(pdf: PdfPages, repo: Path, out: Path):
     page_header(fig, "Figure 5 — Llama training iteration", "Paper/reference on the left · recovered candidates on the right; exact paper input is still missing")
     outer = fig.add_gridspec(1, 2, left=0.03, right=0.98, bottom=0.10, top=0.90, wspace=0.12)
     show_reference(fig.add_subplot(outer[0, 0]), repo / "figures/fig5_llama7b.png", "Paper/reference plot")
-    right = outer[0, 1].subgridspec(2, 1, height_ratios=[2.5, 1], hspace=0.08)
-    ax = fig.add_subplot(right[0])
-    ax_sens = fig.add_subplot(right[1], sharex=ax)
+    right = outer[0, 1].subgridspec(
+        5, 1, height_ratios=[0.85, 2.5, 1.0, 0.15, 0.95], hspace=0.08
+    )
+    fig.add_subplot(right[0]).axis("off")
+    ax = fig.add_subplot(right[1])
+    ax_sens = fig.add_subplot(right[2], sharex=ax)
     static_lgs = prefer_current_lgs(out / "fresh/fig5_llama7b_n4_static_bin")
     lx, ly = curve(static_lgs, "L_ns", "runtime_ns", 1e-3, 1e-6)
     old_meta = out / "experiments/fig5_historical_metadata/composed_runtime.csv"
     mx, my = curve(old_meta, "L", "runtime", 1e-3, 1e-6)
     paper_comp = repo / "data/output/llama7b/comp_100pct/sweeps/composed_runtime.csv"
     px, py = curve(paper_comp, "L", "runtime", 1e-3, 1e-6)
-    ax.plot(px, py, color=C_PAPER, ls="--", label="packaged paper Composite (context)")
+    ax.plot(px, py, color=C_PAPER, ls="--", lw=1.1, label="paper reference")
     if len(mx):
-        ax.plot(mx, my, color=C_COMP, lw=1.7, label="fresh replay from old metadata")
+        ax.plot(mx, my, color=C_COMP, lw=1.6, label="Composite LP (old metadata)")
     if len(lx):
-        ax.plot(lx, ly, "s:", ms=3, color=C_LGS, label="fresh public-V2 static BIN replay")
+        ax.plot(lx, ly, "s-.", lw=1.2, ms=3, color=C_LGS, label="LGS (public-V2 BIN)")
     add_hw_star(ax, 895.65, None, x=4.0)
     panel_style(ax, "Fresh candidate replays", "", "runtime [ms]")
     add_latency_regions(ax)
     plt.setp(ax.get_xticklabels(), visible=False)
     plot_lambda(ax_sens, mx, my, runtime_unit="ms", color=C_COMP)
     ax.legend(loc="upper left")
-    ax.text(
-        0.03, 0.72,
+    fig.add_subplot(right[3]).axis("off")
+    note = fig.add_subplot(right[4])
+    note.axis("off")
+    note.text(
+        0.02, 0.92,
         "Exact paper input: unresolved\n"
         "Both candidates identify Llama 7B, N4/GPU16, DP16\n"
         "Paper label: Llama 8B\n"
         "Raw one-iteration NSYS/GOAL: missing\n"
         "Old metadata matches an older dev curve, not the paper slope\n"
         "Public-V2 BIN is a different 16-rank program",
-        transform=ax.transAxes, va="top", fontsize=10,
-        bbox=dict(boxstyle="round", facecolor="white", alpha=0.9, edgecolor="#bbbbbb"),
+        va="top", fontsize=8,
+        bbox=dict(boxstyle="round", facecolor="#f7f7f7", edgecolor="#bbbbbb"),
     )
     page_footer(fig, "The fresh old-metadata Composite starts at the same baseline as the paper but differs by 10.038% mean over the full curve. The public-V2 static BIN runs at roughly 2.1–3.3 s and is related provenance only. Neither candidate is promoted to exact.")
     pdf.savefig(fig)
