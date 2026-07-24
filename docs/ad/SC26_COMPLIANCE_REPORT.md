@@ -10,7 +10,7 @@ Checked on 24 July 2026 against:
 ## Result
 
 `ad_ae_appendix.tex` follows the current SC26 structure and compiles to the
-five-page `ad_ae_appendix.pdf`. It uses the official `IEEEtran.cls` and
+three-page `ad_ae_appendix.pdf`. It uses the official `IEEEtran.cls` and
 `sc26repro.sty` files without changes. The explanation and example tags are
 commented out, all appendix text is black, and no author or affiliation block
 was added.
@@ -76,15 +76,13 @@ documented on the [SC26 process page](https://sc26.supercomputing.org/program/pa
 
 These are administrative checks, not missing appendix content:
 
-1. Push the final `artifact_freeze` branch and confirm that it is readable
-   from a clean checkout before submitting the PDF.
-2. Select the requested badges in the SC26 submission form. The appendix
+1. Select the requested badges in the SC26 submission form. The appendix
    states the intended set, but the form controls the actual request.
-3. Assign persistent DOI records by the SC26 artifact-freeze deadline, not
+2. Assign persistent DOI records by the SC26 artifact-freeze deadline, not
    before. The [SC26 process page](https://sc26.supercomputing.org/program/papers/reproducibility-appendices-badges/)
    lists 25 August 2026 as the artifact-freeze and DOI deadline. No DOI was
    created during this work.
-4. If the submission system requests an archive, create it only after the
+3. If the submission system requests an archive, create it only after the
    user has reviewed the final branch. No archive or release was created here.
 
 ## Build verification

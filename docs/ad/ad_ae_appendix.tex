@@ -1,15 +1,9 @@
 \documentclass[conference]{IEEEtran}
 
-\usepackage{cite}
-\usepackage{amsmath,amssymb,amsfonts}
-\usepackage{graphicx}
 \usepackage[hyphens]{url}
 \Urlmuskip=0mu plus 1mu\relax
-\usepackage{textcomp}
-\usepackage{xcolor}
 \usepackage{booktabs}
 \usepackage{tagging}
-
 \usepackage{sc26repro}
 
 % The next two lines MUST stay commented for final submission.
@@ -36,44 +30,31 @@ Appendix: Artifact Description/Artifact Evaluation
 \subsection{Paper's Main Contributions}
 
 \begin{description}
-\item[$C_1$] We provide a large-scale, trace-grounded
-characterization of AI network sensitivity across realistic
-workloads, fabrics, and scales up to 4{,}096 GPUs. The study
-separates the effects of latency, bandwidth, and jitter and
-identifies the operating regimes in which each limits performance.
-\item[$C_2$] We develop and validate a compositional
-linear-programming method with signature-based caching. The method
-preserves workload dependencies while making production-scale
-sensitivity studies practical.
-\item[$C_3$] We derive latency-bandwidth performance envelopes and
-use them to identify safe operating regions, performance cliffs,
-and useful network provisioning points.
+\item[$C_1$] We characterize the latency, bandwidth, and jitter
+sensitivity of AI communication workloads at scales up to 4,096 GPUs.
+\item[$C_2$] We introduce a compositional linear-programming method
+with signature-based caching for practical large-scale analysis.
+\item[$C_3$] We use the results to derive network performance envelopes
+and identify useful provisioning points.
 \end{description}
 
 \subsection{Computational Artifacts}
 
-The paper is accompanied by two artifacts. Artifact $A_1$ contains
-the analysis code, compact result data, reproduction drivers,
-plotting scripts, manifests, and the final plots. Artifact $A_2$ is
-the companion collection of execution traces used as inputs to the
-analysis.
+The evaluation uses two artifacts:
 
 \begin{description}
-\item[$A_1$] \url{https://github.com/tommasobo/SC_Tracing}
-  (branch \texttt{artifact\_freeze})
-\item[$A_2$] \url{http://storage2.spcl.ethz.ch/traces/ai/}
+\item[$A_1$] Code, compact data, scripts, and results:
+\url{https://github.com/tommasobo/SC_Tracing}, branch
+\texttt{artifact\_freeze}.
+\item[$A_2$] Public input traces:
+\url{http://storage2.spcl.ethz.ch/traces/ai/}.
 \end{description}
-
-The authors intend to request the Artifacts Available, Artifacts
-Evaluated-Functional, and Results Reproduced badges. Persistent
-DOIs will be assigned at the SC26 artifact-freeze stage. No DOI has
-been assigned at the time of this submission.
 
 \begin{center}
 \small
 \begin{tabular}{rll}
 \toprule
-Artifact & Contributions & Related paper elements \\
+Artifact & Contributions & Paper elements \\
 \midrule
 $A_1$ & $C_1,C_2,C_3$ & Figs.\ 1, 3--10 \\
 $A_2$ & $C_1,C_2$ & Table II, Figs.\ 3--6 \\
@@ -81,554 +62,263 @@ $A_2$ & $C_1,C_2$ & Table II, Figs.\ 3--6 \\
 \end{tabular}
 \end{center}
 
+The requested badges are Artifacts Available, Artifacts
+Evaluated-Functional, and Results Reproduced. A persistent DOI will be
+added at the artifact-freeze stage.
+
 \section{Artifact Identification}
 
 \newartifact
 
 \artrel
 
-Artifact $A_1$ contains the following components:
-
-\begin{itemize}
-\item \texttt{solver/}: Composite-LP and Monolithic-LP analysis.
-\item \texttt{tools/}: the NCCL-to-GOAL conversion code and the
-  LogGOPSim source.
-\item \texttt{pipeline/}: drivers for trace conversion, LP analysis,
-  LogGOPSim replay, and selected sensitivity sweeps.
-\item \texttt{data/} and \texttt{results/}: compact inputs and
-  outputs for the figure workflows.
-\item \texttt{scripts/}: one plotting workflow for each
-  reproducible paper figure.
-\item \texttt{local\_artifact/}: provenance manifests and checks for
-  the recovered Figure 5 and Figure 6 inputs.
-\item \texttt{reproduce\_quick.sh} and
-  \texttt{reproduce\_full.sh}: the reviewer entry points.
-\end{itemize}
-
-The trace-to-analysis path supports $C_1$ and $C_2$. Its outputs
-are the sensitivity envelopes, validation comparisons, memory
-measurements, and jitter results that support $C_3$. Figure 2 is a
-method diagram and has no computational output.
+Artifact $A_1$ contains the solver, trace-processing tools, compact
+plotting data, reproduction scripts, verification manifests, and final
+plots. The quick workflow redraws Figures 1 and 3--10. Figure 2 is a
+method diagram. The full workflow also runs bounded checks for Figures
+3, 4, and 6 and verifies the closest recovered Figure 5 result.
 
 \artexp
 
-The quick workflow redraws Figures 1 and 3--10 from
-the compact data. It should complete in a few minutes on a laptop
-and produce PDF and PNG files under \texttt{figures/}. The layout,
-curves, relative ordering, and main breakpoints should agree
-closely with the paper.
+The quick workflow should produce eight PDF files under
+\texttt{figures/}. The full workflow should also produce task manifests
+and result CSV files in the selected scratch directory.
 
-The full workflow additionally exercises affordable analysis and
-trace-processing paths. It supports local execution by default and
-Slurm execution on Alps or a similar cluster. Long or high-memory
-stages are disabled unless the user supplies
-\texttt{--expensive\_run}. In particular, the Grok 4{,}096-GPU
-experiment is not run by default.
+Figures 1, 7, and 10 are exact redraws of compact data. Figures 8 and 9
+redraw the published values embedded in their plotting script. The
+paper-style plots for Figures 3, 4, and 6 use the compact paper data,
+while separate raw-derived checks record the reproducibility of those
+experiments. The closest Figure 5 Composite curve differs from the paper
+CSV by at most 0.014853\%.
 
-The expected scientific results are:
+The following limitations are documented in
+\texttt{docs/REPRODUCTION\_REPORT.md}:
 
 \begin{itemize}
-\item Composite-LP and the validation baselines have close runtime
-  predictions for the configurations where the baselines are
-  feasible.
-\item The workload curves have different sensitivity regimes.
-  Llama training is bandwidth-sensitive over a substantial range,
-  Grok at large scale has a broad compute-dominated region, and
-  vLLM inference has a broad memory-dominated region.
-\item The full-trace Monolithic-LP memory requirement grows quickly
-  with scale, while the compositional method remains practical.
-\item Sparse jitter has little effect on the studied Grok workload,
-  while perturbing a large fraction of messages produces a clear
-  slowdown.
+\item the exact paper-era Figure 5 per-motif transformation was not
+  recovered;
+\item the available Figure 6 Llama metadata identify Llama 7B at 128
+  GPUs, while the paper says Llama 70B;
+\item the Figure 6 vLLM full curves require an unavailable paper-era
+  token-window reduction; and
+\item Grok at 4,096 GPUs is plot-only unless the expensive option is
+  explicitly enabled.
 \end{itemize}
-
-The repository includes a reproduction report with quantitative
-comparisons and known differences. The most important limitations
-are also stated here. The released 128-GPU Llama source is named
-\texttt{Llama7B\_N32\_GPU128}, although the paper labels the panel
-as Llama 70B. The matching scale and the close regenerated curve
-indicate a paper-label error. The closest recovered Figure 5
-Composite curve is raw-derived and differs from the paper CSV by
-at most 0.014853\%. Cold runs from the recovered Llama N4/GPU16
-traces do not match it as closely. The recovered Figure 6 vLLM raw
-trace follows the complete conversion and replay path, but a
-paper-era token-window reduction step is not available. The
-default vLLM plot therefore uses the compact paper data, and the
-report records the raw-replay difference.
 
 \arttime
 
-Times below are estimates for an ordinary workstation unless a
-cluster is stated.
-
-\begin{itemize}
-\item Artifact setup: 5--10 min for cloning, creating a Python
-  environment, and installing the plotting dependencies.
-\item Quick execution: less than 5 min for
-  \texttt{./reproduce\_quick.sh}.
-\item Quick analysis: 10--20 min to run the checks and compare the
-  generated plots with the paper and reference files.
-\item Full execution without expensive stages: up to 6 h. Each
-  selected figure workflow is designed to finish within about one
-  hour. Independent tasks may be submitted concurrently on Slurm.
-\item Full analysis: about 30 min for manifest checks, plot
-  inspection, and review of the generated report.
-\end{itemize}
-
-The quick path is sufficient to exercise the packaged artifact.
-The non-expensive full path fits within the SC26 eight-hour review
-budget. Grok at 4{,}096 GPUs and any stage expected to exceed
-45 min or require substantial memory remain opt-in and are not part
-of the recommended reviewer run.
+Installation takes about 10 minutes. The quick workflow takes under
+5 minutes and took about 20 seconds on Alps. The default full workflow
+takes under 6 hours with independent tasks submitted in parallel. Each
+individual default experiment is bounded to about 45 minutes. Grok at
+4,096 GPUs is excluded from this estimate.
 
 \artin
 
 \artinpart{Hardware}
 
-The quick workflow requires a laptop or workstation with about
-1\,GiB of free RAM and 1\,GiB of free disk space. It does not
-require a GPU.
-
-The full local workflow should use scratch storage and a host with
-at least 16\,GiB of RAM. Raw NSYS conversion and larger GOAL files
-may require more memory and disk. The Slurm path was prepared for
-the CSCS Alps system, whose compute nodes use NVIDIA GH200
-superchips and the Slingshot-11 interconnect. Large trace runs must
-use compute nodes rather than login nodes.
-
-The opt-in Grok 4{,}096-GPU path and large Monolithic-LP cases can
-require hundreds of GiB to multiple TiB of memory or very large
-temporary files. Reviewers should not enable this path without an
-appropriate allocation.
+The quick workflow needs one CPU core, 2 GB of RAM, and about 100 MB of
+free space. The full workflow was tested on Alps CPU nodes. We recommend
+4 or more CPU cores, 32 GB of RAM, and a scratch filesystem. No GPU is
+required. The Grok 4,096-GPU analysis needs substantially more memory
+and time and is disabled by default.
 
 \artinpart{Software}
 
-The default artifact requires:
-
-\begin{itemize}
-\item Python 3.10 or later, \url{https://www.python.org/}.
-\item NumPy 1.21 or later,
-  \url{https://numpy.org/}.
-\item pandas 1.3 or later,
-  \url{https://pandas.pydata.org/}.
-\item Matplotlib 3.5 or later,
-  \url{https://matplotlib.org/}.
-\item Bash 4.4 or later,
-  \url{https://www.gnu.org/software/bash/}.
-\end{itemize}
-
-The optional LogGOPSim build requires a C++ compiler,
-\texttt{gengetopt}, and \texttt{re2c}:
-\url{https://gcc.gnu.org/},
-\url{https://www.gnu.org/software/gengetopt/}, and
-\url{https://re2c.org/}.
-
-LP regeneration requires Gurobi 10.0 or later,
-\url{https://www.gurobi.com/}. A free academic license is
-sufficient. Slurm execution requires an installed Slurm client,
-\url{https://slurm.schedmd.com/}. Conversion from raw
-\texttt{.nsys-rep} inputs requires NVIDIA Nsight Systems with
-SQLite export support,
-\url{https://developer.nvidia.com/nsight-systems}.
+Python 3.10 or newer is required
+(\url{https://www.python.org/}). Package versions are listed in
+\texttt{requirements.txt}; full verification also uses
+\texttt{requirements-dev.txt}. Fresh solver runs need Gurobi and a
+license (\url{https://www.gurobi.com/}). LogGOPSim is included in the
+repository and additionally uses \texttt{g++}, \texttt{gengetopt}, and
+\texttt{re2c}. Slurm is optional.
 
 \artinpart{Datasets / Inputs}
 
-The compact CSV and JSON inputs required for the default workflows
-are stored in the repository. They include sensitivity sweeps,
-hardware reference points, memory results, jitter results, and
-provenance metadata. These files are small enough for a normal Git
-checkout.
-
-Artifact $A_2$ provides larger GOAL, BIN, and NSYS inputs. A
-reviewer does not need the complete collection. Selected trace
-directories can be downloaded separately. Raw and intermediate
-files can be several GiB, while the largest Grok case produces
-temporary data on the TiB scale.
-
-Figures 1, 7, 8, 9, and 10 use existing compact data by design.
-The default Figure 5 plot uses the closest recovered raw-derived
-Composite curve together with existing Monolithic and LGS data.
-The Grok and vLLM portions of Figure 6 use compact paper data
-because of the limitations described under Expected Results. All
-plotting scripts are included.
+Compact data are committed under \texttt{data/},
+\texttt{local\_artifact/results/}, and
+\texttt{results/reproduced/}. Hashes and raw-input identities are under
+\texttt{local\_artifact/manifests/}. Large NSYS, SQLite, GOAL, solver
+cache, and temporary files are intentionally kept outside Git.
 
 \artinpart{Installation and Deployment}
 
-\begingroup\small
 \begin{verbatim}
-git clone -b artifact_freeze \
-  https://github.com/tommasobo/SC_Tracing.git
+git clone https://github.com/tommasobo/SC_Tracing.git
 cd SC_Tracing
-python3 -m venv .venv
-source .venv/bin/activate
-python3 -m pip install -r requirements.txt
+git checkout artifact_freeze
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
 \end{verbatim}
-\endgroup
 
-No compilation is needed for the quick workflow. The optional
-LogGOPSim build is performed by
-\texttt{pipeline/build\_tools.sh}. On a Slurm cluster, clone or copy
-the repository to scratch and keep raw and temporary files there.
-The full workflow also requires:
-
-\begingroup\small
-\begin{verbatim}
-python3 -m pip install -r requirements-dev.txt
-\end{verbatim}
-\endgroup
-
-This includes the solver and test dependencies. A configured
-Gurobi license is required for fresh LP sweeps.
+For the full validation, also install
+\texttt{requirements-dev.txt} and confirm that Gurobi can obtain a
+license.
 
 \artcomp
 
-The workflow consists of five tasks:
+The default local check is:
 
-\begin{itemize}
-\item $T_1$: validate compact inputs and provenance manifests.
-\item $T_2$: choose the quick plot-only path or the full path.
-\item $T_3$: for enabled full-path experiments, convert or load
-  traces, build dependency metadata, and run Composite-LP,
-  Monolithic-LP, or LogGOPSim as required.
-\item $T_4$: transform result tables and generate the paper plots.
-\item $T_5$: check the expected output set and write the
-  reproduction report.
-\end{itemize}
-
-The quick dependency chain is
-$T_1 \rightarrow T_2 \rightarrow T_4 \rightarrow T_5$.
-The full dependency chain is
-$T_1 \rightarrow T_2 \rightarrow T_3 \rightarrow T_4
-\rightarrow T_5$. Independent Figure 3--5 tasks may run in
-parallel. The two Figure 6 solver sweeps are serialized by the
-Slurm launcher to stay within the available concurrent Gurobi
-license slots.
-
-The compact-data path is deterministic and needs one run. Hardware
-reference data and stochastic experiments retain the repetitions
-used for the paper in the packaged tables. Fresh stochastic or
-hardware runs must retain their seed and run count in their output
-metadata.
-
-The two top-level commands are:
-
-\begingroup\small
 \begin{verbatim}
 ./reproduce_quick.sh
-./reproduce_full.sh
 \end{verbatim}
-\endgroup
 
-The full script runs locally by default. Useful options are
-\texttt{--scratch DIR}, \texttt{--workers N}, \texttt{--slurm},
-and \texttt{--dry-run}. The \texttt{--expensive\_run} flag is the
-only way to enable Grok 4k and other long or high-memory stages.
+Run the full workflow from a scratch filesystem:
+
+\begin{verbatim}
+./reproduce_full.sh \
+  --scratch /scratch/$USER/provisioning_artifact \
+  --workers 4
+\end{verbatim}
+
+On Alps, submit independent tasks through Slurm:
+
+\begin{verbatim}
+./reproduce_full.sh --slurm \
+  --account <account> --partition normal \
+  --scratch /iopsstor/scratch/cscs/$USER/artifact \
+  --workers 4
+\end{verbatim}
+
+The full launcher serializes the longest solver sweeps when needed to
+respect license limits. Grok at 4,096 GPUs is run only with
+\texttt{--expensive\_run} and an explicit N1024 analysis directory.
 
 \artout
 
-Successful execution produces plots under \texttt{figures/} and
-processed tables, logs, and execution manifests under the selected
-scratch directory. The final reproduction report is under
-\texttt{docs/}. The manifest and artifact checks must pass. The
-evaluator should compare the generated PDFs with the paper or the
-supplied side-by-side reference.
-
-The comparison should focus on curve shape, method ordering,
-breakpoints, and the conclusions listed under Expected Results.
-Exact pixel equality is not required. Any remaining numeric
-difference, including the known Figure 5 and vLLM Figure 6 cases,
-must be recorded in the final report rather than hidden by
-substituting another workload.
+The quick workflow writes the final PDFs under \texttt{figures/} and
+checks their presence. The full workflow writes one manifest per task,
+fresh CSV files, logs, and a summary in the selected scratch directory.
+The final comparison and known differences are in
+\texttt{docs/REPRODUCTION\_REPORT.md}.
 
 \newartifact
 
 \artrel
 
-Artifact $A_2$ contains the trace inputs used by the analysis. It
-supports $C_1$ by making the communication workloads inspectable
-and reusable. It supports $C_2$ by providing GOAL schedules that
-can be replayed by LogGOPSim and analyzed by the code in $A_1$.
+Artifact $A_2$ contains the execution traces used to build communication
+graphs and validate the analysis pipeline. It supports the trace-based
+checks for Figures 3--6.
 
 \artexp
 
-A downloaded GOAL trace should parse and replay successfully with
-the tools in $A_1$. A selected moderate-size trace should produce
-a runtime point or sensitivity curve with the same qualitative
-behavior as the corresponding compact result.
-
-The directory name is part of the trace provenance. In particular,
-the 128-GPU Llama directory identifies a 7B model. It must not be
-renamed to imply that it is a 70B trace. The exact vLLM 8B paper
-input is represented by the recovered local provenance manifest
-and compact results in $A_1$; the currently public vLLM 70B input
-is a different workload and must not be used as a substitute.
+A selected trace should download with the recorded hash and pass through
+SQLite export, GOAL conversion, binary conversion, LogGOPSim replay, and
+plotting. The repository includes provenance for the exact inputs used in
+the final checks.
 
 \arttime
 
-For one selected moderate trace:
-
-\begin{itemize}
-\item Artifact setup: 5--30 min to download the selected files,
-  depending on network bandwidth.
-\item Artifact execution: about 5--45 min for conversion or replay.
-\item Artifact analysis: about 10 min to compare the generated
-  runtime points with the compact reference.
-\end{itemize}
-
-Downloading the complete trace collection or processing Grok 4k
-is outside the recommended reviewer path.
+A small trace download and replay takes about 5--45 minutes. Processing a
+large campaign can take several hours and is not required for the
+functional check.
 
 \artin
 
 \artinpart{Hardware}
 
-Downloading and inspecting one selected trace requires a
-workstation with sufficient scratch space. Moderate GOAL replays
-need several GiB of RAM. Large Grok traces require cluster-scale
-scratch and memory and are not enabled by default.
+Use one CPU node with at least 32 GB of RAM and a scratch filesystem.
 
 \artinpart{Software}
 
-The downloader requires \texttt{wget} or \texttt{curl}. GOAL replay
-uses the LogGOPSim source included in $A_1$. Raw NSYS conversion
-uses NVIDIA Nsight Systems and the NCCL converter in $A_1$.
+The trace workflow uses \texttt{curl}, SQLite, the repository's Python
+tools, and LogGOPSim. NSYS is needed only when exporting a new report.
 
 \artinpart{Datasets / Inputs}
 
-$A_2$ is the input dataset. The relevant public top-level
-directories are \texttt{llama/}, \texttt{grok/}, and
-\texttt{vllm/}. Each directory includes model and scale information
-in its name. The manifests in $A_1$ record the input identity and
-hashes used during the final reproduction work.
+The traces are listed at
+\url{http://storage2.spcl.ethz.ch/traces/ai/}. Exact filenames and
+SHA-256 hashes used by this artifact are recorded under
+\texttt{local\_artifact/manifests/}.
 
 \artinpart{Installation and Deployment}
 
-Download only the trace needed for the selected evaluation. For
-example, the public 16-GPU Grok GOAL trace is under:
-
-\begingroup\small
-\begin{verbatim}
-http://storage2.spcl.ethz.ch/traces/ai/grok/
-  Grok314B_N4_GPU16_TP4_PP1_CP1_VP1_
-  EP4_ETP4_GBS256/grok.goal
-\end{verbatim}
-\endgroup
-
-Place downloaded files in a scratch directory. Do not copy large
-raw traces into the Git checkout.
+Install Artifact $A_1$, choose one trace recorded in the manifests, and
+download it to scratch. Do not store large trace files in the repository
+or the home directory.
 
 \artcomp
 
-The data workflow is:
-\begin{center}
-\small
-NSYS $\rightarrow$ SQLite $\rightarrow$ GOAL/BIN\\
-$\rightarrow$ LP or LogGOPSim $\rightarrow$ CSV
-$\rightarrow$ plot.
-\end{center}
-Prebuilt GOAL files enter at the third stage. The raw-input and
-GOAL workflows, their metadata requirements, and the validated
-exceptions are documented in $A_1$.
+Follow the commands in \texttt{docs/provenance/} for the selected trace.
+The stages are NSYS or SQLite input, GOAL, binary schedule, LogGOPSim
+replay, and CSV plotting. A moderate trace is sufficient for evaluation.
 
 \artout
 
-The expected output is a GOAL replay runtime or sensitivity CSV.
-The evaluator should keep the exact source URL, file size, and hash
-with the output. The generated result can then be passed to the
-plotting stage in $A_1$.
+Record the downloaded file's SHA-256 hash, the replay runtime, and the
+generated CSV. These values can be compared with the committed manifest
+and reference result.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % AE Appendix
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\newpage
 \appendixAE
 
 \arteval{1}
 
 \artin
 
-Clone the \texttt{artifact\_freeze} branch and install the Python
-requirements using the commands in the AD. From the repository
-root, first inspect the available work:
-
-\begingroup\small
-\begin{verbatim}
-./reproduce_full.sh --dry-run
-\end{verbatim}
-\endgroup
-
-The dry run lists the enabled tasks without starting experiments.
-Confirm that \texttt{data/}, \texttt{scripts/},
-\texttt{reproduce\_quick.sh}, and \texttt{reproduce\_full.sh} are
-present. Use scratch storage for all nontrivial runs.
-
-For a local run, choose a scratch directory with:
-
-\begingroup\small
-\begin{verbatim}
-mkdir -p /path/to/scratch/sc26-provisioning
-\end{verbatim}
-\endgroup
-
-On Alps, create the scratch directory first and use the Slurm mode
-described below. Do not launch trace conversion, LP sweeps, or
-LogGOPSim replays on a login node.
+Clone branch \texttt{artifact\_freeze}, create the Python environment,
+and install \texttt{requirements.txt}. For full validation, install
+\texttt{requirements-dev.txt}, verify the Gurobi license, and choose a
+scratch directory. On a cluster, use a compute allocation or the Slurm
+launcher rather than a login node.
 
 \artcomp
 
-\emph{Quick evaluation.} Run:
+First run:
 
-\begingroup\small
 \begin{verbatim}
 ./reproduce_quick.sh
 \end{verbatim}
-\endgroup
 
-This validates the compact inputs and redraws Figures 1 and 3--10.
-The tasks are: load the committed CSV and JSON inputs,
-check their schemas, call the relevant plotting scripts, and check
-that the expected PDF and PNG outputs were created. No solver,
-large trace, GPU, or cluster allocation is used.
+It redraws Figures 1 and 3--10 from the committed compact inputs and
+validates the data manifests. Then run either the local full command or
+the Slurm command from the AD section. Do not add
+\texttt{--expensive\_run} for the normal evaluation.
 
-\emph{Full local evaluation without expensive stages.} Run:
+The main checks are:
 
-\begingroup\small
-\begin{verbatim}
-./reproduce_full.sh \
-  --scratch /path/to/scratch/sc26-provisioning \
-  --workers 4
-\end{verbatim}
-\endgroup
-
-The local driver runs the bounded tasks one after another. Solver
-workers within a task use the requested worker count. The core task
-redraws the figures and runs the manifest, artifact, and test
-checks. Each subsequent task writes result tables, comparison
-metrics, and a JSON execution manifest. It does not run Grok 4k or
-any stage marked as long or high-memory.
-
-\emph{Full Slurm evaluation.} On Alps or a similar cluster, run:
-
-\begingroup\small
-\begin{verbatim}
-./reproduce_full.sh --slurm \
-  --scratch /path/to/scratch/sc26-provisioning
-\end{verbatim}
-\endgroup
-
-The driver submits experiments as separate batch jobs. Independent
-jobs run concurrently, while the two Figure 6 solver sweeps are
-serialized to respect Gurobi license limits. Each job writes its
-own log and JSON execution manifest. Monitor the submitted job IDs
-and inspect every manifest after completion. The core job performs
-the compact-data redraw. Inspect the generated job specifications
-first with \texttt{--dry-run}.
-
-\emph{Opt-in expensive evaluation.} The command below is documented
-for completeness and is not part of the recommended review:
-
-\begingroup\small
-\begin{verbatim}
-./reproduce_full.sh --slurm --expensive_run \
-  --grok-analysis-dir /scratch/grok/N1024/analysis \
-  --scratch /large/scratch/sc26-provisioning
-\end{verbatim}
-\endgroup
-
-Use it only after confirming the time, memory, storage, and compute
-allocation. The flag enables Grok 4k and other stages that may
-exceed 45 min or require substantial memory.
+\begin{itemize}
+\item Figures 3 and 4: compare the fresh bounded runs with the selected
+  raw-derived results and the paper CSVs;
+\item Figure 5: verify the selected 201-point Composite CSV and its
+  maximum relative error of 0.014853\%;
+\item Figure 6 Llama: run the bounded latency and bandwidth checks with
+  four physical NIC queues; and
+\item Figure 6 vLLM and Grok 4k: inspect the committed replay evidence
+  and compact data. These are not rerun by default.
+\end{itemize}
 
 \artout
 
-After the quick run, confirm that plots for Figures 1 and 3--10
-exist under \texttt{figures/}. After a full run, inspect
-the task log and the final report under \texttt{docs/}. Run the
-artifact checker documented by the top-level README and verify that
-it reports no missing required file or malformed compact dataset.
-
-The expected comparisons are:
-
-\begin{itemize}
-\item Figures 1, 7, 8, 9, and 10 are redraws from existing data. Their
-  plots should agree with the paper within plotting precision.
-\item Figures 3 and 4 should preserve the paper's method ordering,
-  sensitivity trends, and main breakpoints. Small configuration
-  differences are listed in the report.
-\item Figure 5 uses the closest recovered raw-derived Composite
-  result, whose maximum relative difference from the paper CSV is
-  0.014853\%. The Monolithic and LGS series use existing compact
-  data. Cold recovered-trace alternatives and their larger
-  differences are documented in the report.
-\item Figure 6 should reproduce the plotted paper curves from
-  compact data. Fresh Llama metadata analysis closely matches the
-  packaged curve, subject to the 7B versus 70B label issue. The
-  Grok 4k and vLLM paper curves use compact data by default.
-\end{itemize}
-
-For the Results Reproduced assessment, compare behavior rather
-than PDF pixels. Check the curve shapes, the ordering of the
-methods, the location of the major sensitivity transitions, and
-the provisioning conclusions. Use the supplied paper-versus-result
-comparison PDF and metrics tables for quantitative checks. The
-known differences must remain visible in the report.
+Confirm that the eight expected PDF files exist under \texttt{figures/}.
+For a full run, inspect \texttt{summary.json}, the task manifests, and
+the result CSVs in scratch. Use
+\texttt{docs/REPRODUCTION\_REPORT.md} for the expected error values and
+the interpretation of remaining differences.
 
 \arteval{2}
 
 \artin
 
-Select one moderate trace rather than the full archive. The
-16-GPU Grok GOAL trace is suitable for a functional check:
-
-\begingroup\small
-\begin{verbatim}
-mkdir -p /path/to/scratch/sc26-trace
-cd /path/to/scratch/sc26-trace
-wget http://storage2.spcl.ethz.ch/traces/ai/grok/\
-Grok314B_N4_GPU16_TP4_PP1_CP1_VP1_\
-EP4_ETP4_GBS256/grok.goal
-\end{verbatim}
-\endgroup
-
-Return to the $A_1$ checkout and build LogGOPSim:
-
-\begingroup\small
-\begin{verbatim}
-pipeline/build_tools.sh
-\end{verbatim}
-\endgroup
+Install Artifact $A_1$ and download one trace listed in the committed
+manifests to scratch. Verify its SHA-256 hash before processing it. The
+Llama-3.1-8B vLLM trace is the most complete end-to-end example.
 
 \artcomp
 
-Replay the selected GOAL file at a representative latency:
-
-\begingroup\small
-\begin{verbatim}
-python3 pipeline/run_lgs.py \
-  --goal /path/to/scratch/sc26-trace/grok.goal \
-  --L 4000
-\end{verbatim}
-\endgroup
-
-This path parses the GOAL schedule, converts it to the simulator's
-binary format if needed, and runs LogGOPSim. The output reports the
-predicted workload runtime. The full driver uses the same stages
-for its supported trace cases and stores reusable conversion files
-under the selected scratch directory.
-
-Do not substitute the public vLLM 70B trace for the paper's vLLM
-8B trace. Do not run the 4{,}096-GPU Grok trace during a routine
-evaluation.
+Use the documented trace pipeline to produce SQLite, GOAL, binary, and
+LogGOPSim outputs. A single archived vLLM job point is enough to check
+the pipeline. The available online 70B trace is not a substitute for the
+paper-era vLLM input.
 
 \artout
 
-Record the source URL, downloaded file size, hash, LogGOPSim
-parameters, and reported runtime. Compare the result with the
-matching compact reference or the tolerance stated in the final
-reproduction report. A successful parse and replay exercises the
-published trace, the simulator build, and the trace-to-runtime
-portion of the method. Use $A_1$ for the final plotting and
-paper-level comparison.
+Compare the input hash and replay runtime with the committed manifest.
+The archived vLLM point should replay exactly. The full sensitivity
+curve is expected to differ because the paper-era token-window reduction
+is unavailable.
 
 \end{document}
