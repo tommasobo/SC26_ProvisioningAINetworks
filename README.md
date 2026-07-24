@@ -1,37 +1,42 @@
 # Provisioning Networks for AI Supercomputers
 
-This branch is the SC26 artifact freeze for the paper. The default workflow is
-a local redraw of Figures 1 and 3 to 10 from compact data. Figure 2 is a method
-diagram and has no computational output. The full workflow reruns the bounded
-solver checks for Figures 3, 4, and 6 and verifies the best recovered Figure 5
-result. Large traces, solver caches, and temporary files stay outside the
-repository.
+This repository contains the artifact for reproducing the computational
+figures in the paper. It assumes that execution traces have already been
+collected. Public traces are available from the
+[SPCL trace repository](http://storage2.spcl.ethz.ch/traces/ai/).
 
-The quick workflow takes about 15 seconds on Alps. It does not download traces,
-run Gurobi, or rerun Grok at 4,096 GPUs.
+Two workflows are provided:
 
-## Setup
+- `reproduce_quick.sh` generates Figures 1 and 3 to 10 from the supplied
+  inputs. Figure 2 is a method diagram.
+- `reproduce_full.sh` additionally runs the analysis and validation stages
+  for Figures 3 to 6.
+
+Large intermediate files should be stored on a scratch filesystem.
+
+## Installation
 
 Python 3.10 or newer is required:
 
 ```bash
+git clone https://github.com/tommasobo/SC26_ProvisioningAINetworks.git
+cd SC26_ProvisioningAINetworks
+git checkout artifact_freeze
 python3.11 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 ```
 
-`uv venv --python 3.11 .venv` and `uv pip install --python
-.venv/bin/python -r requirements.txt` are equivalent when `uv` is available.
+For the full workflow, also install `requirements-dev.txt`. The analysis
+stages require a working Gurobi installation and license. The LogGOPSim
+example additionally requires `g++`, `gengetopt`, and `re2c`.
 
-For the full workflow, also install `requirements-dev.txt`. It needs a working
-Gurobi license; the small LogGOPSim demo needs `g++`, `gengetopt`, and `re2c`.
-
-## Quick local reproduction
+## Quick reproduction
 
 ```bash
 ./reproduce_quick.sh
 ```
 
-The command redraws these files under `figures/`:
+Allow about one minute. The output files are:
 
 | Paper figure | Plot script | Output |
 | --- | --- | --- |
@@ -44,13 +49,9 @@ The command redraws these files under `figures/`:
 | 8 and 9 | `scripts/fig08_09_cluster_params_cost.py` | `fig_network_perf_combined.pdf` |
 | 10 | `scripts/fig10_jitter.py` | `fig_jitter_3panel.pdf` |
 
-Figure 5 uses the closest recovered raw-derived Composite curve, which differs
-from the paper CSV by at most 0.014853%. Grok 4k panels, the Figure 5
-Monolithic curve, and Figures 1 and 7 to 10 use the existing compact data.
-
 ## Full local reproduction
 
-Use a scratch directory with enough free space:
+Use a scratch directory with sufficient free space:
 
 ```bash
 ./reproduce_full.sh \
@@ -58,41 +59,30 @@ Use a scratch directory with enough free space:
   --workers 4
 ```
 
-The full script performs the quick redraw, manifest and test checks, the small
-LogGOPSim demo, fresh-cache metadata Composite checks for Figures 3 and 4, a
-comparison of the recovered Figure 5 curve, and fresh-cache Figure 6 Llama
-latency and bandwidth checks. Each default experiment is bounded to about
-45 minutes. The Figure 6 checks are the longest and previously took about 19
-and 31 minutes. Both Figure 6 tasks use the four physical NIC queues. July
-one-queue results and a final repeated one-queue result are retained under
-`results/reproduced/fig6/` to document the investigated alternative.
-
-Large raw NSYS and GOAL files are not committed. Their exact hashes and
-provenance are under `local_artifact/manifests/`. The full script starts from
-the compact metadata that is present in the repository.
+Allow up to eight hours, depending on the machine, solver license
+availability, and selected worker count. Most individual analysis tasks
+should be allowed up to one hour. The script writes result CSV files, logs,
+and task summaries below the selected scratch directory.
 
 ## Alps and Slurm
 
-Do not run the full workflow on a login node. Submit the work as separate
-batch jobs:
+Submit longer work from a compute allocation:
 
 ```bash
 ./reproduce_full.sh --slurm \
-  --account a-g200 \
+  --account <account> \
   --partition normal \
   --scratch /iopsstor/scratch/cscs/$USER/provisioning_artifact \
   --workers 4
 ```
 
-The launcher runs independent jobs concurrently and serializes the two Figure
-6 sweeps to respect Gurobi license limits. Job IDs are written to
+Independent tasks are submitted separately. Submitted job IDs are written to
 `submitted_jobs.txt` below the selected scratch directory.
 
-## Expensive Grok 4k option
+## Optional large run
 
-Grok at 4,096 GPUs is disabled by default. Its paper CSVs are used for plots.
-The full launcher exposes the cold Composite latency and bandwidth workflows
-only when both the explicit gate and N1024 metadata are supplied:
+The Grok 4k analysis is not part of the default workflow. Enable it only when
+enough memory, compute time, and scratch space are available:
 
 ```bash
 ./reproduce_full.sh --slurm --expensive_run \
@@ -100,34 +90,18 @@ only when both the explicit gate and N1024 metadata are supplied:
   --scratch /scratch/path/to/output
 ```
 
-Do not enable this option without confirming the input, RAM, allocation, and
-time. The Grok solver jobs run after the Figure 6 jobs and are serialized with
-each other. The historical cold latency solve took about 4.4 hours. No Grok
-4k experiment was run while preparing this branch.
+Allow several additional hours for this option.
 
-## Data and interpretation
+## Repository contents
 
-- `data/output/` contains the compact paper plotting inputs.
-- `data/workspaces/llama7b_n32_spcl_20260407/` contains the Figure 6 Llama
-  metadata used by the bounded full rerun.
-- `local_artifact/results/` contains the strongest compact raw-derived results
-  for Figures 3 to 6.
-- `local_artifact/figures/SC26_paper_vs_reproduced_figures_3_to_6.pdf` is the
-  retained paper-versus-result comparison bundle from the local handoff.
-- `results/reproduced/` contains selected Alps results that improved on the
-  local handoff, including the historical four-NIC Figure 3 auto-channel run.
-- `local_artifact/manifests/` records hashes and raw-input identities.
-- `docs/REPRODUCTION_REPORT.md` gives the match status and remaining gaps.
+- `data/` contains the supplied inputs used by the plotting workflows.
+- `results/reproduced/` and `local_artifact/results/` contain the selected
+  numerical results.
+- `local_artifact/manifests/` records input and output identities.
+- `docs/REPRODUCTION_REPORT.md` contains the detailed numerical comparison.
 - `docs/comparison/SC26_paper_vs_artifact.pdf` places each paper plot above
-  its reproduced or compact-data result.
-- `docs/provenance/` retains the detailed Alps and local handoff notes.
-- `docs/ad/` contains the final combined AD/AE in LaTeX and PDF form.
+  the corresponding artifact result.
+- `docs/ad/` contains the combined AD/AE source and PDF.
 
-The Figure 1 phase map combines one-dimensional latency and bandwidth sweeps;
-it is not a joint two-dimensional simulation. The Figure 6 Llama metadata
-identify Llama 7B at N32/GPU128 even though the paper label says 70B. Figures
-8 and 9 are plot-only because their published latency, bandwidth, and cost
-data are embedded in the plotting script.
-
-For exact commands, discrepancies, and provenance, read
+The full numerical results, provenance, and known limitations are recorded in
 `docs/REPRODUCTION_REPORT.md`.

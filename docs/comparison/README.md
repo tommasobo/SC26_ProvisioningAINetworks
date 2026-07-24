@@ -2,8 +2,7 @@
 
 `SC26_paper_vs_artifact.pdf` contains one page for each computational paper
 figure. The paper plot is on top and the corresponding artifact output or
-raw-derived result is below it. Each page states whether the lower plot is a
-fresh result, a compact-data redraw, or a plot-only result.
+analysis result is below it.
 
 Rebuild it from the current paper PDF with:
 
