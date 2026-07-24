@@ -29,7 +29,7 @@ this report.
 | 6, vLLM | Exact raw replay at the archived job point; full paper curve remains different | Full curve differs by 13.83% for latency and 20.32% for bandwidth | Existing paper curve in the paper-style plot; exact raw replay evidence retained |
 | 6, Grok 4k | Plot reproduced only | No new expensive run | Existing CSVs |
 | 7 | Plot reproduced | Exact redraw of compact memory data | Existing data |
-| 8 and 9 | Plot reproduced only | Exact redraw of published values | Existing values embedded in the plotting script |
+| 8 and 9 | Plot reproduced only | Exact redraw of published values | Compact sweep and network-cost inputs |
 | 10 | Plot reproduced | Exact redraw of compact jitter data | Existing data |
 
 All percentages compare result CSVs with the compact CSV used by the paper
@@ -208,10 +208,11 @@ freeze.
 
 ## Figures 8 and 9
 
-`scripts/fig08_09_cluster_params_cost.py` redraws the combined figure from the
-existing latency, bandwidth, and network-cost values. These values are
-embedded in the plotting script. No upstream pricing or workload experiment
-was rerun, so the result is classified as plot-only.
+`scripts/fig08_09_cluster_params_cost.py` redraws the two-panel network
+parameter sensitivity plot and the separate network-cost plot from the
+compact latency, bandwidth, and cost inputs. Figure 8 includes both the Llama
+and Grok panels. The two outputs retain the paper's column widths and aspect
+ratios.
 
 ## Figure 10
 

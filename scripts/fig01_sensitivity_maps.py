@@ -353,9 +353,9 @@ PALETTE_VARIANTS = {
 }
 
 WORKLOAD_COLORS = {
-    "Llama 70B (128 GPUs)": "#8A6255",
-    "Grok 314B (4096 GPUs)": "#5A7B99",
-    "vLLM 8B (8 GPUs)": "#6D8A7C",
+    "Llama (128 GPUs)": "#8A6255",
+    "Grok (4096 GPUs)": "#5A7B99",
+    "vLLM (8 GPUs)": "#6D8A7C",
 }
 
 LOGO_PATHS = {
@@ -642,9 +642,9 @@ def add_common_axes_style(ax):
 
 def format_workload_title(name):
     title_map = {
-        "Llama 70B (128 GPUs)": "Train. Llama 70B, 128 GPUs",
-        "Grok 314B (4096 GPUs)": "Train. Grok 314B, 4096 GPUs",
-        "vLLM 8B (8 GPUs)": "Infer. vLLM, Llama 8B, 8 GPUs",
+        "Llama (128 GPUs)": "Train. Llama, 128 GPUs",
+        "Grok (4096 GPUs)": "Train. Grok, 4096 GPUs",
+        "vLLM (8 GPUs)": "Infer. vLLM, 8 GPUs",
     }
     return title_map.get(name, name)
 
@@ -696,7 +696,7 @@ def make_llama_detail_figure(workload):
     fig, ax = plt.subplots(figsize=(4.8, 3.45))
     ax.pcolormesh(L_GRID, BW_GRID, workload["facecolors"], shading="nearest")
     add_common_axes_style(ax)
-    ax.set_title("Llama 70B (128 GPUs) — Derived 2D Latency/BW Regions", pad=4)
+    ax.set_title("Llama (128 GPUs) — Derived 2D Latency/BW Regions", pad=4)
     add_operating_point_marker(ax, workload, annotate=True)
 
     line_legend_handles = add_runtime_change_contours(ax, workload, with_handles=True)
@@ -931,9 +931,9 @@ def make_frontier_overlay_figure(workloads):
 
 def main():
     workloads = [
-        prepare_workload("Llama 70B (128 GPUs)", load_llama_curves, DEFAULT_LAT_BASELINE_US, 200.0, "Alps", "cscs", "Alps"),
-        prepare_workload("Grok 314B (4096 GPUs)", load_grok_curves, DEFAULT_LAT_BASELINE_US, 800.0, "Azure ND GB200 v6", "azure", "Azure\nND GB200 v6"),
-        prepare_workload("vLLM 8B (8 GPUs)", load_vllm_curves, DEFAULT_LAT_BASELINE_US, 200.0, "Alps", "cscs", "Alps"),
+        prepare_workload("Llama (128 GPUs)", load_llama_curves, DEFAULT_LAT_BASELINE_US, 200.0, "Alps", "cscs", "Alps"),
+        prepare_workload("Grok (4096 GPUs)", load_grok_curves, DEFAULT_LAT_BASELINE_US, 800.0, "Azure ND GB200 v6", "azure", "Azure\nND GB200 v6"),
+        prepare_workload("vLLM (8 GPUs)", load_vllm_curves, DEFAULT_LAT_BASELINE_US, 200.0, "Alps", "cscs", "Alps"),
     ]
     make_llama_detail_figure(workloads[0])
     make_workload_comparison_figure(workloads)

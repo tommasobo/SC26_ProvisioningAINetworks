@@ -38,9 +38,9 @@ FIGURE_MAP = [
     (7,  "fig07_memory_scaling.py",
         ["fig6_grok_memory.pdf"]),
     (8,  "fig08_09_cluster_params_cost.py",
-        ["fig_network_perf_combined.pdf"]),
+        ["fig8_network_parameters.pdf"]),
     (9,  "fig08_09_cluster_params_cost.py",
-        ["fig_network_perf_combined.pdf"]),
+        ["fig9_network_cost.pdf"]),
     (10, "fig10_jitter.py",
         ["fig_jitter_3panel.pdf"]),
 ]
@@ -90,16 +90,23 @@ def main() -> int:
         print()
 
     selected = set(args.only) if args.only else None
-    seen_scripts: set[str] = set()
+    selected_rows = [
+        row for row in FIGURE_MAP
+        if selected is None or row[0] in selected
+    ]
+    grouped: dict[str, tuple[list[int], list[str]]] = {}
+    for num, script, outs in selected_rows:
+        if script not in grouped:
+            grouped[script] = ([], [])
+        numbers, outputs = grouped[script]
+        numbers.append(num)
+        outputs.extend(out for out in outs if out not in outputs)
+
     missing_outputs: list[Path] = []
     total_t = 0.0
-    for num, script, outs in FIGURE_MAP:
-        if selected is not None and num not in selected:
-            continue
-        if script in seen_scripts:
-            continue  # multi-figure scripts run once
-        seen_scripts.add(script)
-        print(f"[Fig {num}] {script}")
+    for script, (numbers, outs) in grouped.items():
+        figure_label = ", ".join(str(number) for number in numbers)
+        print(f"[Fig {figure_label}] {script}")
         dt = run_script(script)
         total_t += dt
         for out in outs:

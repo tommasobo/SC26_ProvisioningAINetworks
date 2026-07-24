@@ -46,7 +46,8 @@ Allow about one minute. The output files are:
 | 5 | `scripts/fig05_llama_iteration.py` | `fig5_llama7b.pdf` |
 | 6 | `scripts/fig06_sensitivity_grid.py` | `fig_3x3_sensitivity.pdf` |
 | 7 | `scripts/fig07_memory_scaling.py` | `fig6_grok_memory.pdf` |
-| 8 and 9 | `scripts/fig08_09_cluster_params_cost.py` | `fig_network_perf_combined.pdf` |
+| 8 | `scripts/fig08_09_cluster_params_cost.py` | `fig8_network_parameters.pdf` |
+| 9 | `scripts/fig08_09_cluster_params_cost.py` | `fig9_network_cost.pdf` |
 | 10 | `scripts/fig10_jitter.py` | `fig_jitter_3panel.pdf` |
 
 ## Full local reproduction
