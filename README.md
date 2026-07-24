@@ -6,6 +6,17 @@ The artifact takes NCCL/AI workload traces that have already been converted to G
 
 Work for this cleanup/revalidation pass lives on branch `clean_version`.
 
+## Local raw-trace reproduction handoff
+
+The detailed July 2026 local-PC handoff is
+[`LOCAL_ARTIFACT_README.md`](LOCAL_ARTIFACT_README.md). It records the
+raw/metadata pipelines used for Figures 3–6, all reproduction errors, exact
+Figure 6 Llama public report identities, and the recovered exact Figure 6
+vLLM Llama-3.1-8B/128-token job `1812656` NSYS archive members and hashes.
+This supersedes the earlier conclusion that the exact vLLM input was
+globally missing: it was absent from the public index and Alps run root, but
+survived in a local archive.
+
 ## What Is Included
 
 - `scripts/`: figure-generation and comparison scripts.

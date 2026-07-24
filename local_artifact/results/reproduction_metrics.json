@@ -1,0 +1,74 @@
+{
+  "figure3": {
+    "latency_ch1": {
+      "points": 201,
+      "max_rel_pct": 0.8135011072087228,
+      "mean_rel_pct": 0.33497043967559,
+      "max_abs_ns": 90399.0
+    },
+    "latency_auto": {
+      "points": 201,
+      "max_rel_pct": 2.5737702300784235,
+      "mean_rel_pct": 0.7719890495671227,
+      "max_abs_ns": 114305.00000000745
+    },
+    "bandwidth_ch1": {
+      "points": 61,
+      "max_rel_pct": 3.7112476418003255,
+      "mean_rel_pct": 0.32531415120103785,
+      "max_abs_ns": 91539.00000000093
+    },
+    "bandwidth_auto": {
+      "points": 61,
+      "max_rel_pct": 25.819773058785938,
+      "mean_rel_pct": 14.877476447987409,
+      "max_abs_ns": 2780610.452159982
+    }
+  },
+  "figure4": {
+    "latency": {
+      "points": 201,
+      "max_rel_pct": 0.141780702304865,
+      "mean_rel_pct": 0.047379370084496095,
+      "max_abs_ns": 266612.9999999702
+    },
+    "bandwidth": {
+      "points": 61,
+      "max_rel_pct": 0.2420133560378309,
+      "mean_rel_pct": 0.04005751276443635,
+      "max_abs_ns": 257028.70719985664
+    }
+  },
+  "figure5": {
+    "composite": {
+      "points": 201,
+      "max_rel_pct": 0.014852741934791467,
+      "mean_rel_pct": 0.004879053193970809,
+      "max_abs_ns": 153254.0
+    },
+    "monolithic_L0_rel_pct": 0.00026463060118752545,
+    "monolithic_L1M_status": "time_limit"
+  },
+  "figure6": {
+    "llama_latency": {
+      "max_rel_pct": 0.0275300684900053,
+      "mean_rel_pct": 0.010732659987884646
+    },
+    "llama_bandwidth": {
+      "max_rel_pct": 0.6334748113378921,
+      "mean_rel_pct": 0.05879339989468294
+    },
+    "vllm_latency": {
+      "points": 10,
+      "max_rel_pct": 13.827943757451388,
+      "mean_rel_pct": 12.212613964796793,
+      "max_abs_ns": 419435982.05308914
+    },
+    "vllm_bandwidth": {
+      "points": 17,
+      "max_rel_pct": 20.315004165334607,
+      "mean_rel_pct": 16.020816306433602,
+      "max_abs_ns": 621683000.4611516
+    }
+  }
+}

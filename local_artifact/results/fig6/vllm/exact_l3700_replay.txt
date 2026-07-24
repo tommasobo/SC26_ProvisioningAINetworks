@@ -1,0 +1,21 @@
+Command parameters:
+  L=3700 ns
+  o=200 ns
+  g=5 ns
+  G=0.04 ns/byte
+  S=0
+  GOAL ranks=2
+
+Fresh replay output:
+  The schedule will be valid after this simulation!
+  size: 2 (62 CPUs, 4 NICs); L=3700, o=200 g=5, G=0.040000, O=0, P=2, S=0
+  PERFORMANCE: Processes: 2 Events: 709740
+  Average FCT is 20946.695758
+  Maximum finishing time at host 0: 3450438267 (3.45044 s)
+
+Archived job-1812658 output:
+  Host 0: 3450438267
+  Host 1: 3450416692
+
+The fresh Host-0 finishing time is an exact integer match to the archived
+job log.

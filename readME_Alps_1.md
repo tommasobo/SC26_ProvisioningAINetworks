@@ -1,5 +1,15 @@
 # Alps reproduction notes for SC26 Figures 3–6
 
+> **Local follow-up (2026-07-24):** this file remains the record of what was
+> reachable on Alps. A subsequent local-PC audit recovered the exact Figure 6
+> vLLM Llama-3.1-8B, N2/GPU8, 128-token NSYS input for trace job `1812656`
+> inside `vllm_recent_runs_20260407.zip`, and replayed its freshly generated
+> GOAL/BIN to the exact runtime recorded by GOAL job `1812658`. See
+> [`LOCAL_ARTIFACT_README.md`](LOCAL_ARTIFACT_README.md) and
+> `local_artifact/manifests/vllm_figure6_files.csv`. Statements below that
+> the exact vLLM input was missing describe the Alps environment only and
+> must not be repeated as a global conclusion.
+
 This document records the CSCS/Alps reproduction performed on 22–24 July
 2026 for the paper *Provisioning Networks for AI Supercomputers: A
 Trace-Driven Study of Performance Sensitivity at Unprecedented Scale*.

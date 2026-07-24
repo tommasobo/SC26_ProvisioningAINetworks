@@ -1,0 +1,12 @@
+{
+  "bin": "/home/tbonato/LLAMP_Test/SC26_e2e_slides_laptop-cjl91217-wsl2_20260723T182036+0200/fig6/vllm/goal_regen/simulation.bin",
+  "simulator": "/home/tbonato/LLAMP_Test/atlahs/sim/LogGOPSim/LogGOPSim",
+  "latency_points": 10,
+  "bandwidth_points": 17,
+  "bandwidth_fixed_L_ns": 4000,
+  "elapsed_s": 47.372462574000565,
+  "latency_T0_ns": 3452685100,
+  "latency_T1M_ns": 3556231673,
+  "bandwidth_TG0_ns": 3419950276,
+  "bandwidth_TGmax_ns": 3681898964
+}
