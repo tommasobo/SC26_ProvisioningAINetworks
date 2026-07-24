@@ -118,6 +118,8 @@ each other. The historical cold latency solve took about 4.4 hours. No Grok
   local handoff, including the historical four-NIC Figure 3 auto-channel run.
 - `local_artifact/manifests/` records hashes and raw-input identities.
 - `docs/REPRODUCTION_REPORT.md` gives the match status and remaining gaps.
+- `docs/comparison/SC26_paper_vs_artifact.pdf` places each paper plot above
+  its reproduced or compact-data result.
 - `docs/provenance/` retains the detailed Alps and local handoff notes.
 - `docs/ad/` contains the final combined AD/AE in LaTeX and PDF form.
 
