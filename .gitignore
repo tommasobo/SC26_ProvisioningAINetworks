@@ -13,8 +13,11 @@ __pycache__/
 .venv/
 venv/
 
-# Generated figures (created at runtime)
-figures/
+# Keep final PDFs in the artifact; local PNG previews are generated at runtime.
+figures/*.png
+figures/fig3_sensitivity_2x2.pdf
+figures/fig_2d_sensitivity_frontiers.pdf
+figures/fig_2d_sensitivity_llama_detail.pdf
 solver/*.png
 
 # Pipeline intermediate output

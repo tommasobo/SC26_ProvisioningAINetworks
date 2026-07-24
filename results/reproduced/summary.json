@@ -1,0 +1,93 @@
+{
+  "comparison_definition": "pointwise against the compact CSV used by the paper plot",
+  "figure3": {
+    "ch1_latency": {
+      "points": 6,
+      "max_rel_pct": 0.07826527193555474,
+      "mean_rel_pct": 0.02509314955551033
+    },
+    "auto_latency": {
+      "points": 6,
+      "max_rel_pct": 0.16608388935770776,
+      "mean_rel_pct": 0.05643765690314292
+    },
+    "ch1_bandwidth": {
+      "points": 61,
+      "max_rel_pct": 2.373020609218425,
+      "mean_rel_pct": 0.229570332293618
+    },
+    "auto_bandwidth": {
+      "points": 61,
+      "max_rel_pct": 1.4933663068301113,
+      "mean_rel_pct": 0.5225195129971271
+    }
+  },
+  "figure4": {
+    "latency": {
+      "points": 201,
+      "max_rel_pct": 0.141780702304865,
+      "mean_rel_pct": 0.047379370084496095
+    },
+    "bandwidth": {
+      "points": 61,
+      "max_rel_pct": 0.2420133560378309,
+      "mean_rel_pct": 0.04005751276443635
+    }
+  },
+  "figure5": {
+    "composite": {
+      "points": 201,
+      "max_rel_pct": 0.014852741934791467,
+      "mean_rel_pct": 0.004879053193970809
+    },
+    "monolithic_L0_rel_pct": 0.00026463060118752545,
+    "monolithic_L1M_status": "time_limit"
+  },
+  "figure6": {
+    "llama_latency_archived_june": {
+      "points": 201,
+      "max_rel_pct": 0.0275300684900053,
+      "mean_rel_pct": 0.010732659987884646
+    },
+    "llama_bandwidth_archived_june": {
+      "points": 20,
+      "max_rel_pct": 0.6334748113378921,
+      "mean_rel_pct": 0.05879339989468294
+    },
+    "llama_latency_july_1nic": {
+      "points": 201,
+      "max_rel_pct": 0.12766430405558815,
+      "mean_rel_pct": 0.05733820346332023
+    },
+    "llama_bandwidth_july_1nic": {
+      "points": 20,
+      "max_rel_pct": 0.3579634061024582,
+      "mean_rel_pct": 0.026331214958486098
+    },
+    "llama_bandwidth_final_1nic_repeat": {
+      "points": 20,
+      "max_rel_pct": 0.9162731567475895,
+      "mean_rel_pct": 0.053885694561051335
+    },
+    "llama_latency_final_4nic": {
+      "points": 201,
+      "max_rel_pct": 0.09510397798779845,
+      "mean_rel_pct": 0.03316506909986963
+    },
+    "llama_bandwidth_final_4nic": {
+      "points": 20,
+      "max_rel_pct": 0.570807317310247,
+      "mean_rel_pct": 0.050712146054540816
+    },
+    "vllm_latency": {
+      "points": 10,
+      "max_rel_pct": 13.827943757451388,
+      "mean_rel_pct": 12.212613964796793
+    },
+    "vllm_bandwidth": {
+      "points": 17,
+      "max_rel_pct": 20.315004165334607,
+      "mean_rel_pct": 16.020816306433602
+    }
+  }
+}

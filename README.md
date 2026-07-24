@@ -1,575 +1,131 @@
-# SC Tracing Artifact
+# Provisioning Networks for AI Supercomputers
 
-This repository supports the SC paper, "Provisioning Networks for AI Supercomputers: A Trace-Driven Study of Performance Sensitivity at Unprecedented Scale".
+This branch is the SC26 artifact freeze for the paper. The default workflow is
+a local redraw of Figures 1 and 3 to 10 from compact data. Figure 2 is a method
+diagram and has no computational output. The full workflow reruns the bounded
+solver checks for Figures 3, 4, and 6 and verifies the best recovered Figure 5
+result. Large traces, solver caches, and temporary files stay outside the
+repository.
 
-The artifact takes NCCL/AI workload traces that have already been converted to GOAL-like schedules, replays or analyzes them with LogGOPSim and LP tooling, and regenerates the paper figures from packaged CSV outputs. The cleaned workflow is intentionally tiered: reviewers can run the cheap packaged path on a laptop, while deeper GOAL and LP revalidation can be run on a larger machine with Gurobi and matching sidecars.
+The quick workflow takes about 15 seconds on Alps. It does not download traces,
+run Gurobi, or rerun Grok at 4,096 GPUs.
 
-Work for this cleanup/revalidation pass lives on branch `clean_version`.
+## Setup
 
-## Local raw-trace reproduction handoff
-
-The detailed July 2026 local-PC handoff is
-[`LOCAL_ARTIFACT_README.md`](LOCAL_ARTIFACT_README.md). It records the
-raw/metadata pipelines used for Figures 3–6, all reproduction errors, exact
-Figure 6 Llama public report identities, and the recovered exact Figure 6
-vLLM Llama-3.1-8B/128-token job `1812656` NSYS archive members and hashes.
-This supersedes the earlier conclusion that the exact vLLM input was
-globally missing: it was absent from the public index and Alps run root, but
-survived in a local archive.
-
-## What Is Included
-
-- `scripts/`: figure-generation and comparison scripts.
-- `data/output/` and `data/workspaces/`: packaged CSVs and intermediate outputs used by the paper figure scripts.
-- `data/traces/demo_allreduce_16r_1MiB.goal`: a tiny GOAL trace for local LogGOPSim and LP smoke tests.
-- `pipeline/`: user-facing wrappers for LogGOPSim replay, GOAL sidecar generation, raw NSYS conversion, and LP runs.
-- `solver/`: dependency-graph and LP tooling for Composite-LP/Monolithic-LP style analyses.
-- `tools/LogGOPSim/`: vendored/patched LogGOPSim source used by replay wrappers.
-- `tools/nccl_generator/`: NCCL trace converter for optional raw NSYS SQLite to GOAL plus metadata sidecars.
-- `docs/progress_log.md` and `docs/revalidation_report.md`: evidence from the cleanup/revalidation pass.
-
-Raw tracing is not part of the normal artifact path. Use released GOAL traces and packaged intermediate outputs unless you are explicitly validating the optional NSYS conversion path.
-
-## Tier A: Packaged Figure Reproduction
-
-This path uses packaged CSVs only. It does not need GPUs, raw NSYS traces, Gurobi, or large GOAL files.
+Python 3.10 or newer is required:
 
 ```bash
-git clone -b clean_version https://github.com/tommasobo/SC_Tracing.git
-cd SC_Tracing
-python3 -m venv .venv
-. .venv/bin/activate
-python -m pip install -r requirements.txt
-python reproduce_all.py
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
 ```
 
-Outputs are written to `figures/`. On the cleanup machine (`bigmem`, Ubuntu 24.04, Python 3.12), this completed in about 22 seconds with about 190 MiB peak RSS.
+`uv venv --python 3.11 .venv` and `uv pip install --python
+.venv/bin/python -r requirements.txt` are equivalent when `uv` is available.
 
-Useful variants:
+For the full workflow, also install `requirements-dev.txt`. It needs a working
+Gurobi license; the small LogGOPSim demo needs `g++`, `gengetopt`, and `re2c`.
+
+## Quick local reproduction
 
 ```bash
-python reproduce_all.py --list
-python reproduce_all.py --only 3 6 10
+./reproduce_quick.sh
 ```
 
-## Tier B: Demo and Real GOAL LogGOPSim Replay
+The command redraws these files under `figures/`:
 
-System packages needed for building LogGOPSim:
+| Paper figure | Plot script | Output |
+| --- | --- | --- |
+| 1 | `scripts/fig01_sensitivity_maps.py` | `fig_2d_sensitivity_workloads.pdf` |
+| 3 | `scripts/fig03_allreduce_1x4.py` | `fig3_sensitivity_1x4.pdf` |
+| 4 | `scripts/fig04_mixed_collectives.py` | `fig_mixed_16n_ch1.pdf` |
+| 5 | `scripts/fig05_llama_iteration.py` | `fig5_llama7b.pdf` |
+| 6 | `scripts/fig06_sensitivity_grid.py` | `fig_3x3_sensitivity.pdf` |
+| 7 | `scripts/fig07_memory_scaling.py` | `fig6_grok_memory.pdf` |
+| 8 and 9 | `scripts/fig08_09_cluster_params_cost.py` | `fig_network_perf_combined.pdf` |
+| 10 | `scripts/fig10_jitter.py` | `fig_jitter_3panel.pdf` |
+
+Figure 5 uses the closest recovered raw-derived Composite curve, which differs
+from the paper CSV by at most 0.014853%. Grok 4k panels, the Figure 5
+Monolithic curve, and Figures 1 and 7 to 10 use the existing compact data.
+
+## Full local reproduction
+
+Use a scratch directory with enough free space:
 
 ```bash
-sudo apt-get install g++ gengetopt re2c
+./reproduce_full.sh \
+  --scratch /path/to/scratch/provisioning_artifact \
+  --workers 4
 ```
 
-Run the bundled synthetic demo:
+The full script performs the quick redraw, manifest and test checks, the small
+LogGOPSim demo, fresh-cache metadata Composite checks for Figures 3 and 4, a
+comparison of the recovered Figure 5 curve, and fresh-cache Figure 6 Llama
+latency and bandwidth checks. Each default experiment is bounded to about
+45 minutes. The Figure 6 checks are the longest and previously took about 19
+and 31 minutes. Both Figure 6 tasks use the four physical NIC queues. July
+one-queue results and a final repeated one-queue result are retained under
+`results/reproduced/fig6/` to document the investigated alternative.
+
+Large raw NSYS and GOAL files are not committed. Their exact hashes and
+provenance are under `local_artifact/manifests/`. The full script starts from
+the compact metadata that is present in the repository.
+
+## Alps and Slurm
+
+Do not run the full workflow on a login node. Submit the work as separate
+batch jobs:
 
 ```bash
-python pipeline/demo.py
+./reproduce_full.sh --slurm \
+  --account a-g200 \
+  --partition normal \
+  --scratch /iopsstor/scratch/cscs/$USER/provisioning_artifact \
+  --workers 4
 ```
 
-The demo writes:
+The launcher runs independent jobs concurrently and serializes the two Figure
+6 sweeps to respect Gurobi license limits. Job IDs are written to
+`submitted_jobs.txt` below the selected scratch directory.
 
-```text
-data/demo_output/lgs_points.csv
-```
+## Expensive Grok 4k option
 
-Equivalent direct command:
+Grok at 4,096 GPUs is disabled by default. Its paper CSVs are used for plots.
+The full launcher exposes the cold Composite latency and bandwidth workflows
+only when both the explicit gate and N1024 metadata are supplied:
 
 ```bash
-python pipeline/run_lgs_sweep.py \
-  --goal data/traces/demo_allreduce_16r_1MiB.goal \
-  --out data/demo_output/lgs_points.csv \
-  --latencies 0 1000 10000 100000
+./reproduce_full.sh --slurm --expensive_run \
+  --grok-analysis-dir /scratch/path/to/grok/N1024/analysis \
+  --scratch /scratch/path/to/output
 ```
 
-To also verify the small LP path with a generated sidecar:
-
-```bash
-python pipeline/demo.py --with-lp
-```
-
-Released GOAL traces are indexed at:
-
-```text
-http://storage2.spcl.ethz.ch/traces/ai/
-```
-
-Download only the GOAL files you need. Large local inputs should go under `data/external/`, which is ignored by git.
-
-Example, Grok 314B N4/GPU16:
-
-```bash
-mkdir -p data/external/grok_N4 data/revalidation/grok_N4_lgs
-curl -L -o data/external/grok_N4/grok.goal \
-  http://storage2.spcl.ethz.ch/traces/ai/grok/Grok314B_N4_GPU16_TP4_PP1_CP1_VP1_EP4_ETP4_GBS256/grok.goal
-curl -L -o data/external/grok_N4/SHA256SUMS \
-  http://storage2.spcl.ethz.ch/traces/ai/grok/Grok314B_N4_GPU16_TP4_PP1_CP1_VP1_EP4_ETP4_GBS256/SHA256SUMS
-(cd data/external/grok_N4 && sha256sum -c SHA256SUMS --ignore-missing)
-python pipeline/run_lgs_sweep.py \
-  --goal data/external/grok_N4/grok.goal \
-  --out data/revalidation/grok_N4_lgs/lgs_points.csv \
-  --latencies 0 4000 10000 \
-  --G 0.04 --o 200
-```
-
-For large GOAL files, keep both the txt2bin cache and any temporary binary
-traces on a large scratch filesystem. Otherwise `txt2bin`/LogGOPSim can fail
-with filesystem or `SIGBUS` errors if `/tmp` is small:
-
-```bash
-python pipeline/run_lgs_sweep.py \
-  --goal /mnt/scratch/workspaces/grok/N128/analysis/output.goal \
-  --out results/revalidation/grok_N128_lgs/lgs_runtime.csv \
-  --latencies 0 4000 10000 250000 500000 1000000 \
-  --G 0.04 --o 200 \
-  --bin-cache-dir /mnt/scratch/SC_Tracing_lgs_cache/grok_N128 \
-  --tmp-dir /mnt/scratch/SC_Tracing_lgs_cache/_tmp
-```
-
-Example, vLLM Llama 70B N2/GPU8:
-
-```bash
-mkdir -p data/external/vllm_llama70b_N2 data/revalidation/vllm_llama70b_N2_lgs
-curl -L -o data/external/vllm_llama70b_N2/vllm_llama_N2_GPU8_PP8.goal \
-  http://storage2.spcl.ethz.ch/traces/ai/vllm/Llama_3.1_70B_Instruct_N2_GPU8_TP8_Short_Prompts/vllm_llama_N2_GPU8_PP8.goal
-python pipeline/run_lgs_sweep.py \
-  --goal data/external/vllm_llama70b_N2/vllm_llama_N2_GPU8_PP8.goal \
-  --out data/revalidation/vllm_llama70b_N2_lgs/lgs_points.csv \
-  --latencies 0 4000 10000 \
-  --G 0.04 --o 200
-```
-
-## Tier C: GOAL Plus `comm_dep` LP Regeneration
-
-LP regeneration requires Gurobi and a communication-dependency sidecar. Install optional solver dependencies:
-
-```bash
-python -m pip install -r requirements-solver.txt
-```
-
-Verify Gurobi:
-
-```bash
-python -c "import gurobipy as gp; m=gp.Model(); x=m.addVar(lb=0); m.setObjective(x, gp.GRB.MAXIMIZE); m.addConstr(x <= 1); m.optimize(); print(m.Status, m.ObjVal)"
-```
-
-The LP sidecar is a four-column CSV:
-
-```text
-src_rank,src_label_offset,dst_rank,dst_label_offset
-```
-
-Preferred sidecar generation path:
-
-```bash
-python pipeline/run_lgs.py \
-  --goal path/to/output.goal \
-  --L 1000 --G 0.04 --o 200 \
-  --comm-dep-out path/to/comm_dep.csv
-```
-
-Fallback sidecar generation from GOAL text alone:
-
-```bash
-python pipeline/generate_comm_dep_from_goal.py \
-  --goal path/to/output.goal \
-  --out path/to/comm_dep.csv
-```
-
-The fallback is useful for diagnostics and validated on the demo, Grok N4, and a local Llama7B N2 trace, but it is not universally safe. For the public prebuilt vLLM Llama70B N2 GOAL, tag-only FIFO matching produces a cyclic LP graph even though every send/recv is paired; that public GOAL needs true upstream match/dependency information for LP.
-
-For V2 NCCL generator inputs, the expected flow is regenerable: one GOAL rank
-per GPU plus metadata sidecars are produced from NSYS SQLite by
-`pipeline/run_nccl_generator.py`, and the LP `comm_dep.csv` can then be emitted
-from that GOAL by patched LogGOPSim. This has been validated end-to-end on the
-online vLLM Llama70B N2 NSYS reports. If only a public GOAL is available and its
-matching V2 metadata/raw SQLite is missing, the fallback matcher may not be
-correct enough for Monolithic-LP.
-
-For most data-level regeneration tasks, use the orchestration driver instead of chaining the lower-level scripts manually. From an existing GOAL:
-
-```bash
-python pipeline/regenerate_from_inputs.py \
-  --goal path/to/output.goal \
-  --out-dir data/revalidation/workload \
-  --comm-dep-mode auto \
-  --bin-cache-dir /mnt/scratch/SC_Tracing_lgs_cache \
-  --lgs-latencies 0 4000 10000 \
-  --monolithic-latencies 0 4000 \
-  --ranks-per-node 4 \
-  --l-intra 350 --g-intra 0.00333 \
-  --o 200 --G 0.04 --add-barriers
-```
-
-From NSYS-exported SQLite files, use the same driver with `--sqlite-dir`; it first invokes `pipeline/run_nccl_generator.py` and then emits/validates the LP `comm_dep.csv`:
-
-```bash
-python pipeline/regenerate_from_inputs.py \
-  --sqlite-dir path/to/nsys_sqlite_dir \
-  --out-dir data/revalidation/workload \
-  --bin-cache-dir /mnt/scratch/SC_Tracing_lgs_cache \
-  --lgs-latencies 0 4000 \
-  --monolithic-latencies 0 4000
-```
-
-By default, `--comm-dep-mode auto` uses an existing `--comm-dep` if supplied, otherwise patched LogGOPSim. The driver validates that the sidecar is non-empty and has four integer columns. Use `--allow-goal-fallback` only for diagnostics or traces already known to match the LogGOPSim sidecar exactly.
-When `--bin-cache-dir` is provided, lower-level LGS calls place temporary
-conversion files next to that cache by default; pass `--tmp-dir` to
-`pipeline/run_lgs.py` or `pipeline/run_lgs_sweep.py` directly if you need a
-specific scratch location.
-
-Run Monolithic-LP:
-
-```bash
-python pipeline/run_monolithic_lp.py \
-  --goal path/to/output.goal \
-  --comm-dep path/to/comm_dep.csv \
-  --out data/revalidation/workload/full_runtime.csv \
-  --l-min 0 --l-max 1000000 --step 50000 \
-  --l-intra 350 --o 200 --G 0.04
-```
-
-For node-scaling or hardware-comparison checks where only a few latency
-points are needed, use the exact-point runner. It builds the full LP once
-and solves only the requested latency values:
-
-```bash
-python pipeline/run_monolithic_points.py \
-  --goal path/to/output.goal \
-  --comm-dep path/to/comm_dep.csv \
-  --out data/revalidation/workload/monolithic_points.csv \
-  --latencies 0 4000 \
-  --ranks-per-node 4 \
-  --l-intra 350 --g-intra 0.00333 \
-  --o 200 --G 0.04 --add-barriers
-```
-
-The exact-point runner writes the output CSV after each solved latency. This is
-important for large runs because late high-latency points can take much longer
-than the model build and earlier solves.
-
-Run the GOAL-level LP sensitivity wrapper when the GOAL and LP sidecar are
-available. This path builds a dependency graph from the full GOAL trace and
-therefore requires `comm_dep.csv` for real NCCL traces:
-
-```bash
-python pipeline/run_composite_lp.py \
-  --goal path/to/output.goal \
-  --comm-dep path/to/comm_dep.csv \
-  --out data/revalidation/workload/composed_runtime.csv \
-  --l-min 0 --l-max 1000000 --step 50000 \
-  --l-intra 350 --o 200 --G 0.04
-```
-
-Both GOAL-level LP wrappers fail early if `--comm-dep` is missing or empty. Use `--allow-tag-match` only for known-simple synthetic traces.
-
-Run the paper-style NCCL Composite-LP path when the NCCL metadata sidecars are
-available. This path does not use `comm_dep.csv`; it reads
-`collective_instances.csv` and `comm_ring_info.csv`, solves unique collective
-motifs, and composes the program-level curve:
-
-```bash
-python pipeline/run_nccl_composite.py \
-  --analysis-dir path/to/analysis \
-  --out data/revalidation/workload/comp/sweeps/composed_runtime.csv \
-  --cache-dir data/revalidation/workload/collective_cache \
-  --clear-cache --parallel-solve --max-workers 8
-```
-
-By default this wrapper uses each row's NCCL communicator size
-(`--rank-count-mode row-nranks`). This matches the newer Grok replay driver and
-avoids a legacy shortcut where one global `nranks` value was accidentally reused
-for all collective motifs. The legacy behavior is still available with
-`--rank-count-mode first-row` when comparing against old scratch outputs.
-
-If a trace has multiple stream IDs, the wrapper now checks whether collective
-time intervals actually overlap before composing per-stream timelines. Multiple
-stream IDs without overlap are composed as one sequential rank timeline. Use
-`--force-parallel-streams` only for diagnostics that intentionally preserve the
-earlier cleaned-wrapper behavior.
-
-Some older packaged curves used historical motif-LP settings. The Llama7B N32
-figure bundle is reproduced with one NIC queue per rank and sequential rank-0
-composition:
-
-```bash
-/usr/bin/time -v timeout 7200 python pipeline/run_nccl_composite.py \
-  --analysis-dir data/workspaces/llama7b_n32_spcl_20260407/analysis \
-  --out data/revalidation/figures_end_to_end/llama7b_n32_composite_packaged_mode/comp/sweeps/composed_runtime.csv \
-  --cache-dir data/revalidation/figures_end_to_end/llama7b_n32_composite_packaged_mode/collective_cache \
-  --clear-cache --parallel-solve --max-workers 8 \
-  --node-map-mode rank-block --force-sequential --nic-per-rank
-```
-
-This cold-cache run completed in 19m26s on `bigmem` and reproduced
-`data/workspaces/llama7b_n32_spcl_20260407/output/comp/sweeps/composed_runtime.csv`
-within 0.0276% max relative difference. Without `--nic-per-rank`, the same
-metadata regenerates a different lower-cost motif family and is not comparable
-to the packaged paper curve.
-
-The fixed-latency bandwidth-sensitivity companion for the Llama7B N32 figure is:
-
-```bash
-/usr/bin/time -v timeout 7200 python pipeline/run_nccl_bw_sensitivity.py \
-  --analysis-dir data/workspaces/llama7b_n32_spcl_20260407/analysis \
-  --out data/revalidation/figures_end_to_end/llama7b_n32_bw_full/bandwidth_sensitivity.csv \
-  --cache-dir data/revalidation/figures_end_to_end/llama7b_n32_bw_full/fixed_l_cache \
-  --clear-cache --fixed-l-ns 4000 \
-  --min-bw-gbps 10 --max-bw-gbps 1600 --num-points 20 --spacing log \
-  --max-workers 8 --node-map-mode rank-block --force-sequential --nic-per-rank
-```
-
-This cold-cache run completed in 31m22s on `bigmem`, solving 20 bandwidth
-points from the metadata sidecars. It reproduces the packaged bandwidth curve
-within 0.6335% max relative difference and 0.0588% mean relative difference.
-The remaining drift is concentrated at the high-bandwidth asymptote and is
-documented as historical-driver/model provenance, not a cached-data shortcut.
-
-Figure-level end-to-end evidence and the commands used are summarized in
-`results/revalidation/figures_end_to_end/figure_end_to_end_summary.md`.
-For a concise per-figure status table, including which figures are plot-only
-versus data/model regenerated, see `docs/figure_reproduction_status.md`.
-
-For Grok, the cleaned wrapper has been validated through N512 using copied
-per-motif caches from the development replay outputs. N8, N16, N32, N64, N128,
-N256, and N512 reproduce those replay Composite-LP curves exactly over
-`L=0..1e6 ns`. N4 has two usable paths: the old replay cache is a legacy
-16-rank/global-rank run, while the cleaned default regenerates 4-rank row-nranks
-motifs from the metadata.
-
-N64, N256, and N512 were also regenerated from cold caches on the high-RAM
-machine. N64 solved 16 signatures in 47m13s with 1.60 GiB peak RSS and matched
-the development replay curve within 0.000060% max relative difference. N256
-solved 16 signatures in 31m36s with 8.0 GiB peak RSS and matched within
-0.0023%. N512 solved 16 signatures in 2h31m43s with 30.5 GiB peak RSS and
-matched within 0.0018%.
-
-The high-RAM Grok node-scaling aggregation used during revalidation is:
-
-```bash
-python scripts/grok_node_scaling.py \
-  --scratch-root /mnt/scratch/GrokStudy/repo \
-  --extra-scratch-root /mnt/scratch/GrokStudyCodex/Traces_Compression \
-  --out-dir results/revalidation/grok_node_scaling \
-  --nodes 4 8 16 32 64 128 256 512 \
-  --target-latency 0 \
-  --target-latencies 0 4000 10000 250000 500000 1000000 \
-  --no-packaged-large \
-  --exclude-monolithic
-```
-
-It combines hardware wall times from `collective_instances.csv`, regenerated
-Composite-LP curves under `data/revalidation/` where available, and regenerated
-or existing LGS curves. N128 now uses
-`data/revalidation/grok_N128_lgs_regen/lgs_runtime.csv`, regenerated from the
-16 GiB GOAL in 1h20m13s with 52.5 GiB peak RSS using a scratch-backed txt2bin
-cache. The command above intentionally
-excludes packaged N512/N1024 rows and excludes Monolithic-LP points; with the
-development replay workspace available, N512 is included from real metadata
-instead. The command does not launch any Monolithic-LP solves. The multi-latency mode writes
-per-latency CSV/JSON summaries plus
-`grok_node_scaling_multi_latency.{png,pdf}`.
-
-### End-to-End Grok Composite Cold Runs
-
-The large per-motif caches are intentionally not required for the artifact. To
-recreate the corrected Composite-LP curves from metadata sidecars, run the
-cold-cache commands below on the high-RAM machine. These do not require the LP
-`comm_dep.csv` sidecar; they require `collective_instances.csv`,
-`comm_ring_info.csv`, and the shipped `data/npkit/` calibration files.
-
-N64 corrected cold run:
-
-```bash
-/usr/bin/time -v timeout 7200 python pipeline/run_nccl_composite.py \
-  --analysis-dir /mnt/scratch/GrokStudy/repo/workspaces/grok/N64/analysis_new \
-  --out data/revalidation/grok_N64_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv \
-  --cache-dir data/revalidation/grok_N64_composite_row_nranks_regen/collective_cache \
-  --clear-cache --parallel-solve --max-workers 4
-```
-
-N256 corrected cold run:
-
-```bash
-/usr/bin/time -v timeout 7200 python pipeline/run_nccl_composite.py \
-  --analysis-dir /mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N256/analysis \
-  --out data/revalidation/grok_N256_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv \
-  --cache-dir data/revalidation/grok_N256_composite_row_nranks_regen/collective_cache \
-  --clear-cache --parallel-solve --max-workers 4
-```
-
-N512 corrected cold run:
-
-```bash
-/usr/bin/time -v timeout 21600 python pipeline/run_nccl_composite.py \
-  --analysis-dir /mnt/scratch/GrokStudyCodex/Traces_Compression/workspaces/grok/N512/analysis \
-  --out data/revalidation/grok_N512_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv \
-  --cache-dir data/revalidation/grok_N512_composite_row_nranks_regen/collective_cache \
-  --clear-cache --parallel-solve --max-workers 4
-```
-
-The revalidation run completed N64 in 47m13s, N256 in 31m36s, and N512 in
-2h31m43s on `bigmem`. N512 exceeds the two-hour-per-plot budget used for the
-final packaged-plot sweep, so treat it as an optional high-RAM validation run.
-
-Compare regenerated curves numerically:
-
-```bash
-python scripts/compare_csv.py \
-  --expected /mnt/scratch/GrokStudyCodex/Traces_Compression/output/grok_n512/comp/sweeps/composed_runtime.csv \
-  --actual data/revalidation/grok_N512_composite_row_nranks_regen/comp/sweeps/composed_runtime.csv \
-  --out-dir results/revalidation/grok_N512_composite_row_nranks_regen \
-  --label grok_N512_cold_regen_vs_codex \
-  --points actual
-```
-
-N128 Monolithic-LP is intentionally optional and expensive. The final scratch
-continuation did run one N128 point at `L=4000 ns`; it took 11h17m46s wall time
-and 266.7 GiB peak RSS. Treat N256+ Monolithic-LP as a separate high-RAM
-decision, not part of the default artifact workflow.
-
-## Tier D: Optional Raw NSYS SQLite to GOAL
-
-This path is not needed for normal artifact reproduction. It exists to document how raw NSYS SQLite exports can be converted to GOAL plus NCCL metadata sidecars:
-
-```bash
-python -m pip install -r requirements-tierc.txt
-python pipeline/run_nccl_generator.py \
-  --sqlite-dir /path/to/nsys_sqlite_dir \
-  --out-dir /path/to/analysis
-```
-
-This writes `output.goal`, `collective_instances.csv`, `goal_label_ranges.csv`, `comm_info.csv`, `comm_ring_info.csv`, and related NCCL metadata. It does not write the LP `comm_dep.csv`; generate that from the produced GOAL with `pipeline/run_lgs.py --comm-dep-out`.
-
-The online vLLM Llama70B N2 trace is a concrete raw-NSYS example:
-
-```bash
-mkdir -p /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/{nsys,sqlite,analysis_strict,commdep_strict,lgs_strict,composite_strict,bin_cache}
-cd /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/nsys
-wget -c --progress=dot:giga \
-  http://storage2.spcl.ethz.ch/traces/ai/vllm/Llama_3.1_70B_Instruct_N2_GPU8_TP8_Short_Prompts/nsys_reports/nsys_report_nid006673_57756.nsys-rep \
-  http://storage2.spcl.ethz.ch/traces/ai/vllm/Llama_3.1_70B_Instruct_N2_GPU8_TP8_Short_Prompts/nsys_reports/nsys_report_nid006679_8937.nsys-rep
-
-for rep in /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/nsys/*.nsys-rep; do
-  sqlite=/mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/sqlite/$(basename "${rep%.nsys-rep}.sqlite")
-  nsys export --type=sqlite -o "$sqlite" "$rep"
-done
-
-cd /path/to/SC_Tracing
-python pipeline/run_nccl_generator.py \
-  --sqlite-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/sqlite \
-  --out-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict
-python pipeline/run_lgs.py \
-  --goal /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict/output.goal \
-  --L 4000 --G 0.04 --o 200 \
-  --bin-cache-dir /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/bin_cache \
-  --comm-dep-out /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/commdep_strict/comm_dep.csv
-python pipeline/run_composite_lp.py \
-  --goal /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/analysis_strict/output.goal \
-  --comm-dep /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/commdep_strict/comm_dep.csv \
-  --out /mnt/scratch/SC_Tracing_revalidation/vllm_llama70b_N2/composite_strict/composed_runtime.csv \
-  --l-min 0 --l-max 8000 --step 4000 --l-intra 350 --o 200
-```
-
-This validates the online Llama70B N2 path, not the packaged vLLM8B paper curve under `data/output/vllm_llama8b_128tok/`.
-
-For the guarded Fig. 5 NSYS pipeline:
-
-```bash
-bash pipeline/reproduce_fig5_from_nsys.sh --dry-run
-bash pipeline/reproduce_fig5_from_nsys.sh --run-lp
-```
-
-The default URL is the online Llama7B N4/GPU16 one-iteration raw NSYS subtree:
-`http://storage2.spcl.ethz.ch/traces/ai/llama/Llama7B_N4_GPU16_TP1_PP1_DP16_BS32_1iter/raw_nsys/`.
-The `--run-lp` mode can take substantial time and requires Gurobi. On `bigmem`,
-the local-NSYS run completed in 9m30s with 5.1 GiB peak RSS, but did not match
-the packaged Fig. 5 Monolithic curve; see
-`results/revalidation/fig5_from_nsys/summary.md`.
-
-## Comparing Regenerated CSVs
-
-Use the numeric comparison helper instead of relying only on plots:
-
-```bash
-python scripts/compare_csv.py \
-  --expected path/to/packaged_or_prior.csv \
-  --actual path/to/new.csv \
-  --out-dir results/revalidation/workload \
-  --label my_check \
-  --points actual
-```
-
-It writes a detailed CSV and JSON summary with absolute and relative differences.
-
-## Final Scratch Rerun Campaign
-
-The strongest local validation bundle was produced on branch
-`final_scratch_rerun_20260627` from existing GOAL files, NCCL metadata sidecars,
-and NSYS/SQLite inputs. It avoids using packaged scientific CSVs as model
-outputs, while still preserving large scratch artifacts outside git:
-
-```bash
-python3 scripts/final_scratch_rerun_campaign.py --workers 8
-python3 scripts/summarize_final_scratch_rerun.py \
-  --results-dir results/final_scratch_rerun_20260627
-```
-
-Key outputs:
-
-- `results/final_scratch_rerun_20260627/final_scratch_summary.md`
-- `results/final_scratch_rerun_20260627/comparison_summary.csv`
-- `results/final_scratch_rerun_20260627/manual_lgs_summary.csv`
-- `results/final_scratch_rerun_20260627/grok_node_scaling/`
-- `new_results/final_scratch_rerun_20260627/`
-
-The final Grok scaling plot uses fresh scratch outputs where available.
-Monolithic-LP now has multi-latency exact points for N4, N8, N16, N32, and N64
-at `L=0`, `4000`, `10000`, `250000`, and `500000 ns`; N4-N32 also completed
-`L=1000000 ns`. The N64 `L=1000000 ns` solve was stopped after the model had
-run for about 7h01m and the final point made no visible progress for roughly
-2.6h, so the plot leaves that one Monolithic-LP point blank. At `L=4000 ns`,
-N64 has hardware 9562.007 ms, Composite-LP 8604.782 ms, LGS 9788.116 ms, and
-Monolithic-LP 8072.785 ms. N128 still has one exact Monolithic-LP point at
-`L=4000 ns`: hardware 8530.951 ms, Composite-LP 8107.423 ms, LGS 8973.763 ms,
-and Monolithic-LP 7137.090 ms. N128 is the largest exact LP scale attempted in
-this pass: 80.6M variables, 200.8M constraints, 11h17m46s wall time, and
-266.7 GiB peak RSS. N256 Monolithic-LP was not launched.
-
-## Expensive Or Skipped Paths
-
-- Do not retrace workloads or recollect GOAL traces as part of normal artifact reproduction.
-- Do not rerun 4096-GPU Grok cases unless a specific gap justifies the cost.
-- Use packaged outputs for 4096-GPU Monolithic-LP and full-scale replay baselines.
-- Moderate GOAL replay from released traces is feasible and useful for sanity checks.
-- LP regeneration is feasible only when GOAL and matching `comm_dep` information are both available.
-
-## Tests
-
-For development validation:
-
-```bash
-python -m pip install -r requirements-dev.txt
-python -m pytest -q
-python scripts/check_artifact.py --skip-figure
-```
-
-Cleanup result after this pass: `13 passed` on `bigmem`.
-
-## Current Validation Status
-
-During the `clean_version` cleanup pass:
-
-- Packaged figures regenerated successfully from bundled CSVs.
-- Vendored LogGOPSim builds on the current GCC toolchain.
-- Real downloaded GOAL traces for Grok N4/GPU16 and vLLM N2/GPU8 replay through LogGOPSim.
-- Real Monolithic-LP regeneration succeeded for Grok N4/GPU16, selected local Grok N8/N16/N32/N64 high-RAM points, and a local Llama7B N2/GPU8 trace when valid `comm_dep` sidecars were available or generated.
-- Real NCCL metadata-sidecar Composite-LP regeneration succeeded for Grok through N512. Corrected row-nranks cold-cache runs are available for N64, N256, and N512; N4-N512 scaling plots use real metadata, not packaged-large rows.
-- Grok N128 LogGOPSim was regenerated from the 16 GiB GOAL for the final scaling plot. The run used `--normalize-tags never` and a scratch txt2bin cache, completed in 1h20m13s, and replaced the previous invalid all-zero N128 LGS CSV in the plot inputs.
-- Llama7B N32 Composite-LP latency and fixed-L bandwidth curves are regenerable from packaged V2 metadata sidecars; latency matches within 0.0276% max relative difference and bandwidth within 0.6335%.
-- Online vLLM Llama70B N2 NSYS reports regenerate through NSYS export, V2 GOAL generation, LGS sidecar emission, and Composite-LP; Composite-LP matches LGS within about 0.186% on sampled points.
-- The guarded Fig. 5 NSYS-to-GOAL-to-sidecar-to-Monolithic-LP path runs on the online/local Llama7B N4 one-iteration inputs, but the regenerated curve differs from the packaged Fig. 5 Monolithic curve by 120.64% max relative difference.
-- LGS/LP numeric comparisons were saved under `results/revalidation/`.
-- The remaining vLLM gap is the packaged vLLM8B paper curve: the available online raw trace is Llama70B N2 and does not numerically match `data/output/vllm_llama8b_128tok/`.
-- The final scratch rerun results are under `results/final_scratch_rerun_20260627/` and `new_results/final_scratch_rerun_20260627/`. They include fresh-cache Grok Composite-LP through N512, complete manual N128 LGS, partial manual N256 LGS through `L=500000 ns`, Grok Monolithic-LP multi-latency points through N64 except the interrupted `N64@L=1000000 ns`, and the earlier N128 Monolithic-LP `L=4000 ns` exact point.
-
-See `docs/progress_log.md` for commands and `docs/revalidation_report.md` for the workload matrix and detailed sidecar analysis.
+Do not enable this option without confirming the input, RAM, allocation, and
+time. The Grok solver jobs run after the Figure 6 jobs and are serialized with
+each other. The historical cold latency solve took about 4.4 hours. No Grok
+4k experiment was run while preparing this branch.
+
+## Data and interpretation
+
+- `data/output/` contains the compact paper plotting inputs.
+- `data/workspaces/llama7b_n32_spcl_20260407/` contains the Figure 6 Llama
+  metadata used by the bounded full rerun.
+- `local_artifact/results/` contains the strongest compact raw-derived results
+  for Figures 3 to 6.
+- `local_artifact/figures/SC26_paper_vs_reproduced_figures_3_to_6.pdf` is the
+  retained paper-versus-result comparison bundle from the local handoff.
+- `results/reproduced/` contains selected Alps results that improved on the
+  local handoff, including the historical four-NIC Figure 3 auto-channel run.
+- `local_artifact/manifests/` records hashes and raw-input identities.
+- `docs/REPRODUCTION_REPORT.md` gives the match status and remaining gaps.
+- `docs/provenance/` retains the detailed Alps and local handoff notes.
+- `docs/ad/` contains the final combined AD/AE in LaTeX and PDF form.
+
+The Figure 1 phase map combines one-dimensional latency and bandwidth sweeps;
+it is not a joint two-dimensional simulation. The Figure 6 Llama metadata
+identify Llama 7B at N32/GPU128 even though the paper label says 70B. Figures
+8 and 9 are plot-only because their published latency, bandwidth, and cost
+data are embedded in the plotting script.
+
+For exact commands, discrepancies, and provenance, read
+`docs/REPRODUCTION_REPORT.md`.

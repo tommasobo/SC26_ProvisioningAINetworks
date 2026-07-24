@@ -144,8 +144,12 @@ def run_lgs(
             "-G", str(G),
             "-o", str(o),
             "-g", str(g),
-            "--ranks-per-node", str(ranks_per_node),
         ]
+        # Older paper-era binaries predate the topology options. Omitting the
+        # no-op default keeps the lightweight demo compatible with them, while
+        # real multi-rank-per-node runs still require a current build.
+        if ranks_per_node != 1 or L_intra is not None or G_intra is not None:
+            cmd += ["--ranks-per-node", str(ranks_per_node)]
         if L_intra is not None:
             cmd += ["--LogGOPS_L_intra", str(L_intra)]
         if G_intra is not None:

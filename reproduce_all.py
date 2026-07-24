@@ -91,6 +91,7 @@ def main() -> int:
 
     selected = set(args.only) if args.only else None
     seen_scripts: set[str] = set()
+    missing_outputs: list[Path] = []
     total_t = 0.0
     for num, script, outs in FIGURE_MAP:
         if selected is not None and num not in selected:
@@ -104,10 +105,19 @@ def main() -> int:
         for out in outs:
             p = FIGURES / out
             status = "OK" if p.exists() else "MISSING"
+            if not p.exists():
+                missing_outputs.append(p)
             print(f"   -> {p.relative_to(HERE)}  [{status}]")
         print(f"   ({dt:.1f}s)")
 
     print(f"\nDone. Total: {total_t:.1f}s. Outputs in {FIGURES.relative_to(HERE)}/")
+    if missing_outputs:
+        print(
+            "Missing expected outputs: "
+            + ", ".join(str(path.relative_to(HERE)) for path in missing_outputs),
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 

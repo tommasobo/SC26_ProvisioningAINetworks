@@ -1,6 +1,0 @@
-L,runtime,elapsed_s,peak_rss_mb,source_json
-0.0,8958244410.0,19521.206963300705,785627.45703125,/mnt/scratch/GrokStudyCodex/Traces_Compression/output/grok_n512/stats/lgs_L0.json
-250000.0,10941378397.0,17587.178873300552,785598.921875,/mnt/scratch/GrokStudyCodex/Traces_Compression/output/grok_n512/stats/lgs_L250000.json
-500000.0,13706083725.0,17113.71086525917,785635.48828125,/mnt/scratch/GrokStudyCodex/Traces_Compression/output/grok_n512/stats/lgs_L500000.json
-750000.0,16511845444.0,15849.452044487,785588.9375,/mnt/scratch/GrokStudyCodex/Traces_Compression/output/grok_n512/stats/lgs_L750000.json
-1000000.0,19319757993.0,16871.511553049088,785583.79296875,/mnt/scratch/GrokStudyCodex/Traces_Compression/output/grok_n512/stats/lgs_L1000000.json
