@@ -4,8 +4,13 @@ from dep_graph_generator import DependencyGraphGenerator
 from lp_converter import LPConverter
 from lp_analyzer import LPAnalyzer
 from topology import NetTopology
+from utils import is_gurobi_installed
 
 
+@unittest.skipUnless(
+    is_gurobi_installed(),
+    "network-latency sensitivity tests require a working Gurobi license",
+)
 class TestGraphAnalysis(unittest.TestCase):
     DATA = Path(__file__).resolve().parent / "data"
 
