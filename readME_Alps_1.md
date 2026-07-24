@@ -18,6 +18,10 @@ The most important distinction is:
 - Figure 6 Llama can be regenerated from metadata committed to the
   repository, but that is a metadata-level regeneration rather than a raw
   NSYS regeneration.
+- Stock LLAMP is now shown wherever a packaged CSV is present (Figures 3,
+  4, and 5). These gray dashed curves are parsed from committed CSVs and
+  explicitly labelled `Stock LLAMP (packaged CSV)`; they are not claimed as
+  fresh stock-LLAMP executions.
 - The exact Figure 5 paper input and Figure 6 vLLM 8B input are still
   missing. The repository alone cannot independently reproduce those panels.
 
@@ -56,6 +60,7 @@ that convention was necessary for the Figure 3 automatic-channel result.
 | Fig. 5 | historical `llama7b_n4` metadata sidecars plus `/iopsstor/scratch/cscs/btommaso/orderedchaos_ae/inputs/llama7b_n4/llama.bin` | BIN 241,872,936 B | Related Llama 7B inputs only. Neither is the proven paper input; paper says 8B |
 | Fig. 6 Llama | `data/workspaces/llama7b_n32_spcl_20260407/analysis/` | packaged metadata, 128 ranks | Derived metadata only. It identifies Llama 7B N32/GPU128/DP128, while the paper says 70B |
 | Fig. 6 vLLM | none | — | Exact Llama-3.1-8B N2/GPU8/128-token input expired; not reproduced and no 70B substitute was used |
+| Stock LLAMP overlays | committed `*_stock_runtime.csv` files listed below | 7 CSVs; 987 data rows | Derived/packaged solver outputs only. Parsed for plot context, not regenerated from original inputs |
 
 Source-container hashes:
 
@@ -218,7 +223,34 @@ python pipeline/run_nccl_bw_sensitivity.py \
 This is fully regenerable from repository data, but remains a
 metadata-level check with a 7B/70B identity conflict.
 
-### 6. Error calculation
+### 6. Parse the packaged stock-LLAMP CSVs
+
+The side-by-side presentation parses the following committed files directly
+with `pandas.read_csv`:
+
+| Figure | CSV | Rows | SHA-256 |
+| --- | --- | ---: | --- |
+| 3 ch1 latency | `data/output/final_plots/data/ar_128m_16n_ch1/latency_stock_runtime.csv` | 201 | `27ca9a8efc941ce0868fca8b3c3790876a2d506e0ee1585190ac2b645739b494` |
+| 3 ch1 bandwidth | `data/output/final_plots/data/ar_128m_16n_ch1/bw_stock_runtime.csv` | 61 | `504546c55c7dce68a6c44a06ae3303ea460e726b450496bdca8d0078c5cb2363` |
+| 3 auto latency | `data/output/final_plots/data/ar_128m_16n_auto/latency_stock_runtime.csv` | 201 | `fdaf4184465ab2258fb77356338260c872fcb19e8d462635816d4fece377b74a` |
+| 3 auto bandwidth | `data/output/final_plots/data/ar_128m_16n_auto/bw_stock_runtime.csv` | 61 | `108e57096f9fa1bb23476ba2266d996f793e8621383351f5e4a1f7f8a8f12b76` |
+| 4 latency | `data/output/final_plots/data/mixed_16n_ch1/latency_stock_runtime.csv` | 201 | `5310b3f0551b7649330794720cf53337ea1ac4484428865192fd90195d5cafa0` |
+| 4 bandwidth (retained, not needed by the current Figure 4 page) | `data/output/final_plots/data/mixed_16n_ch1/bw_stock_runtime.csv` | 61 | `569b11fb47d64bcd95b4ac0ea36d16fc5225b010e26bad0673147a4e4aef292b` |
+| 5 latency | `data/output/llama7b/partial_100pct/sweeps/stock_runtime.csv` | 201 | `fa352e764dabc83ec72cc4c14c2e1fee2ce7c067cb212fc09e383f1ee7208ff7` |
+
+Latency CSVs use `L` in nanoseconds and `runtime` in nanoseconds; the plot
+converts them to microseconds and milliseconds. Bandwidth CSVs use `G` in
+nanoseconds per byte and `runtime` in nanoseconds; the plot converts
+`G > 0` to `BW = 8/G` Gbps and runtime to milliseconds. The Figure 4 page
+contains only a latency panel, so its packaged bandwidth CSV is documented
+but not plotted. No stock-LLAMP CSV exists for Figure 6.
+
+These curves have zero parsing/redraw difference from their own source CSVs
+by construction. That is not an accuracy measurement and must not be
+reported as a successful stock-LLAMP reproduction. Restoring and validating
+the original stock-LLAMP executable path remains future work.
+
+### 7. Error calculation
 
 Fresh points were compared to the packaged paper/reference CSVs with
 `scripts/compare_csv.py`. For an actual point `x`, the paper curve is linearly
@@ -332,9 +364,9 @@ figures/SC26_paper_vs_reproduction_clariden-ln004.pdf
 ```
 
 The PDF has paper/reference plots on the left and fresh results on the right.
-Dashed reference curves and red hardware stars on the right come from
-packaged paper data and are marked as context; solid/marker reproduction
-curves and their lower-panel derivatives are freshly generated.
+Gray dashed paper-reference and Stock LLAMP curves, plus red hardware stars,
+come from packaged paper data and are marked as context. Solid/marker
+reproduction curves and their lower-panel derivatives are freshly generated.
 
 ## Verification
 

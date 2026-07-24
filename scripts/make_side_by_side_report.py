@@ -36,6 +36,7 @@ plt.rcParams.update({
 })
 
 C_PAPER = "#777777"
+C_STOCK = "#666666"
 C_COMP = "#D6604D"
 C_LGS = "#4DAF4A"
 C_MONO = "#2166AC"
@@ -191,13 +192,27 @@ def show_reference(ax, image_path: Path, title: str):
 
 
 def plot_latency(ax, paper: Path, comp: Path, lgs: Path, mono: Path, title: str,
-                 *, sensitivity_ax=None, hw=None, hw_error=None):
+                 *, stock: Path | None = None, sensitivity_ax=None, hw=None, hw_error=None):
     px, py = curve(paper, "L", "runtime", 1e-3, 1e-6)
+    sx_stock, sy_stock = (
+        curve(stock, "L", "runtime", 1e-3, 1e-6)
+        if stock is not None
+        else (np.array([]), np.array([]))
+    )
     cx, cy = curve(comp, "L", "runtime", 1e-3, 1e-6)
     lx, ly = curve(lgs, "L_ns", "runtime_ns", 1e-3, 1e-6)
     mx, my = curve(mono, "L", "runtime", 1e-3, 1e-6)
     if len(px):
         ax.plot(px, py, color=C_PAPER, ls="--", lw=1.1, alpha=0.72, label="paper reference")
+    if len(sx_stock):
+        ax.plot(
+            sx_stock,
+            sy_stock,
+            color=C_STOCK,
+            ls=(0, (5, 2)),
+            lw=1.35,
+            label="Stock LLAMP (packaged CSV)",
+        )
     if len(cx):
         ax.plot(cx, cy, color=C_COMP, lw=1.6, label="Composite LP")
     if len(lx):
@@ -236,15 +251,21 @@ def bandwidth_curve(path: Path, runtime_column: str = "runtime"):
 
 
 def plot_bandwidth(ax, paper: Path, paper_lgs: Path, comp: Path, lgs: Path, mono: Path, title: str,
-                   *, sensitivity_ax=None, hw=None, hw_error=None):
+                   *, stock: Path | None = None, sensitivity_ax=None, hw=None, hw_error=None):
     px, py = bandwidth_curve(paper)
     plx, ply = bandwidth_curve(paper_lgs)
+    sx_stock, sy_stock = (
+        bandwidth_curve(stock)
+        if stock is not None
+        else (np.array([]), np.array([]))
+    )
     cx, cy = bandwidth_curve(comp, "runtime_ns")
     lx, ly = bandwidth_curve(lgs)
     mx, my = bandwidth_curve(mono)
     for x, y, style, color, label in (
         (px, py, "--", C_PAPER, "paper LP reference"),
         (plx, ply, ":", C_PAPER, "paper LGS reference"),
+        (sx_stock, sy_stock, "--", C_STOCK, "Stock LLAMP (packaged CSV)"),
         (cx, cy, "-", C_COMP, "Composite LP"),
         (lx, ly, "s-.", C_LGS, "LGS"),
         (mx, my, "-", C_MONO, "Monolithic LP"),
@@ -319,8 +340,9 @@ def summary_page(pdf: PdfPages, repo: Path, out: Path, host: str):
         0.06,
         0.10,
         "Left-hand plots on later pages are regenerated from the artifact's packaged paper data. "
-        "They are references, not independent reruns. Right-hand plots use only outputs generated during this run. "
-        "Gray dashed curves on the right are paper CSVs shown solely for visual comparison.",
+        "They are references, not independent reruns. Right-hand plots combine outputs generated during this run "
+        "with explicitly labelled packaged reference CSVs. Gray dashed curves are CSV-derived context, including "
+        "Stock LLAMP where a packaged CSV exists; they are not fresh solver runs.",
         fontsize=9,
         wrap=True,
     )
@@ -354,6 +376,7 @@ def figure3_page(pdf: PdfPages, repo: Path, out: Path):
         lat_top = fig.add_subplot(lat_grid[0])
         lat_bottom = fig.add_subplot(lat_grid[1], sharex=lat_top)
         plot_latency(lat_top, paper, comp, lgs, mono, f"Fresh latency — {title}",
+                     stock=paper_dir / "latency_stock_runtime.csv",
                      sensitivity_ax=lat_bottom, hw=hw, hw_error=hw_error)
         paper_bw = paper_dir / "bw_composite_runtime.csv"
         lgs_bw = out / "experiments/lgs_bandwidth" / name / "physical_intra/runtime.csv"
@@ -370,11 +393,12 @@ def figure3_page(pdf: PdfPages, repo: Path, out: Path):
         bw_bottom = fig.add_subplot(bw_grid[1], sharex=bw_top)
         plot_bandwidth(bw_top, paper_bw, paper_lgs_bw, out / "_no_composite_bandwidth.csv",
                        lgs_bw, mono_bw, f"Fresh bandwidth — {title}",
+                       stock=paper_dir / "bw_stock_runtime.csv",
                        sensitivity_ax=bw_bottom, hw=hw, hw_error=hw_error)
     handles, labels = fig.axes[1].get_legend_handles_labels()
     if handles:
-        fig.legend(handles, labels, loc="upper center", ncol=4, fontsize=7, bbox_to_anchor=(0.745, 0.925))
-    page_footer(fig, "Evidence: 64 original NSYS reports per mode; 16 nodes, 64 ranks, Ring/Simple. The recovered historical generator establishes four physical NIC queues per GH200 node. Monolithic bandwidth: ch1 0.230% mean error; auto 0.523% mean error. All right-hand solid/marker curves are fresh.")
+        fig.legend(handles, labels, loc="upper center", ncol=3, fontsize=6.5, bbox_to_anchor=(0.745, 0.925))
+    page_footer(fig, "Evidence: 64 original NSYS reports per mode; 16 nodes, 64 ranks, Ring/Simple. The recovered historical generator establishes four physical NIC queues per GH200 node. Monolithic bandwidth: ch1 0.230% mean error; auto 0.523% mean error. Right-hand solid/marker curves are fresh; Stock LLAMP and paper-reference dashed curves are parsed from packaged CSVs.")
     pdf.savefig(fig)
     plt.close(fig)
 
@@ -410,6 +434,7 @@ def figure4_page(pdf: PdfPages, repo: Path, out: Path):
         work / "lgs_topology/lgs_runtime.csv",
         prefer_monolithic(work),
         "Fresh end-to-end reproduction — job 1808340",
+        stock=paper_dir / "latency_stock_runtime.csv",
         sensitivity_ax=ax_sens,
         hw=hw,
         hw_error=hw_error,
@@ -442,8 +467,8 @@ def figure4_page(pdf: PdfPages, repo: Path, out: Path):
     page_footer(
         fig,
         "End-to-end path for job 1808340: 64 original NSYS → fresh SQLite → fresh GOAL/metadata "
-        "→ fresh LGS/Composite/Monolithic solves → this plot. Packaged CSVs are used only for "
-        "the dashed reference and red measured-HW star.",
+        "→ fresh LGS/Composite/Monolithic solves → this plot. Packaged CSVs supply the dashed "
+        "paper-reference and Stock LLAMP curves; packaged timestamps supply the red measured-HW star.",
     )
     pdf.savefig(fig)
     plt.close(fig)
@@ -466,7 +491,18 @@ def figure5_page(pdf: PdfPages, repo: Path, out: Path):
     mx, my = curve(old_meta, "L", "runtime", 1e-3, 1e-6)
     paper_comp = repo / "data/output/llama7b/comp_100pct/sweeps/composed_runtime.csv"
     px, py = curve(paper_comp, "L", "runtime", 1e-3, 1e-6)
+    stock = repo / "data/output/llama7b/partial_100pct/sweeps/stock_runtime.csv"
+    sx, sy = curve(stock, "L", "runtime", 1e-3, 1e-6)
     ax.plot(px, py, color=C_PAPER, ls="--", lw=1.1, label="paper reference")
+    if len(sx):
+        ax.plot(
+            sx,
+            sy,
+            color=C_STOCK,
+            ls=(0, (5, 2)),
+            lw=1.35,
+            label="Stock LLAMP (packaged CSV)",
+        )
     if len(mx):
         ax.plot(mx, my, color=C_COMP, lw=1.6, label="Composite LP (old metadata)")
     if len(lx):
@@ -491,7 +527,7 @@ def figure5_page(pdf: PdfPages, repo: Path, out: Path):
         va="top", fontsize=8,
         bbox=dict(boxstyle="round", facecolor="#f7f7f7", edgecolor="#bbbbbb"),
     )
-    page_footer(fig, "The fresh old-metadata Composite starts at the same baseline as the paper but differs by 10.038% mean over the full curve. The public-V2 static BIN runs at roughly 2.1–3.3 s and is related provenance only. Neither candidate is promoted to exact.")
+    page_footer(fig, "The fresh old-metadata Composite starts at the same baseline as the paper but differs by 10.038% mean over the full curve. The public-V2 static BIN runs at roughly 2.1–3.3 s and is related provenance only. Stock LLAMP is parsed from the packaged CSV and is not a fresh run. Neither candidate is promoted to exact.")
     pdf.savefig(fig)
     plt.close(fig)
 
