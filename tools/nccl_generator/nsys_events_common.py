@@ -22,7 +22,7 @@ logger = logging.getLogger("nsys_events")
 
 def find_all_traces(directory):
     """Find all trace files that end with .sqlite in the given directory."""
-    return list(pathlib.Path(directory).rglob("*.sqlite"))
+    return sorted(pathlib.Path(directory).rglob("*.sqlite"), key=lambda path: str(path))
 
 
 def convert_numeric(

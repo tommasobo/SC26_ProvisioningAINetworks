@@ -684,8 +684,17 @@ if __name__ == "__main__":
         help="Skip GPUs with incomplete NVTX/kernel annotations instead of failing. "
              "Needed for vLLM inference traces where profiling windows miss some GPU events.",
     )
+    parser.add_argument(
+        "--nics-per-node",
+        type=int,
+        default=1,
+        help="Number of physical NIC/injection resources per node; NCCL channel CPU lanes "
+             "are mapped with cpu %% nics_per_node (GH200: 4).",
+    )
 
     args = parser.parse_args()
+    if args.nics_per_node < 1:
+        parser.error("--nics-per-node must be at least 1")
     trace_dir = pathlib.Path(args.trace_dir).resolve()
     output_dir = pathlib.Path(args.output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -849,14 +858,33 @@ if __name__ == "__main__":
     comm_op_ids = {name: i for i, name in enumerate(comm_ops.keys())}
     comm_op_ids["Send"] = comm_op_ids["Recv"]
     
-    # Build gpu_id2goal_rank mapping
-    gpu_id2goal_rank = {gpu.gpu_id: i for i, gpu in enumerate(gpu_devices.values())}
+    # Build a deterministic, topology-preserving GOAL-rank mapping.  The
+    # simulator's ranks-per-node model assumes colocated ranks are contiguous;
+    # insertion order here used to depend on filesystem traversal order.
+    def _gpu_sort_key(gpu):
+        node = str(gpu.node_id)
+        node_key = (0, int(node)) if node.isdigit() else (1, node)
+        return node_key, int(gpu.pid)
+
+    ordered_gpu_devices = sorted(gpu_devices.values(), key=_gpu_sort_key)
+    gpu_id2goal_rank = {gpu.gpu_id: i for i, gpu in enumerate(ordered_gpu_devices)}
     
     # Initialize npkit data
     init_data(
         npkit_data_simple,
         npkit_data_ll,
     )
+
+    # Restore the multi-NIC topology option present in the historical
+    # Traces_Compression workspace used during figure development.
+    import nccl_primitives
+    nccl_primitives.nics_per_node = args.nics_per_node
+    if args.nics_per_node > 1:
+        logger.info(
+            "Multi-NIC mode: %d resources per node (channel -> NIC via cpu %% %d)",
+            args.nics_per_node,
+            args.nics_per_node,
+        )
 
     _MASK = (1 << sys.hash_info.width) - 1
     def hash_sequnces(*sequences):

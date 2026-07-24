@@ -12,11 +12,13 @@ CONTEXT_LABELS = {"Other": 0, "PP": 1, "DP": 2}
 
 
 def _gpu_order(comm_info: pd.DataFrame) -> Dict[Tuple[str, int], int]:
-    gpus_df = comm_info[["nodeId", "pid"]].drop_duplicates().reset_index(drop=True)
+    rows = [
+        (str(row["nodeId"]), int(row["pid"]))
+        for _, row in comm_info[["nodeId", "pid"]].drop_duplicates().iterrows()
+    ]
+    rows.sort(key=lambda item: ((0, int(item[0])) if item[0].isdigit() else (1, item[0]), item[1]))
     out: Dict[Tuple[str, int], int] = {}
-    for idx, (_, row) in enumerate(gpus_df.iterrows()):
-        node_raw = str(row["nodeId"])
-        pid = int(row["pid"])
+    for idx, (node_raw, pid) in enumerate(rows):
         out[(node_raw, pid)] = idx
         if node_raw.isdigit():
             out[(str(int(node_raw)), pid)] = idx

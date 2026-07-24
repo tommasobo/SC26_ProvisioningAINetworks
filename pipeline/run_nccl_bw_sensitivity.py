@@ -105,6 +105,7 @@ def _solve_collective_runtime_at_l_exact_goal(
     npkit_ll: str,
     enable_intra_node_transfer: bool | None,
     nic_per_rank: bool,
+    nics_per_node: int,
 ) -> dict[str, Any]:
     import gurobipy as gp
 
@@ -222,6 +223,7 @@ def _solve_collective_runtime_at_l_exact_goal(
             l_intra=sig.network.L_intra,
             g_intra=sig.network.G_intra,
             nic_per_rank=nic_per_rank,
+            nics_per_node=nics_per_node,
         ).convert_to_lp(verbose=False, G=sig.network.G_inter)
         model.setParam("LogToConsole", 0)
         model.setParam("Method", 1)
@@ -254,6 +256,7 @@ def _solve_worker(payload: tuple[Any, ...]) -> tuple[str, dict[str, Any]]:
         npkit_ll,
         enable_intra_node_transfer,
         nic_per_rank,
+        nics_per_node,
     ) = payload
     return key, _solve_collective_runtime_at_l_exact_goal(
         sig=sig,
@@ -264,6 +267,7 @@ def _solve_worker(payload: tuple[Any, ...]) -> tuple[str, dict[str, Any]]:
         npkit_ll=npkit_ll,
         enable_intra_node_transfer=enable_intra_node_transfer,
         nic_per_rank=nic_per_rank,
+        nics_per_node=nics_per_node,
     )
 
 
@@ -435,6 +439,7 @@ def run_point(
                     str(args.npkit_ll.resolve()),
                     args.enable_intra_node_transfer,
                     bool(args.nic_per_rank),
+                    int(args.nics_per_node),
                 )
             )
 
@@ -592,6 +597,7 @@ def run(args: argparse.Namespace) -> int:
             "o_ns": float(args.o),
             "msg_gap_ns": float(args.msg_gap),
             "nic_per_rank": bool(args.nic_per_rank),
+            "nics_per_node": int(args.nics_per_node),
             "enable_intra_node_transfer": args.enable_intra_node_transfer,
         },
         "runtime_range_ms": {
@@ -640,6 +646,8 @@ def main() -> int:
                         help="Compose rank events in timestamp order even if streams overlap.")
     parser.add_argument("--nic-per-rank", action="store_true",
                         help="Use one serialized NIC queue per rank inside motif LPs.")
+    parser.add_argument("--nics-per-node", type=int, default=1,
+                        help="Physical NIC queues per node when --nic-per-rank is enabled.")
     parser.add_argument("--enable-intra-node-transfer", action=argparse.BooleanOptionalAction,
                         default=None,
                         help="Override NCCL generator intra-node transfer mode when supported.")
@@ -662,6 +670,8 @@ def main() -> int:
 
     if args.ranks_per_node <= 0:
         parser.error("--ranks-per-node must be positive")
+    if args.nics_per_node <= 0:
+        parser.error("--nics-per-node must be positive")
     if args.nranks is not None and args.nranks <= 0:
         parser.error("--nranks must be positive")
     if args.max_workers <= 0:

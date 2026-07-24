@@ -28,6 +28,12 @@ def main() -> int:
                     help="Overhead, ns (default: 200)")
     ap.add_argument("--g", type=int, default=5,
                     help="Gap, ns (default: 5)")
+    ap.add_argument("--ranks-per-node", type=int, default=1,
+                    help="Ranks colocated per node (default: 1)")
+    ap.add_argument("--L-intra", type=int, default=None,
+                    help="Fixed intra-node latency in ns")
+    ap.add_argument("--G-intra", type=float, default=None,
+                    help="Fixed intra-node gap per byte in ns/byte")
     ap.add_argument("--normalize-tags", choices=("auto", "always", "never"), default="auto",
                     help="Forwarded to run_lgs.py.")
     ap.add_argument("--bin-cache-dir", type=Path, default=None,
@@ -51,6 +57,9 @@ def main() -> int:
         "G_ns_per_byte",
         "o_ns",
         "g_ns",
+        "ranks_per_node",
+        "L_intra_ns",
+        "G_intra_ns_per_byte",
     ]
     with args.out.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -66,6 +75,9 @@ def main() -> int:
                 normalize_tags=args.normalize_tags,
                 bin_cache_dir=args.bin_cache_dir,
                 tmp_dir=args.tmp_dir,
+                ranks_per_node=args.ranks_per_node,
+                L_intra=args.L_intra,
+                G_intra=args.G_intra,
             )
             elapsed_s = time.perf_counter() - t0
             writer.writerow({
@@ -76,6 +88,9 @@ def main() -> int:
                 "G_ns_per_byte": args.G,
                 "o_ns": args.o,
                 "g_ns": args.g,
+                "ranks_per_node": args.ranks_per_node,
+                "L_intra_ns": args.L_intra,
+                "G_intra_ns_per_byte": args.G_intra,
             })
             f.flush()
             print(

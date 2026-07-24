@@ -272,6 +272,7 @@ def run_composite(args: argparse.Namespace) -> int:
         os.environ["LLAMP_NCCL_ENABLE_INTRA_NODE_TRANSFER"] = "0"
     if args.nic_per_rank:
         os.environ["LLAMP_NCCL_NIC_PER_RANK"] = "1"
+    os.environ["LLAMP_NCCL_NICS_PER_NODE"] = str(args.nics_per_node)
 
     out_csv = args.out.resolve()
     out_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -543,6 +544,7 @@ def run_composite(args: argparse.Namespace) -> int:
         "peak_rss_mb": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
         "disable_intra_node_transfer": bool(args.disable_intra_node_transfer),
         "nic_per_rank": bool(args.nic_per_rank),
+        "nics_per_node": int(args.nics_per_node),
     }
     summary_path = out_csv.parent / "summary.json"
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -625,12 +627,16 @@ def main() -> int:
                             "preserves an older Llama bundle setting; the cleaned default "
                             "uses the LPConverter default per-destination/channel queues."
                         ))
+    parser.add_argument("--nics-per-node", type=int, default=1,
+                        help="Physical NIC queues per node when --nic-per-rank is enabled.")
     args = parser.parse_args()
 
     if args.nranks is not None and args.nranks <= 0:
         parser.error("--nranks must be positive")
     if args.ranks_per_node <= 0:
         parser.error("--ranks-per-node must be positive")
+    if args.nics_per_node <= 0:
+        parser.error("--nics-per-node must be positive")
     if args.max_workers <= 0:
         parser.error("--max-workers must be positive")
     return run_composite(args)

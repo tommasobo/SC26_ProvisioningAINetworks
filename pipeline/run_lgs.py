@@ -97,6 +97,9 @@ def run_lgs(
     normalize_tags: str = "auto",
     bin_cache_dir: Optional[Path] = None,
     tmp_dir: Optional[Path] = None,
+    ranks_per_node: int = 1,
+    L_intra: Optional[int] = None,
+    G_intra: Optional[float] = None,
 ) -> int:
     """Run LGS on a GOAL file and return runtime in ns."""
     ensure_built()
@@ -141,7 +144,12 @@ def run_lgs(
             "-G", str(G),
             "-o", str(o),
             "-g", str(g),
+            "--ranks-per-node", str(ranks_per_node),
         ]
+        if L_intra is not None:
+            cmd += ["--LogGOPS_L_intra", str(L_intra)]
+        if G_intra is not None:
+            cmd += ["--LogGOPS_G_intra", str(G_intra)]
         if comm_dep_out is not None:
             comm_dep_out.parent.mkdir(parents=True, exist_ok=True)
             cmd += ["--comm-dep-file", str(comm_dep_out)]
@@ -166,6 +174,12 @@ def main() -> int:
                     help="Overhead, ns (default: 200)")
     ap.add_argument("--g", type=int, default=5,
                     help="Gap, ns (default: 5)")
+    ap.add_argument("--ranks-per-node", type=int, default=1,
+                    help="Ranks colocated per node (default: 1)")
+    ap.add_argument("--L-intra", type=int, default=None,
+                    help="Fixed intra-node latency in ns")
+    ap.add_argument("--G-intra", type=float, default=None,
+                    help="Fixed intra-node gap per byte in ns/byte")
     ap.add_argument("--comm-dep-out", type=Path, default=None,
                     help="Optional CSV path for patched LogGOPSim send/recv "
                          "dependency output. This file can be passed to "
@@ -188,7 +202,8 @@ def main() -> int:
 
     t0 = time.perf_counter()
     rt = run_lgs(args.goal, args.L, args.G, args.o, args.g,
-                 args.comm_dep_out, args.normalize_tags, args.bin_cache_dir, args.tmp_dir)
+                 args.comm_dep_out, args.normalize_tags, args.bin_cache_dir, args.tmp_dir,
+                 args.ranks_per_node, args.L_intra, args.G_intra)
     dt = time.perf_counter() - t0
     print(f"[lgs] runtime = {rt} ns ({rt / 1e6:.3f} ms) "
           f"[L={args.L} G={args.G} o={args.o}, solved in {dt:.2f}s]")

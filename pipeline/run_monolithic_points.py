@@ -123,6 +123,10 @@ def main() -> int:
                     help="Use one serialized NIC injection queue per rank.")
     ap.add_argument("--nics-per-node", type=int, default=1,
                     help="Number of physical NICs per node for --nic-per-rank.")
+    ap.add_argument("--method", type=int, choices=[-1, 0, 1, 2, 3, 4, 5], default=1,
+                    help="Gurobi LP method (default: 1, dual simplex).")
+    ap.add_argument("--threads", type=int, default=0,
+                    help="Gurobi thread limit; 0 uses the solver default.")
     ap.add_argument("--dry-run", action="store_true",
                     help="Validate arguments and print the planned configuration.")
     args = ap.parse_args()
@@ -171,7 +175,8 @@ def main() -> int:
     )
     model = converter.convert_to_lp(verbose=False, G=args.G)
     model.setParam("LogToConsole", 0)
-    model.setParam("Method", 1)
+    model.setParam("Method", args.method)
+    model.setParam("Threads", args.threads)
     l_var = model.getVarByName("l")
     if l_var is None:
         print("error: LP model does not contain latency variable 'l'", file=sys.stderr)
@@ -217,6 +222,8 @@ def main() -> int:
         "add_barriers": args.add_barriers,
         "nic_per_rank": args.nic_per_rank,
         "nics_per_node": args.nics_per_node,
+        "method": args.method,
+        "threads": args.threads,
         "num_vertices": dep_graph.num_vertices(),
         "num_edges": dep_graph.num_edges(),
         "num_ranks": dep_graph.num_ranks,

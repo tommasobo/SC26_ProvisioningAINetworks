@@ -42,6 +42,9 @@ def main() -> int:
     ap.add_argument("--parallel", action="store_true", default=False,
                     help="Use the Dask-backed parallel event extractor "
                          "(experimental; may not apply tolerant_gpu_match).")
+    ap.add_argument("--nics-per-node", type=int, default=1,
+                    help="Physical NIC/injection resources per node; forwarded "
+                         "to the generator (GH200: 4).")
     ap.add_argument("--dry-run", action="store_true",
                     help="Validate inputs and print the generator command "
                          "without running it.")
@@ -64,6 +67,7 @@ def main() -> int:
         "-s", str(args.npkit_simple),
         "-l", str(args.npkit_ll),
         "--intermediate_results",
+        "--nics-per-node", str(args.nics_per_node),
     ]
     if args.parallel:
         cmd += ["-p"]

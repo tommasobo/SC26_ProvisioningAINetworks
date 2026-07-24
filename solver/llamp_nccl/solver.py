@@ -443,6 +443,7 @@ def solve_collective(sig: CollectiveSignature,
 
         nic_per_rank_env = os.environ.get("LLAMP_NCCL_NIC_PER_RANK", "")
         nic_per_rank = nic_per_rank_env.strip().lower() in {"1", "true", "yes"}
+        nics_per_node = int(os.environ.get("LLAMP_NCCL_NICS_PER_NODE", "1"))
 
         model = LPConverter(
             dg, o=int(sig.network.o),
@@ -450,6 +451,7 @@ def solve_collective(sig: CollectiveSignature,
             l_intra=sig.network.L_intra,
             g_intra=sig.network.G_intra,
             nic_per_rank=nic_per_rank,
+            nics_per_node=nics_per_node,
         ).convert_to_lp(verbose=False, G=sig.network.G_inter)
 
         # --- Step 3: Sweep and extract piecewise ---

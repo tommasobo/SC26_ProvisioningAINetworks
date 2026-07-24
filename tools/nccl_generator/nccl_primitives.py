@@ -18,6 +18,7 @@ GpuId = Tuple[str, int]
 zero_price_reduction_copy = False
 zero_price_communication = False
 enable_intra_node_transfer = True
+nics_per_node = 1
 
 
 def init_generation_flags(
@@ -452,14 +453,18 @@ class NCCLPrimitive(NCCLPrimitiveComm, ABC):
         nic: int,
         intra_node: bool,
     ) -> GoalOp:
+        # GH200 exposes one network injection resource per GPU.  Preserve the
+        # historical multi-NIC generator convention: NCCL channel/CPU lanes
+        # are striped across those resources.
+        effective_nic = cpu % nics_per_node if nics_per_node > 1 else nic
         if zero_price_communication:
-            return GoalSend(target_goal_rank, 0, nic, self.context, self_goal_rank, cpu)
+            return GoalSend(target_goal_rank, 0, effective_nic, self.context, self_goal_rank, cpu)
         if intra_node and not enable_intra_node_transfer:
             # Legacy mode: 0-byte notification + hardcoded calc for intra-node BW.
             return GoalSequential(
                 [
                     GoalSend(
-                        target_goal_rank, 0, nic, self.context, self_goal_rank, cpu
+                        target_goal_rank, 0, effective_nic, self.context, self_goal_rank, cpu
                     ),
                     GoalCalc(intra_node_transfer_time(size), self_goal_rank, cpu),
                 ],
@@ -468,7 +473,7 @@ class NCCLPrimitive(NCCLPrimitiveComm, ABC):
             )
         # Default: sized send so that L_intra / G_intra are applied by the
         # solver/simulator instead of a hardcoded calc.
-        return GoalSend(target_goal_rank, size, nic, self.context, self_goal_rank, cpu)
+        return GoalSend(target_goal_rank, size, effective_nic, self.context, self_goal_rank, cpu)
 
     def recv_goal(
         self,
@@ -479,21 +484,22 @@ class NCCLPrimitive(NCCLPrimitiveComm, ABC):
         nic: int,
         intra_node: bool,
     ) -> GoalOp:
+        effective_nic = cpu % nics_per_node if nics_per_node > 1 else nic
         if zero_price_communication:
-            return GoalRecv(source_goal_rank, 0, nic, self.context, self_goal_rank, cpu)
+            return GoalRecv(source_goal_rank, 0, effective_nic, self.context, self_goal_rank, cpu)
         if intra_node and not enable_intra_node_transfer:
             # Legacy mode: 0-byte notification + hardcoded calc for intra-node BW.
             return GoalSequential(
                 [
                     GoalRecv(
-                        source_goal_rank, 0, nic, self.context, self_goal_rank, cpu
+                        source_goal_rank, 0, effective_nic, self.context, self_goal_rank, cpu
                     ),
                     GoalCalc(intra_node_transfer_time(size), self_goal_rank, cpu),
                 ],
                 self_goal_rank,
                 cpu,
             )
-        return GoalRecv(source_goal_rank, size, nic, self.context, self_goal_rank, cpu)
+        return GoalRecv(source_goal_rank, size, effective_nic, self.context, self_goal_rank, cpu)
 
     @abstractmethod
     def _p_to_goal(
