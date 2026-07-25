@@ -156,10 +156,17 @@ Run the quick workflow locally:
 Run the full workflow with a scratch directory:
 
 \begin{verbatim}
+./scripts/fetch_traces.py \
+  --output /scratch/$USER/raw_traces
+
 ./reproduce_full.sh \
   --scratch /scratch/$USER/provisioning_artifact \
+  --trace-root /scratch/$USER/raw_traces \
   --workers 4
 \end{verbatim}
+
+The downloader selects all registered Figure 3--6 trace sets by default.
+The optional 4,096-GPU Grok trace set is not downloaded.
 
 On Alps, submit the analysis through Slurm:
 
@@ -167,6 +174,7 @@ On Alps, submit the analysis through Slurm:
 ./reproduce_full.sh --slurm \
   --account <account> --partition normal \
   --scratch /iopsstor/scratch/cscs/$USER/artifact \
+  --trace-root /iopsstor/scratch/cscs/$USER/raw_traces \
   --workers 4
 \end{verbatim}
 
@@ -190,27 +198,29 @@ trace-to-plot workflow for Figures 3--6.
 
 \artexp
 
-A selected trace set, supplied with the artifact or downloaded from the
-public repository, should pass through the trace-processing and numerical
-analysis stages. The repository records the input identities used by the
-workflow.
+The trace downloader should prepare the complete standard Figure 3--6 input
+tree and record the downloaded files. The optional Figure 3--6 selector is
+needed only for a smaller test. The 4,096-GPU Grok trace set is excluded from
+the standard download. The prepared inputs pass through the trace-processing
+and numerical analysis stages of Artifact $A_1$.
 
 \arttime
 
-Allow up to one hour for a selected trace download and replay. Processing
-a larger trace set can take several hours.
+Allow several hours for downloading and processing the complete trace set.
+The exact time depends on storage and network performance.
 
 \artin
 
 \artinpart{Hardware}
 
-Use one CPU node with at least 32 GB of RAM and a scratch filesystem.
+Use one CPU node with at least 32 GB of RAM and a scratch filesystem. The
+downloader reports the current transfer size before writing files.
 
 \artinpart{Software}
 
-The trace workflow uses \texttt{wget}, the \texttt{nsys} command,
-SQLite, the repository's Python tools, and Gurobi. LogGOPSim is used by
-the optional replay and Monolithic-LP stages.
+The downloader uses Python 3.10 or newer. The trace-processing workflow uses
+the \texttt{nsys} command, SQLite, the repository's Python tools, and Gurobi.
+LogGOPSim is used by the optional replay and Monolithic-LP stages.
 
 \artinpart{Datasets / Inputs}
 
@@ -221,21 +231,27 @@ Filenames and SHA-256 hashes used by this artifact are recorded under
 
 \artinpart{Installation and Deployment}
 
-Install Artifact $A_1$ and prepare the selected trace set. Small trace sets
-may be supplied with the artifact; download larger trace sets to scratch.
-Do not store large traces in the home directory.
+Install Artifact $A_1$ and select a scratch directory. Do not store large
+traces in the repository or the home directory.
 
 \artcomp
 
-Run the selected trace workflow in a scratch directory. It exports the
-NSYS reports to SQLite, constructs the communication schedule and
-analysis inputs, runs the numerical analysis, and writes the result CSV
-and plot.
+Download the registered trace inputs:
+
+\begin{verbatim}
+./scripts/fetch_traces.py \
+  --output /scratch/$USER/raw_traces
+\end{verbatim}
+
+The default includes all registered Figure 3--6 traces except the
+4,096-GPU Grok set. The script creates the directory layout expected by
+\texttt{reproduce\_full.sh}, resumes partial transfers, and checks recorded
+file sizes and hashes.
 
 \artout
 
-Confirm that the downloaded file's SHA-256 hash, the generated result,
-and the execution log are recorded in the output directory.
+Confirm that \texttt{trace\_download\_manifest.json} is present below the
+trace root and lists the prepared inputs.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % AE Appendix
@@ -265,11 +281,16 @@ Begin with the short installation and plotting check:
 This verifies the Python environment and generates Figures 1 and 3--10
 with the submission plotting scripts. Figure 2 is a method diagram.
 
-Run the main numerical workflow with:
+Prepare the raw traces. With no figure option, the downloader selects all
+standard Figure 3--6 inputs and excludes the 4,096-GPU Grok set:
 
 \begin{verbatim}
+./scripts/fetch_traces.py \
+  --output /scratch/$USER/raw_traces
+
 ./reproduce_full.sh \
   --scratch /scratch/$USER/provisioning_artifact \
+  --trace-root /scratch/$USER/raw_traces \
   --workers 4
 \end{verbatim}
 
@@ -277,23 +298,8 @@ The full workflow builds the analysis problems, runs the solver and
 sensitivity sweeps for Figures 3--6, and writes fresh numerical results to
 scratch. It then passes those CSV files to the paper-style plotters. The
 generated PDFs use the same axes, labels, typography, and dimensions as the
-paper figures.
-
-For a trace-to-plot run, place the raw NSYS reports in the directory layout
-described in the repository README and add the trace root. Small trace sets
-may be supplied with the artifact; larger sets are available from Artifact
-$A_2$ and should be downloaded to scratch.
-
-\begin{verbatim}
-./reproduce_full.sh \
-  --scratch /scratch/$USER/provisioning_artifact \
-  --trace-root /scratch/$USER/raw_traces \
-  --workers 4
-\end{verbatim}
-
-This adds NSYS export, SQLite conversion, and communication-schedule
-generation before the numerical tasks. The subsequent solver and plotting
-steps use the outputs produced in that same run.
+paper figures. The trace root adds NSYS export, SQLite conversion, and
+communication-schedule generation before the numerical tasks.
 
 On a Slurm system, use the command from the AD section. The numerical
 tasks are submitted independently. Their job identifiers are written to
@@ -314,16 +320,18 @@ inputs used by the final plotting step.
 
 \artin
 
-Install Artifact $A_1$ and prepare the selected raw NSYS reports using the
-directory layout described in the repository README. Use a supplied small
-trace set or download a larger set from Artifact $A_2$. Keep large traces
-and all intermediate files in scratch.
+Install Artifact $A_1$ and choose separate scratch directories for traces
+and generated outputs. Keep large traces and all intermediate files in
+scratch.
 
 \artcomp
 
 Run the general raw-trace workflow:
 
 \begin{verbatim}
+./scripts/fetch_traces.py \
+  --output /scratch/$USER/raw_traces
+
 ./reproduce_full.sh \
   --scratch /scratch/$USER/provisioning_artifact \
   --trace-root /scratch/$USER/raw_traces \
@@ -337,8 +345,8 @@ Use the Slurm option from the AD section when running on a cluster.
 
 \artout
 
-Confirm that the SQLite exports, GOAL schedules, analysis metadata,
-result CSV files, plots, manifests, and task logs were created in the
-selected scratch directory.
+Confirm that the trace download manifest, SQLite exports, GOAL schedules,
+analysis metadata, result CSV files, plots, manifests, and task logs were
+created in the selected scratch directories.
 
 \end{document}

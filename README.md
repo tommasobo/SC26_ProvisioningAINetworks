@@ -59,13 +59,33 @@ Allow about one minute. The output files are:
 | 9 | `scripts/fig08_09_cluster_params_cost.py` | `fig9_network_cost.pdf` |
 | 10 | `scripts/fig10_jitter.py` | `fig_jitter_3panel.pdf` |
 
+## Download raw traces
+
+Prepare the standard Figure 3--6 trace inputs in scratch:
+
+```bash
+./scripts/fetch_traces.py \
+  --output /path/to/scratch/raw_traces
+```
+
+With no figure selection, the script downloads every trace set registered for
+Figures 3--6 except the optional 4,096-GPU Grok trace set. It creates the
+directory layout consumed by `reproduce_full.sh`, resumes partial downloads,
+checks file sizes and recorded SHA-256 hashes, and writes
+`trace_download_manifest.json`. Use `--dry-run` to report the current download
+size and `--figures` only when a smaller subset is desired. The source mapping
+is kept in `local_artifact/manifests/trace_sources.json` so that trace URLs can
+be updated without changing the downloader.
+
 ## Full local reproduction
 
-Use a scratch directory with sufficient free space:
+Use the downloaded trace root and a separate scratch directory for generated
+files:
 
 ```bash
 ./reproduce_full.sh \
   --scratch /path/to/scratch/provisioning_artifact \
+  --trace-root /path/to/scratch/raw_traces \
   --workers 4
 ```
 
@@ -76,23 +96,10 @@ task summaries, and the final paper-style plots below the selected scratch
 directory. The final PDFs are written to `<scratch>/figures/`. Plan for at
 least 4 CPU cores and 128 GB of RAM.
 
-For a trace-to-plot run, prepare the required NSYS reports and add a trace
-root:
-
-```bash
-./reproduce_full.sh \
-  --scratch /path/to/scratch/provisioning_artifact \
-  --trace-root /path/to/scratch/raw_traces \
-  --workers 4
-```
-
-The trace root contains `fig3/ch1`, `fig3/auto`, `fig4`, `fig5`, and
-`fig6/llama`, with the corresponding `.nsys-rep` files in each directory.
-Small trace sets can be copied from the artifact when provided. Larger trace
-sets should be downloaded from the public trace repository into scratch.
-Supplying `--trace-root` enables NSYS export, SQLite conversion,
-communication-schedule generation, numerical analysis, and plotting through
-the same entry point.
+The downloader prepares `fig3/ch1`, `fig3/auto`, `fig4`, `fig5`,
+`fig6/llama`, and `fig6/vllm` below the trace root. Supplying this root enables
+NSYS export, SQLite conversion, communication-schedule generation, numerical
+analysis, and plotting through the same entry point.
 
 ## Alps and Slurm
 
@@ -103,6 +110,7 @@ Submit longer work from a compute allocation:
   --account <account> \
   --partition normal \
   --scratch /iopsstor/scratch/cscs/$USER/provisioning_artifact \
+  --trace-root /iopsstor/scratch/cscs/$USER/raw_traces \
   --workers 4
 ```
 

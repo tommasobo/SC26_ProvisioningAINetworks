@@ -51,6 +51,7 @@ def require_files():
         "pipeline/run_nccl_composite.py",
         "pipeline/run_nccl_generator.py",
         "pipeline/reproduce_fig5_from_nsys.sh",
+        "scripts/fetch_traces.py",
         "scripts/grok_node_scaling.py",
         "scripts/plot_full_run.py",
         "scripts/reproduce_full_task.py",
@@ -91,6 +92,7 @@ def main():
     run([sys.executable, "pipeline/run_nccl_bw_sensitivity.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_nccl_composite.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_nccl_generator.py", "--help"], args.timeout)
+    run([sys.executable, "scripts/fetch_traces.py", "--list"], args.timeout)
     run([sys.executable, "scripts/grok_node_scaling.py", "--help"], args.timeout)
     run([sys.executable, "scripts/plot_full_run.py", "--help"], args.timeout)
     run([sys.executable, "scripts/reproduce_full_task.py", "--help"], args.timeout)

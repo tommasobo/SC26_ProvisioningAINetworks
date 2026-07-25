@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "fig3_fig4_n16",
+      "figures": [3, 4],
+      "url": "http://storage2.spcl.ethz.ch/traces/ai/grok/Grok314B_N16_GPU64_TP4_PP1_CP1_VP1_EP8_ETP4_GBS256/nsys_reports/",
+      "targets": {
+        "3": ["fig3/ch1", "fig3/auto"],
+        "4": ["fig4"]
+      },
+      "pattern": "*.nsys-rep",
+      "selection": "provisional",
+      "description": "Public 16-node, 64-GPU NCCL trace set for the Figure 3 and 4 ingestion path"
+    },
+    {
+      "id": "fig5_llama_n4",
+      "figures": [5],
+      "url": "http://storage2.spcl.ethz.ch/traces/ai/llama/Llama7B_N4_GPU16_TP1_PP1_DP16_BS32_1iter/raw_nsys/",
+      "targets": {
+        "5": ["fig5"]
+      },
+      "pattern": "*.nsys-rep",
+      "selection": "recorded",
+      "description": "Four-node Llama trace set",
+      "files": {
+        "nsys_report_nid007657_153302.nsys-rep": {
+          "bytes": 34717824,
+          "sha256": "5a7da03a9205b7fba3c1f7a0806336991d0a9adfc054ee482f809bc64e851c12"
+        },
+        "nsys_report_nid007660_285413.nsys-rep": {
+          "bytes": 34236621,
+          "sha256": "322fc57e139465fb5876d464e1c7be2a73fa90d289c55063ca6d0ff181d6aed2"
+        },
+        "nsys_report_nid007661_196350.nsys-rep": {
+          "bytes": 33715402,
+          "sha256": "22acd2caba2b7e1367d47a379f645284540a60c5541ea4004ef7a1f1d0df8298"
+        },
+        "nsys_report_nid007662_294007.nsys-rep": {
+          "bytes": 34188161,
+          "sha256": "a139d0daf2c0357524d486f07a888d133de99aa1baff42dd4973ca7ff0666a80"
+        }
+      }
+    },
+    {
+      "id": "fig6_llama_n32",
+      "figures": [6],
+      "url": "http://storage2.spcl.ethz.ch/traces/ai/llama/Llama7B_N32_GPU128_PP1_DP128_7B_BS128/nsys_reports/",
+      "targets": {
+        "6": ["fig6/llama"]
+      },
+      "pattern": "*.nsys-rep",
+      "selection": "recorded",
+      "description": "Llama 128-GPU trace set"
+    },
+    {
+      "id": "fig6_vllm_n2",
+      "figures": [6],
+      "url": "http://storage2.spcl.ethz.ch/traces/ai/vllm/Llama_3.1_70B_Instruct_N2_GPU8_TP8_Short_Prompts/nsys_reports/",
+      "targets": {
+        "6": ["fig6/vllm"]
+      },
+      "pattern": "*.nsys-rep",
+      "selection": "provisional",
+      "description": "Public two-node, eight-GPU vLLM trace set"
+    }
+  ]
+}

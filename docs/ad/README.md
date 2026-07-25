@@ -17,8 +17,11 @@ make
 
 The Makefile runs `pdflatex` three times, as in the official template.
 
-The appendix documents `./reproduce_quick.sh` and `./reproduce_full.sh`.
-The full script runs locally by default and supports Slurm. Grok 4k and the
-other high-cost stages remain disabled unless `--expensive_run` is supplied.
+The appendix documents `./reproduce_quick.sh`,
+`./scripts/fetch_traces.py`, and `./reproduce_full.sh`. The downloader
+selects the standard Figure 3--6 traces by default and excludes the
+4,096-GPU Grok trace set. The full script runs locally by default and supports
+Slurm. Grok 4k and the other high-cost stages remain disabled unless
+`--expensive_run` is supplied.
 The full 4,096-GPU Grok 4k analysis should be allocated at least 1 TB of RAM and
 approximately 3 to 5 days.
