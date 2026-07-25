@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run bounded upstream checks locally or as separate Slurm jobs.
+# Run fresh analysis tasks and build the paper-style plots from their outputs.
 
 set -euo pipefail
 
@@ -12,6 +12,7 @@ ACCOUNT="${SLURM_ACCOUNT:-a-g200}"
 PARTITION="${SLURM_PARTITION:-normal}"
 SCRATCH_DIR="${ARTIFACT_SCRATCH:-${SCRATCH:-/tmp}/sc26_provisioning_artifact_${USER:-user}}"
 GROK_ANALYSIS_DIR=""
+TRACE_ROOT=""
 
 usage() {
     cat <<'EOF'
@@ -22,6 +23,7 @@ Options:
   --slurm                  Submit tasks as separate Slurm jobs.
   --scratch DIR            Working directory for large outputs.
   --workers N              Solver workers per task (default: 4).
+  --trace-root DIR         Raw NSYS tree for trace-to-plot regeneration.
   --account NAME           Slurm account (default: $SLURM_ACCOUNT or a-g200).
   --partition NAME         Slurm partition (default: $SLURM_PARTITION or normal).
   --expensive_run          Enable the gated Grok 4096-GPU tasks.
@@ -49,6 +51,11 @@ while [[ "$#" -gt 0 ]]; do
             shift
             [[ "$#" -gt 0 ]] || { echo "error: --workers needs a number" >&2; exit 2; }
             WORKERS="$1"
+            ;;
+        --trace-root)
+            shift
+            [[ "$#" -gt 0 ]] || { echo "error: --trace-root needs a path" >&2; exit 2; }
+            TRACE_ROOT="$1"
             ;;
         --account)
             shift
@@ -106,10 +113,11 @@ else
     PYTHON_BIN="$(command -v python3)"
 fi
 
-tasks=(core demo fig3 fig4 fig5 fig6-latency fig6-bandwidth)
+tasks=(core fig3 fig4 fig5 fig6-latency fig6-bandwidth)
 if [[ "$EXPENSIVE" -eq 1 ]]; then
     tasks+=(grok4096-latency grok4096-bandwidth)
 fi
+tasks+=(plots)
 
 mkdir -p "$SCRATCH_DIR/logs"
 
@@ -124,6 +132,9 @@ if [[ "$MODE" == local ]]; then
         if [[ "$EXPENSIVE" -eq 1 ]]; then
             cmd+=(--grok-analysis-dir "$GROK_ANALYSIS_DIR")
         fi
+        if [[ -n "$TRACE_ROOT" ]]; then
+            cmd+=(--trace-root "$TRACE_ROOT")
+        fi
         printf '>>>'
         printf ' %q' "${cmd[@]}"
         printf '\n'
@@ -137,9 +148,8 @@ else
         exit 3
     }
     submitted=()
+    analysis_job_ids=()
     fig6_latency_job=""
-    fig6_bandwidth_job=""
-    grok_latency_job=""
     for task in "${tasks[@]}"; do
         time_limit="01:00:00"
         memory="128G"
@@ -155,13 +165,15 @@ else
         if [[ -n "$GROK_ANALYSIS_DIR" ]]; then
             export_spec+=",ARTIFACT_GROK_ANALYSIS_DIR=$GROK_ANALYSIS_DIR"
         fi
+        if [[ -n "$TRACE_ROOT" ]]; then
+            export_spec+=",ARTIFACT_TRACE_ROOT=$TRACE_ROOT"
+        fi
         dependency_args=()
-        if [[ "$task" == fig6-bandwidth && -n "$fig6_latency_job" ]]; then
-            dependency_args=(--dependency "afterany:$fig6_latency_job")
-        elif [[ "$task" == grok4096-latency && -n "$fig6_bandwidth_job" ]]; then
-            dependency_args=(--dependency "afterany:$fig6_bandwidth_job")
-        elif [[ "$task" == grok4096-bandwidth && -n "$grok_latency_job" ]]; then
-            dependency_args=(--dependency "afterany:$grok_latency_job")
+        if [[ "$task" == plots && "${#analysis_job_ids[@]}" -gt 0 ]]; then
+            dependency_list="$(IFS=:; printf '%s' "${analysis_job_ids[*]}")"
+            dependency_args=(--dependency "afterok:$dependency_list")
+        elif [[ "$task" == fig6-bandwidth && -n "$TRACE_ROOT" && -n "$fig6_latency_job" ]]; then
+            dependency_args=(--dependency "afterok:$fig6_latency_job")
         fi
         cmd=(
             sbatch --parsable
@@ -182,12 +194,11 @@ else
         if [[ "$DRY_RUN" -eq 0 ]]; then
             job_id="$("${cmd[@]}")"
             submitted+=("$task:$job_id")
+            if [[ "$task" != plots ]]; then
+                analysis_job_ids+=("$job_id")
+            fi
             if [[ "$task" == fig6-latency ]]; then
                 fig6_latency_job="$job_id"
-            elif [[ "$task" == fig6-bandwidth ]]; then
-                fig6_bandwidth_job="$job_id"
-            elif [[ "$task" == grok4096-latency ]]; then
-                grok_latency_job="$job_id"
             fi
         fi
     done

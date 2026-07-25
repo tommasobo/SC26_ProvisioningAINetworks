@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Reproduce paper Figures 8 and 9 from the compact sweep tables."""
 
+import os
 from pathlib import Path
 
 import matplotlib
@@ -12,21 +13,22 @@ import numpy as np
 import pandas as pd
 
 
-ROOT = Path(__file__).resolve().parents[1]
-OUT_DIR = ROOT / "figures"
+ART_ROOT = Path(__file__).resolve().parents[1]
+DATA_ROOT = Path(os.environ.get("SC26_DATA_ROOT", ART_ROOT / "data"))
+OUT_DIR = Path(os.environ.get("SC26_FIGURE_DIR", ART_ROOT / "figures"))
 
 LLAMA_LAT = (
-    ROOT
-    / "data/workspaces/llama7b_n32_spcl_20260407/output/comp/sweeps"
+    DATA_ROOT
+    / "workspaces/llama7b_n32_spcl_20260407/output/comp/sweeps"
     / "composed_runtime.csv"
 )
 LLAMA_BW = (
-    ROOT
-    / "data/workspaces/llama7b_n32_spcl_20260407/output"
+    DATA_ROOT
+    / "workspaces/llama7b_n32_spcl_20260407/output"
     / "bw_sensitivity_l4us_composition_exact_goal/bandwidth_sensitivity.csv"
 )
-GROK_LAT = ROOT / "data/output/grok_final/grok_N1024_latency_sweep.csv"
-GROK_BW = ROOT / "data/output/grok_final/grok_N1024_bw_sweep.csv"
+GROK_LAT = DATA_ROOT / "output/grok_final/grok_N1024_latency_sweep.csv"
+GROK_BW = DATA_ROOT / "output/grok_final/grok_N1024_bw_sweep.csv"
 
 TIER_BW_GBPS = np.array([100, 200, 400, 800, 1600], dtype=float)
 TIER_COST_M = np.array([4, 12, 24, 36, 66], dtype=float)

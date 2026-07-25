@@ -45,10 +45,10 @@ The evaluation uses two artifacts:
 
 \begin{description}
 \item[$A_1$] Code, input data, scripts, and results:
-\href{https://github.com/tommasobo/SC26_ProvisioningAINetworks}{GitHub repository},
+\url{https://github.com/tommasobo/SC26_ProvisioningAINetworks},
 branch \texttt{main}.
 \item[$A_2$] Public execution traces:
-\href{http://storage2.spcl.ethz.ch/traces/ai/}{SPCL public trace repository}.
+\url{http://storage2.spcl.ethz.ch/traces/ai/}.
 \end{description}
 
 \begin{center}
@@ -76,8 +76,8 @@ will be provided before the freezing date (Stage 3, 25 AUG 2026).
 Artifact $A_1$ contains the analysis implementation, plotting data,
 reproduction scripts, verification manifests, and final plots. The
 quick workflow generates Figures 1 and 3--10. Figure 2 is a method
-diagram. The full workflow additionally runs the analysis and validation
-stages for Figures 3--6.
+diagram. The full workflow freshly solves Figures 3--6 from trace-derived
+inputs and passes the generated CSV files to the paper-style plotters.
 
 \artexp
 
@@ -112,9 +112,12 @@ free space. For the full workflow, we recommend at least 4 CPU cores,
 
 Python 3.10 or newer is required. Python packages are listed in
 \texttt{requirements.txt}; full verification also uses
-\texttt{requirements-dev.txt}. The full analysis requires Gurobi and a
-valid license. Academics can obtain a
-\href{https://www.gurobi.com/academia/academic-program-and-licenses/}{free Gurobi license}.
+\texttt{requirements-dev.txt} and \texttt{requirements-tierc.txt}.
+The raw-trace path requires the \texttt{nsys} command from NVIDIA
+Nsight Systems. The full analysis requires Gurobi and a valid license.
+Academics can obtain a
+free Gurobi license from
+\url{https://www.gurobi.com/academia/academic-program-and-licenses/}.
 The LogGOPSim example additionally uses \texttt{g++}, \texttt{gengetopt},
 and \texttt{re2c}. Slurm is optional.
 
@@ -123,7 +126,7 @@ and \texttt{re2c}. Slurm is optional.
 The repository contains the numerical and processed inputs needed by the
 default workflows. Large trace and intermediate files should be kept on
 a scratch filesystem. Public traces are available from
-\href{http://storage2.spcl.ethz.ch/traces/ai/}{the SPCL public trace repository}.
+\url{http://storage2.spcl.ethz.ch/traces/ai/}.
 Input identities are recorded under \texttt{local\_artifact/manifests/}.
 
 \artinpart{Installation and Deployment}
@@ -137,8 +140,8 @@ python3.11 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 \end{verbatim}
 
-For the full workflow, also install
-\texttt{requirements-dev.txt} and confirm that Gurobi can obtain a
+For the full workflow, also install \texttt{requirements-dev.txt} and
+\texttt{requirements-tierc.txt}, then confirm that Gurobi can obtain a
 license.
 
 \artcomp
@@ -203,13 +206,14 @@ Use one CPU node with at least 32 GB of RAM and a scratch filesystem.
 
 \artinpart{Software}
 
-The trace workflow uses \texttt{curl}, SQLite, the repository's Python
-tools, and LogGOPSim. NSYS is needed only when exporting a new report.
+The trace workflow uses \texttt{wget}, the \texttt{nsys} command,
+SQLite, the repository's Python tools, and Gurobi. LogGOPSim is used by
+the optional replay and Monolithic-LP stages.
 
 \artinpart{Datasets / Inputs}
 
 The public traces are available at
-\href{http://storage2.spcl.ethz.ch/traces/ai/}{the SPCL public trace repository}.
+\url{http://storage2.spcl.ethz.ch/traces/ai/}.
 Filenames and SHA-256 hashes used by this artifact are recorded under
 \texttt{local\_artifact/manifests/}.
 
@@ -221,14 +225,15 @@ or the home directory.
 
 \artcomp
 
-Follow the trace-processing commands in \texttt{docs/provenance/}. The
-workflow converts the selected input into a communication schedule,
-replays it with LogGOPSim, and writes a result CSV.
+Run the selected trace workflow in a scratch directory. It exports the
+NSYS reports to SQLite, constructs the communication schedule and
+analysis inputs, runs the numerical analysis, and writes the result CSV
+and plot.
 
 \artout
 
-Record the downloaded file's SHA-256 hash and the generated result. These
-values can be compared with the committed manifest and reference output.
+Confirm that the downloaded file's SHA-256 hash, the generated result,
+and the execution log are recorded in the output directory.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % AE Appendix
@@ -241,47 +246,96 @@ values can be compared with the committed manifest and reference output.
 \artin
 
 Clone branch \texttt{main}, create the Python environment,
-and install \texttt{requirements.txt}. For full validation, install
-\texttt{requirements-dev.txt}, verify the Gurobi license, and choose a
-scratch directory. On a cluster, use a compute allocation or the Slurm
-launcher.
+and install \texttt{requirements.txt}. For the full workflow, install
+\texttt{requirements-dev.txt} and \texttt{requirements-tierc.txt}, verify
+the Gurobi license, and choose a new scratch directory with sufficient
+free space. We recommend 4 CPU cores and 128 GB of RAM. On a cluster,
+use a compute allocation or the provided Slurm launcher.
 
 \artcomp
 
-First run:
+Begin with the short installation and plotting check:
 
 \begin{verbatim}
 ./reproduce_quick.sh
 \end{verbatim}
 
-Confirm that Figures 1 and 3--10 are generated. Then run either the local
-full command or the Slurm command from the AD section. Do not add
-\texttt{--expensive\_run} for the standard evaluation. The full workflow
-runs the Figure 3--6 analysis tasks and compares their outputs with the
-provided reference values.
+This verifies the Python environment and generates Figures 1 and 3--10
+with the submission plotting scripts. Figure 2 is a method diagram.
+
+Run the main numerical workflow with:
+
+\begin{verbatim}
+./reproduce_full.sh \
+  --scratch /scratch/$USER/provisioning_artifact \
+  --workers 4
+\end{verbatim}
+
+The full workflow starts from the trace-derived collective and topology
+inputs. It builds the analysis problems, runs the solver and sensitivity
+sweeps for Figures 3--6, and writes fresh numerical results to scratch.
+It then passes those CSV files to the paper-style plotters. The generated
+PDFs use the same axes, labels, typography, and dimensions as the paper
+figures.
+
+When raw NSYS reports are available, place them in the directory layout
+described in the repository README and add the trace root:
+
+\begin{verbatim}
+./reproduce_full.sh \
+  --scratch /scratch/$USER/provisioning_artifact \
+  --trace-root /scratch/$USER/raw_traces \
+  --workers 4
+\end{verbatim}
+
+This adds NSYS export, SQLite conversion, and communication-schedule
+generation before the numerical tasks. The subsequent solver and plotting
+steps use the outputs produced in that same run.
+
+On a Slurm system, use the command from the AD section. The numerical
+tasks are submitted independently. Their job identifiers are written to
+\texttt{submitted\_jobs.txt}. Wait for all jobs and the final plotting
+step to finish before inspecting the output. Do not enable
+\texttt{--expensive\_run} during the standard evaluation.
 
 \artout
 
-Confirm that the nine expected PDF files exist under \texttt{figures/}.
-For a full run, inspect \texttt{summary.json}, the task summaries, and the
-result CSV files in scratch.
+A successful full run produces newly computed CSV files, one JSON
+manifest per analysis task, execution logs, and the final plot PDFs.
+Confirm that every task manifest reports \texttt{status: ok} and that
+Figures 1 and 3--10 are present under the scratch directory's
+\texttt{figures/} subdirectory. The CSV files in scratch are the numerical
+inputs used by the final plotting step.
 
 \arteval{2}
 
 \artin
 
-Install Artifact $A_1$ and download one trace listed in the committed
-manifests to scratch. Verify its SHA-256 hash before processing it.
+Install Artifact $A_1$ and select one raw NSYS trace set listed in
+\texttt{local\_artifact/manifests/}. Keep the trace and intermediate
+files in scratch.
 
 \artcomp
 
-Use the documented trace workflow to produce a communication schedule,
-replay output, and result CSV. A single moderate trace is sufficient to
-check the pipeline.
+Run the public Figure 5 trace workflow:
+
+\begin{verbatim}
+pipeline/reproduce_fig5_from_nsys.sh \
+  --work /scratch/$USER/provisioning_fig5 \
+  --workers 4
+\end{verbatim}
+
+The script downloads the selected NSYS reports, exports them to SQLite,
+constructs the GOAL schedule and analysis metadata, runs the solver, and
+passes the newly generated result CSV to the corresponding plotter.
+
+This exercises the path from a raw execution trace to a numerical result
+and a paper-style plot. A single moderate trace is sufficient and should
+be allowed up to one hour.
 
 \artout
 
-Compare the input hash and replay result with the committed manifest and
-reference output.
+Confirm that the SQLite export, GOAL schedule, analysis metadata, result
+CSV, plot, and task log were created in the selected scratch directory.
 
 \end{document}

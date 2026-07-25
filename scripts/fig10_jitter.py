@@ -14,11 +14,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
+import os
 from pathlib import Path
 
 ART_ROOT = Path(__file__).resolve().parents[1]
-ROOT = ART_ROOT / "data"
-OUT = ART_ROOT / "figures"
+ROOT = Path(os.environ.get("SC26_DATA_ROOT", ART_ROOT / "data"))
+OUT = Path(os.environ.get("SC26_FIGURE_DIR", ART_ROOT / "figures"))
 OUT.mkdir(parents=True, exist_ok=True)
 DATA = ROOT / "output/final_plots/data"
 plt.rcParams.update({

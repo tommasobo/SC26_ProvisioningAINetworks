@@ -9,6 +9,7 @@ Basis:
   - SC_Plotting/*.py for colors, rcParams, and panel styling
 """
 import csv
+import os
 import matplotlib
 
 matplotlib.use("Agg")
@@ -19,8 +20,8 @@ import pandas as pd
 from pathlib import Path
 
 ART_ROOT = Path(__file__).resolve().parents[1]
-ROOT = ART_ROOT / "data"
-OUT = ART_ROOT / "figures"
+ROOT = Path(os.environ.get("SC26_DATA_ROOT", ART_ROOT / "data"))
+OUT = Path(os.environ.get("SC26_FIGURE_DIR", ART_ROOT / "figures"))
 OUT.mkdir(parents=True, exist_ok=True)
 PAPER_OUT = OUT
 SC_OUT = OUT
@@ -180,73 +181,6 @@ def extend_series_to_xmax(x, y, x_max):
         slope = (y[-1] - y[-2]) / (x[-1] - x[-2])
         y_extra = y[-1] + slope * (x_max - x[-1])
     return np.append(x, x_max), np.append(y, y_extra)
-
-
-def make_lgs_points_above_curve(x, y, count=6, max_rel=0.07, seed=0, x_min=None):
-    if len(x) == 0:
-        return np.array([]), np.array([])
-
-    mask = np.ones(len(x), dtype=bool)
-    if x_min is not None:
-        mask &= x >= x_min
-    x_pool = x[mask]
-    y_pool = y[mask]
-    if len(x_pool) == 0:
-        return np.array([]), np.array([])
-
-    rng = np.random.default_rng(seed)
-    sample_count = min(count, len(x_pool))
-    idx = np.sort(rng.choice(len(x_pool), size=sample_count, replace=False))
-    rel = rng.uniform(0.01, max_rel, size=sample_count)
-    return x_pool[idx], y_pool[idx] * (1.0 + rel)
-
-
-def make_evenly_spaced_lgs_points(
-    x,
-    y,
-    count=6,
-    max_rel=0.07,
-    seed=0,
-    x_min=None,
-    x_max=None,
-    trend="auto",
-):
-    if len(x) == 0:
-        return np.array([]), np.array([])
-
-    mask = np.ones(len(x), dtype=bool)
-    if x_min is not None:
-        mask &= x >= x_min
-    if x_max is not None:
-        mask &= x <= x_max
-
-    x_pool = x[mask]
-    y_pool = y[mask]
-    if len(x_pool) == 0:
-        return np.array([]), np.array([])
-
-    order = np.argsort(x_pool)
-    x_sorted = x_pool[order]
-    y_sorted = y_pool[order]
-
-    sample_count = min(count, len(x_sorted))
-    x_even = np.linspace(x_sorted[0], x_sorted[-1], sample_count)
-    y_even = np.interp(x_even, x_sorted, y_sorted)
-
-    rng = np.random.default_rng(seed)
-    rel = rng.uniform(0.01, max_rel, size=sample_count)
-    y_lgs = y_even * (1.0 + rel)
-
-    if trend == "auto":
-        trend = "increasing" if y_even[-1] >= y_even[0] else "decreasing"
-
-    if trend == "increasing":
-        y_lgs = np.maximum.accumulate(y_lgs)
-    elif trend == "decreasing":
-        y_lgs = np.minimum.accumulate(y_lgs)
-        y_lgs = np.maximum(y_lgs, y_even * 1.005)
-
-    return x_even, y_lgs
 
 
 def add_measured_point(ax, x, y, hw_err=None):
@@ -478,54 +412,14 @@ def main():
     vllm_bw_gbps = vllm_bw_gbps[keep]
     vllm_bw_T = vllm_bw_T[keep]
 
-    grok_lgs_L, grok_lgs_T = make_evenly_spaced_lgs_points(
-        grok_L,
-        grok_T,
-        count=6,
-        max_rel=0.07,
-        seed=23,
-        x_min=50.0,
-        trend="increasing",
-    )
-    grok_lgs_bw_x, grok_lgs_bw_y = make_evenly_spaced_lgs_points(
-        grok_bw_gbps,
-        grok_bw_T,
-        count=7,
-        max_rel=0.07,
-        seed=29,
-        x_min=50.0,
-        x_max=BW_MAX,
-        trend="decreasing",
-    )
-    llama_lgs_bw_x, llama_lgs_bw_y = make_evenly_spaced_lgs_points(
-        llama_bw_gbps,
-        llama_bw_T,
-        count=7,
-        max_rel=0.07,
-        seed=41,
-        x_min=50.0,
-        x_max=BW_MAX,
-        trend="decreasing",
-    )
-    vllm_lgs_L, vllm_lgs_T = make_evenly_spaced_lgs_points(
-        vllm_L,
-        vllm_T,
-        count=6,
-        max_rel=0.07,
-        seed=31,
-        x_min=50.0,
-        trend="increasing",
-    )
-    vllm_lgs_bw_x, vllm_lgs_bw_y = make_evenly_spaced_lgs_points(
-        vllm_bw_gbps,
-        vllm_bw_T,
-        count=7,
-        max_rel=0.07,
-        seed=47,
-        x_min=50.0,
-        x_max=BW_MAX,
-        trend="decreasing",
-    )
+    # Only display simulator samples that are present in the artifact inputs.
+    # The Llama latency samples above are read from a real LGS result file.
+    no_samples = np.array([], dtype=float)
+    grok_lgs_L = grok_lgs_T = no_samples
+    grok_lgs_bw_x = grok_lgs_bw_y = no_samples
+    llama_lgs_bw_x = llama_lgs_bw_y = no_samples
+    vllm_lgs_L = vllm_lgs_T = no_samples
+    vllm_lgs_bw_x = vllm_lgs_bw_y = no_samples
 
     fig = plt.figure(figsize=(8.99, 3.81))
     gs_outer = fig.add_gridspec(2, 3, hspace=0.42, wspace=0.38)

@@ -40,6 +40,7 @@ def require_files():
         "data/output/grok_final/grok_N1024_bw_sweep.csv",
         "data/output/vllm_llama8b_128tok/latency_runtime.csv",
         "pipeline/demo.py",
+        "pipeline/export_nsys.py",
         "pipeline/generate_comm_dep_from_goal.py",
         "pipeline/regenerate_from_inputs.py",
         "pipeline/run_lgs.py",
@@ -52,6 +53,8 @@ def require_files():
         "pipeline/reproduce_fig5_from_nsys.sh",
         "scripts/compare_csv.py",
         "scripts/grok_node_scaling.py",
+        "scripts/plot_full_run.py",
+        "scripts/reproduce_full_task.py",
         "tools/LogGOPSim/Makefile",
         "tools/nccl_generator/main.py",
     ]
@@ -80,6 +83,7 @@ def main():
 
     run([sys.executable, "reproduce_all.py", "--list"], args.timeout)
     run([sys.executable, "pipeline/generate_comm_dep_from_goal.py", "--help"], args.timeout)
+    run([sys.executable, "pipeline/export_nsys.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/regenerate_from_inputs.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_lgs.py", "--help"], args.timeout)
     run([sys.executable, "pipeline/run_lgs_sweep.py", "--help"], args.timeout)
@@ -90,6 +94,9 @@ def main():
     run([sys.executable, "pipeline/run_nccl_generator.py", "--help"], args.timeout)
     run([sys.executable, "scripts/compare_csv.py", "--help"], args.timeout)
     run([sys.executable, "scripts/grok_node_scaling.py", "--help"], args.timeout)
+    run([sys.executable, "scripts/plot_full_run.py", "--help"], args.timeout)
+    run([sys.executable, "scripts/reproduce_full_task.py", "--help"], args.timeout)
+    run(["bash", "-n", "reproduce_full.sh"], args.timeout)
     run(["bash", "-n", "pipeline/reproduce_fig5_from_nsys.sh"], args.timeout)
     run(["bash", "pipeline/reproduce_fig5_from_nsys.sh", "--dry-run"], args.timeout)
     run([

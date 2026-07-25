@@ -8,13 +8,11 @@ warm-starts, producing the ``full_runtime.csv`` that serves as the
 paper's Monolithic-LP baseline in Figures 3, 4, and 5. Writes
 (L [ns], runtime [ns]).
 
-NOTE: The paper's headline ``Composite LP`` methodology (per-signature
-parametric solve + program-level composition via ``solver/llamp_nccl/``)
-is a *separate* code path in this repository. It is cheaper to solve
-but requires workspace-aware orchestration beyond the scope of a
-single wrapper; its precomputed outputs ship under ``data/output/``.
-Reviewers who want to re-run the Composite LP at scale should use
-the workspace drivers cited in the AD.
+The paper's ``Composite LP`` methodology is a separate code path based
+on per-signature parametric solving and program-level composition. The
+full artifact workflow invokes it through
+``pipeline/run_nccl_composite.py`` and passes the generated results to
+the plotting scripts.
 
 Usage:
     python3 pipeline/run_monolithic_lp.py \\

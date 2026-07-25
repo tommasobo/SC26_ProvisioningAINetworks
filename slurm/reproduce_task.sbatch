@@ -30,5 +30,8 @@ args=(
 if [[ -n "${ARTIFACT_GROK_ANALYSIS_DIR:-}" ]]; then
     args+=(--grok-analysis-dir "$ARTIFACT_GROK_ANALYSIS_DIR")
 fi
+if [[ -n "${ARTIFACT_TRACE_ROOT:-}" ]]; then
+    args+=(--trace-root "$ARTIFACT_TRACE_ROOT")
+fi
 
 exec /usr/bin/time -v "${args[@]}"

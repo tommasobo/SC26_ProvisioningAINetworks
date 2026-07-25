@@ -24,6 +24,7 @@ matplotlib.use("Agg")
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import pandas as pd
 from matplotlib import colors as mcolors
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
@@ -32,8 +33,8 @@ from matplotlib.lines import Line2D
 from pathlib import Path
 
 ART_ROOT = Path(__file__).resolve().parents[1]
-ROOT = ART_ROOT / "data"
-OUT = ART_ROOT / "figures"
+ROOT = Path(os.environ.get("SC26_DATA_ROOT", ART_ROOT / "data"))
+OUT = Path(os.environ.get("SC26_FIGURE_DIR", ART_ROOT / "figures"))
 ASSETS = ART_ROOT / "scripts" / "assets"
 VARIANT_OUT = OUT / "palette_variants"
 OUT.mkdir(parents=True, exist_ok=True)

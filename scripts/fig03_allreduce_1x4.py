@@ -11,6 +11,7 @@ Layout (2x2):
 Each subplot has T(param) on top and sensitivity (lambda or mu) on bottom.
 """
 import csv
+import os
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -20,10 +21,11 @@ import pandas as pd
 from pathlib import Path
 
 ART_ROOT = Path(__file__).resolve().parents[1]
-ROOT = ART_ROOT / "data"
-OUT = ART_ROOT / "figures"
+ROOT = Path(os.environ.get("SC26_DATA_ROOT", ART_ROOT / "data"))
+OUT = Path(os.environ.get("SC26_FIGURE_DIR", ART_ROOT / "figures"))
 OUT.mkdir(parents=True, exist_ok=True)
 DATA = ROOT / "output/final_plots/data"
+FULL_RUN = os.environ.get("SC26_FULL_RUN") == "1"
 # ── Style ──
 plt.rcParams.update({
     "font.size": 8,
@@ -43,7 +45,7 @@ plt.rcParams.update({
 })
 
 C_STOCK = "#888888"   # HPC LLAMP
-C_COMP  = "#2166AC"   # Composite LP
+C_COMP  = "#D6604D"   # Composite LP
 C_LGS   = "#4DAF4A"   # LGS
 C_HW    = "#E41A1C"   # HW
 
@@ -77,7 +79,8 @@ def compute_sensitivity(x, y):
 
 
 def draw_panel(ax_top, ax_bot, x_data, hw_m, hw_err, kind="latency",
-               title="", xlabel="", ylabel_top="", ylabel_bot=""):
+               title="", xlabel="", ylabel_top="", ylabel_bot="",
+               sensitivity_data=None):
     """Draw one T(param) + sensitivity panel."""
 
     for label, x, y, color, ls, lw in x_data:
@@ -99,7 +102,13 @@ def draw_panel(ax_top, ax_bot, x_data, hw_m, hw_err, kind="latency",
     ax_top.grid(True, linestyle=":")
 
     # Sensitivity subplot — Composite LP only
-    for label, x, y, color, ls, lw in x_data:
+    sensitivity_series = x_data
+    if sensitivity_data is not None:
+        sensitivity_series = [
+            ("Composite LP", sensitivity_data[0], sensitivity_data[1],
+             C_COMP, "-", 1.0)
+        ]
+    for label, x, y, color, ls, lw in sensitivity_series:
         if "Composite" not in label: continue
         xm, s = compute_sensitivity(x, y)
         if kind == "latency":
@@ -166,18 +175,23 @@ for ch_label, exp in EXPS.items():
     # Latency
     stock_L, stock_T = load_csv(d / "latency_stock_runtime.csv")
     full_L, full_T   = load_csv(d / "latency_full_runtime.csv")
+    comp_L, comp_T   = load_csv(d / "latency_composite_runtime.csv")
+    if not len(comp_L):
+        comp_L, comp_T = full_L, full_T
     lgs_L, lgs_T     = load_csv(d / "latency_lgs_runtime.csv")
 
     lat_data = []
     if len(stock_L): lat_data.append(("LLAMP", stock_L/1e3, stock_T/1e6, C_STOCK, "--", 1.2))
-    if len(full_L):  lat_data.append(("Monolithic LP", full_L/1e3, full_T/1e6, "#2166AC", "-", 1.6))
-    if len(full_L):  lat_data.append(("Composite LP", full_L/1e3, full_T/1e6, "#D6604D", "-", 1.6))
+    if len(full_L):
+        lat_data.append(("Monolithic LP", full_L/1e3, full_T/1e6, "#2166AC", "-", 1.6))
+    if len(comp_L):  lat_data.append(("Composite LP", comp_L/1e3, comp_T/1e6, "#D6604D", "-", 1.6))
     if len(lgs_L):   lat_data.append(("LGS", lgs_L/1e3, lgs_T/1e6, C_LGS, "-.", 1.2))
 
     panels[("latency", ch_label)] = dict(data=lat_data, hw_m=hw_m, hw_err=hw_err)
 
     # Bandwidth — convert G (ns/byte) to Gbps = 8/G
     stock_G, stock_BT = load_csv(d / "bw_stock_runtime.csv")
+    mono_G, mono_BT   = load_csv(d / "bw_monolithic_runtime.csv")
     comp_G, comp_BT   = load_csv(d / "bw_composite_runtime.csv")
     lgs_G, lgs_BT     = load_csv(d / "bw_lgs_runtime.csv")
 
@@ -189,15 +203,29 @@ for ch_label, exp in EXPS.items():
     if len(stock_G):
         bw_x, bw_y = g_to_gbps(stock_G, stock_BT/1e6)
         bw_data.append(("LLAMP", bw_x, bw_y, C_STOCK, "--", 1.2))
-    if len(comp_G):
+    if len(mono_G):
+        bw_x, bw_y = g_to_gbps(mono_G, mono_BT/1e6)
+        bw_data.append(("Monolithic LP", bw_x, bw_y, "#2166AC", "-", 1.6))
+    elif len(comp_G) and not FULL_RUN:
         bw_x, bw_y = g_to_gbps(comp_G, comp_BT/1e6)
         bw_data.append(("Monolithic LP", bw_x, bw_y, "#2166AC", "-", 1.6))
+    if len(comp_G):
+        bw_x, bw_y = g_to_gbps(comp_G, comp_BT/1e6)
         bw_data.append(("Composite LP", bw_x, bw_y, "#D6604D", "-", 1.6))
     if len(lgs_G):
         bw_x, bw_y = g_to_gbps(lgs_G, lgs_BT/1e6)
         bw_data.append(("LGS", bw_x, bw_y, C_LGS, "-.", 1.2))
 
-    panels[("bandwidth", ch_label)] = dict(data=bw_data, hw_m=hw_m, hw_err=hw_err)
+    if len(mono_G):
+        sensitivity_bw = g_to_gbps(mono_G, mono_BT / 1e6)
+    else:
+        sensitivity_bw = g_to_gbps(comp_G, comp_BT / 1e6)
+    panels[("bandwidth", ch_label)] = dict(
+        data=bw_data,
+        hw_m=hw_m,
+        hw_err=hw_err,
+        sensitivity=sensitivity_bw,
+    )
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -236,7 +264,8 @@ for row, col, kind, ch, subtitle in layout:
 
     draw_panel(ax_top, ax_bot, p["data"], p["hw_m"], p["hw_err"],
                kind=kind, title=title, xlabel=xlabel,
-               ylabel_top=ylabel_top, ylabel_bot=ylabel_bot)
+               ylabel_top=ylabel_top, ylabel_bot=ylabel_bot,
+               sensitivity_data=p.get("sensitivity"))
 
     # Only show legend on top-left
     if not (row == 0 and col == 0):
@@ -284,7 +313,8 @@ for col, kind, ch, subtitle in strip_layout:
 
     draw_panel(ax_top, ax_bot, p["data"], p["hw_m"], p["hw_err"],
                kind=kind, title=subtitle, xlabel=xlabel,
-               ylabel_top=ylabel_top, ylabel_bot=ylabel_bot)
+               ylabel_top=ylabel_top, ylabel_bot=ylabel_bot,
+               sensitivity_data=p.get("sensitivity"))
 
     # Only show legend on first panel
     if col != 0:
@@ -329,7 +359,7 @@ for col, kind, ch, subtitle in strip_layout:
                     fontweight="bold", zorder=5)
 
     # Overlap annotation on first latency subplot (col==0)
-    if kind == "latency" and col == 0:
+    if kind == "latency" and col == 0 and not FULL_RUN:
         from matplotlib.offsetbox import HPacker, TextArea, AnchoredOffsetbox, VPacker
         FS = 6
         line1 = [TextArea("Monolithic LP", textprops=dict(fontsize=FS, fontstyle="italic", color="#2166AC")),

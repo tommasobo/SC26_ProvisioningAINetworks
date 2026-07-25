@@ -2,15 +2,18 @@
 
 This repository contains the artifact for reproducing the computational
 figures in the paper. It assumes that execution traces have already been
-collected. Public traces are available from the
-[SPCL trace repository](http://storage2.spcl.ethz.ch/traces/ai/).
+collected.
+
+Repository: <https://github.com/tommasobo/SC26_ProvisioningAINetworks>
+
+Public traces: <http://storage2.spcl.ethz.ch/traces/ai/>
 
 Two workflows are provided:
 
 - `reproduce_quick.sh` generates Figures 1 and 3 to 10 from the supplied
   inputs. Figure 2 is a method diagram.
-- `reproduce_full.sh` additionally runs the analysis and validation stages
-  for Figures 3 to 6.
+- `reproduce_full.sh` freshly solves Figures 3 to 6 from trace-derived
+  inputs and passes the generated CSV files to the paper-style plotters.
 
 Large intermediate files should be stored on a scratch filesystem.
 
@@ -26,9 +29,12 @@ python3.11 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 ```
 
-For the full workflow, also install `requirements-dev.txt`. The analysis
-stages require a working Gurobi installation and license. Academics can
-obtain a [free Gurobi license](https://www.gurobi.com/academia/academic-program-and-licenses/).
+For the full workflow, also install `requirements-dev.txt` and
+`requirements-tierc.txt`. The raw-trace path requires the `nsys` command
+from NVIDIA Nsight Systems. The analysis stages require a working Gurobi
+installation and license. Academics can
+obtain a free Gurobi license from
+<https://www.gurobi.com/academia/academic-program-and-licenses/>.
 The LogGOPSim example additionally requires `g++`, `gengetopt`, and `re2c`.
 
 ## Quick reproduction
@@ -64,8 +70,22 @@ Use a scratch directory with sufficient free space:
 Allow up to eight hours, depending on the machine, solver license
 availability, and selected worker count. Most individual analysis tasks
 should be allowed up to one hour. The script writes result CSV files, logs,
-and task summaries below the selected scratch directory. Plan for at least
-4 CPU cores and 128 GB of RAM.
+task summaries, and the final paper-style plots below the selected scratch
+directory. The final PDFs are written to `<scratch>/figures/`. Plan for at
+least 4 CPU cores and 128 GB of RAM.
+
+When the original NSYS reports are available, add
+`--trace-root /path/to/traces`. The directory contains `fig3/ch1`,
+`fig3/auto`, `fig4`, `fig5`, and `fig6/llama`, with the corresponding
+`.nsys-rep` files in each directory. This enables the trace export and
+metadata-generation stages before the numerical analysis. Figure 5 can also
+be exercised directly from the public trace repository:
+
+```bash
+pipeline/reproduce_fig5_from_nsys.sh \
+  --work /path/to/scratch/fig5 \
+  --workers 4
+```
 
 ## Alps and Slurm
 

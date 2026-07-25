@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Run one bounded task from the full SC26 artifact workflow.
+"""Run one task from the full SC26 artifact workflow.
 
 The wrapper is used both locally and by the Slurm launcher. Each task writes
 large or temporary outputs below ``--scratch`` and records a JSON manifest.
-The paper plots and compact comparison inputs remain in the repository.
+The final plotting task reads the newly generated CSV files from scratch and
+passes them to the paper-style plotting scripts.
 """
 
 from __future__ import annotations
@@ -108,6 +109,219 @@ def composite_command(
     ]
 
 
+def bandwidth_command(
+    analysis: Path,
+    output: Path,
+    cache: Path,
+    workers: int,
+    extra: Sequence[str],
+    *,
+    fixed_l_ns: int = 5000,
+) -> list[object]:
+    # Match the paper sweep at G=0.002,...,0.120 ns/byte. The plotting
+    # scripts display bandwidth, so pass the equivalent Gbit/s values.
+    bandwidths = [8.0 / (index * 0.002) for index in range(1, 61)]
+    return [
+        PYTHON,
+        "pipeline/run_nccl_bw_sensitivity.py",
+        "--analysis-dir",
+        analysis,
+        "--out",
+        output,
+        "--cache-dir",
+        cache,
+        "--clear-cache",
+        "--fixed-l-ns",
+        fixed_l_ns,
+        "--bandwidths",
+        *[f"{value:.12g}" for value in bandwidths],
+        "--max-workers",
+        workers,
+        *extra,
+    ]
+
+
+def analysis_input(
+    args: argparse.Namespace,
+    records: list[dict[str, object]],
+    *,
+    trace_subdir: str,
+    packaged: Path,
+    nics_per_node: int = 4,
+) -> Path:
+    """Use supplied metadata or regenerate it from an explicit NSYS tree."""
+    if args.trace_root is None:
+        return packaged
+
+    nsys_dir = args.trace_root / trace_subdir
+    if not nsys_dir.is_dir():
+        raise FileNotFoundError(f"raw trace directory not found: {nsys_dir}")
+    raw_work = args.scratch / "raw" / trace_subdir
+    sqlite_dir = raw_work / "sqlite"
+    analysis_dir = raw_work / "analysis"
+    records.append(
+        run(
+            [
+                PYTHON,
+                "pipeline/export_nsys.py",
+                "--input-dir",
+                nsys_dir,
+                "--output-dir",
+                sqlite_dir,
+                "--workers",
+                args.workers,
+            ],
+            timeout=3600,
+        )
+    )
+    records.append(
+        run(
+            [
+                PYTHON,
+                "pipeline/run_nccl_generator.py",
+                "--sqlite-dir",
+                sqlite_dir,
+                "--out-dir",
+                analysis_dir,
+                "--nics-per-node",
+                nics_per_node,
+            ],
+            timeout=3600,
+        )
+    )
+    return analysis_dir
+
+
+def raw_monolithic_outputs(
+    args: argparse.Namespace,
+    records: list[dict[str, object]],
+    *,
+    analysis: Path,
+    out_dir: Path,
+    add_barriers: bool = False,
+    nic_per_rank: bool = False,
+) -> None:
+    """Run GOAL replay and Monolithic-LP sweeps for an NSYS-derived input."""
+    if args.trace_root is None:
+        return
+    goal = analysis / "output.goal"
+    comm_dep = out_dir / "comm_dep.csv"
+    common_topology: list[object] = [
+        "--ranks-per-node",
+        "4",
+        "--L-intra",
+        "350",
+        "--G-intra",
+        "0.00333",
+    ]
+    records.append(
+        run(
+            [
+                PYTHON,
+                "pipeline/run_lgs.py",
+                "--goal",
+                goal,
+                "--L",
+                "4000",
+                "--G",
+                "0.04",
+                "--o",
+                "200",
+                "--comm-dep-out",
+                comm_dep,
+                "--bin-cache-dir",
+                out_dir / "bin_cache",
+                *common_topology,
+            ],
+            timeout=3600,
+        )
+    )
+    records.append(
+        run(
+            [
+                PYTHON,
+                "pipeline/run_lgs_sweep.py",
+                "--goal",
+                goal,
+                "--out",
+                out_dir / "lgs_runtime.csv",
+                "--latencies",
+                *[str(value) for value in range(0, 1_000_001, 50_000)],
+                "--G",
+                "0.04",
+                "--o",
+                "200",
+                "--bin-cache-dir",
+                out_dir / "bin_cache",
+                *common_topology,
+            ],
+            timeout=3600,
+        )
+    )
+    lp_topology: list[object] = [
+        "--ranks-per-node",
+        "4",
+        "--l-intra",
+        "350",
+        "--g-intra",
+        "0.00333",
+    ]
+    if add_barriers:
+        lp_topology.append("--add-barriers")
+    if nic_per_rank:
+        lp_topology += ["--nic-per-rank", "--nics-per-node", "4"]
+    records.append(
+        run(
+            [
+                PYTHON,
+                "pipeline/run_monolithic_lp.py",
+                "--goal",
+                goal,
+                "--comm-dep",
+                comm_dep,
+                "--out",
+                out_dir / "monolithic_runtime.csv",
+                "--l-min",
+                "0",
+                "--l-max",
+                "1000000",
+                "--step",
+                "5000",
+                "--G",
+                "0.04",
+                "--o",
+                "200",
+                *lp_topology,
+            ],
+            timeout=3600,
+        )
+    )
+    records.append(
+        run(
+            [
+                PYTHON,
+                "pipeline/run_monolithic_bandwidth_points.py",
+                "--goal",
+                goal,
+                "--comm-dep",
+                comm_dep,
+                "--out",
+                out_dir / "monolithic_bandwidth.csv",
+                "--gaps",
+                *[f"{index * 0.002:.3f}" for index in range(61)],
+                "--fixed-L",
+                "3700",
+                "--o",
+                "200",
+                "--threads",
+                args.workers,
+                *lp_topology,
+            ],
+            timeout=3600,
+        )
+    )
+
+
 def task_core(args: argparse.Namespace) -> list[dict[str, object]]:
     return [
         run(["bash", "reproduce_quick.sh"], timeout=300),
@@ -156,7 +370,13 @@ def task_fig3(args: argparse.Namespace) -> list[dict[str, object]]:
             ],
         ),
     ]
-    for name, analysis, expected, extra in specs:
+    for name, packaged_analysis, expected, extra in specs:
+        analysis = analysis_input(
+            args,
+            records,
+            trace_subdir=f"fig3/{name}",
+            packaged=packaged_analysis,
+        )
         out_dir = args.scratch / "fig3" / name
         actual = out_dir / "composed_runtime.csv"
         records.append(
@@ -178,6 +398,41 @@ def task_fig3(args: argparse.Namespace) -> list[dict[str, object]]:
                 f"fig3_{name}_composite_vs_paper",
             )
         )
+        bw_extra = list(extra)
+        if "--disable-intra-node-transfer" in bw_extra:
+            bw_extra.remove("--disable-intra-node-transfer")
+            bw_extra.append("--no-enable-intra-node-transfer")
+        fresh_bandwidth = out_dir / "bandwidth_sensitivity.csv"
+        records.append(
+            run(
+                bandwidth_command(
+                    analysis,
+                    fresh_bandwidth,
+                    out_dir / "bandwidth_cache",
+                    args.workers,
+                    bw_extra,
+                )
+            )
+        )
+        records.append(
+            compare(
+                packaged_analysis / "bw_composite_runtime.csv",
+                fresh_bandwidth,
+                out_dir / "bandwidth_comparison",
+                f"fig3_{name}_composite_bandwidth_vs_paper",
+                expected_x="G",
+                actual_x="G_inter_ns_per_byte",
+                expected_y="runtime",
+                actual_y="runtime_ns",
+            )
+        )
+        raw_monolithic_outputs(
+            args,
+            records,
+            analysis=analysis,
+            out_dir=out_dir,
+            nic_per_rank=(name == "auto"),
+        )
         canonical_dir = ROOT / "results/reproduced/fig3"
         canonical_latency = canonical_dir / f"{name}_latency_monolithic.csv"
         bw_suffix = "_4nic" if name == "auto" else ""
@@ -185,7 +440,7 @@ def task_fig3(args: argparse.Namespace) -> list[dict[str, object]]:
         if canonical_latency.is_file():
             records.append(
                 compare(
-                    analysis / "latency_full_runtime.csv",
+                    packaged_analysis / "latency_full_runtime.csv",
                     canonical_latency,
                     out_dir / "canonical_latency_comparison",
                     f"fig3_{name}_best_raw_vs_paper",
@@ -194,7 +449,7 @@ def task_fig3(args: argparse.Namespace) -> list[dict[str, object]]:
         if canonical_bandwidth.is_file():
             records.append(
                 compare(
-                    analysis / "bw_composite_runtime.csv",
+                    packaged_analysis / "bw_composite_runtime.csv",
                     canonical_bandwidth,
                     out_dir / "canonical_bandwidth_comparison",
                     f"fig3_{name}_best_raw_bandwidth_vs_paper",
@@ -210,9 +465,16 @@ def task_fig3(args: argparse.Namespace) -> list[dict[str, object]]:
 def task_fig4(args: argparse.Namespace) -> list[dict[str, object]]:
     out_dir = args.scratch / "fig4"
     actual = out_dir / "composed_runtime.csv"
-    analysis = ROOT / "data/output/final_plots/data/mixed_16n_ch1"
-    expected = analysis / "latency_full_runtime.csv"
-    records = [
+    packaged_analysis = ROOT / "data/output/final_plots/data/mixed_16n_ch1"
+    records: list[dict[str, object]] = []
+    analysis = analysis_input(
+        args,
+        records,
+        trace_subdir="fig4",
+        packaged=packaged_analysis,
+    )
+    expected = packaged_analysis / "latency_full_runtime.csv"
+    records.append(
         run(
             composite_command(
                 analysis,
@@ -229,9 +491,46 @@ def task_fig4(args: argparse.Namespace) -> list[dict[str, object]]:
                 ],
             )
         )
-    ]
+    )
     records.append(
         compare(expected, actual, out_dir / "comparison", "fig4_composite_vs_paper")
+    )
+    records.append(
+        run(
+            bandwidth_command(
+                analysis,
+                out_dir / "bandwidth_sensitivity.csv",
+                out_dir / "bandwidth_cache",
+                args.workers,
+                [
+                    "--node-map-mode",
+                    "rank-block",
+                    "--ring-duplicate-policy",
+                    "last",
+                    "--nic-per-rank",
+                    "--force-sequential",
+                ],
+            )
+        )
+    )
+    records.append(
+        compare(
+            packaged_analysis / "bw_composite_runtime.csv",
+            out_dir / "bandwidth_sensitivity.csv",
+            out_dir / "bandwidth_comparison",
+            "fig4_composite_bandwidth_vs_paper",
+            expected_x="G",
+            actual_x="G_inter_ns_per_byte",
+            expected_y="runtime",
+            actual_y="runtime_ns",
+        )
+    )
+    raw_monolithic_outputs(
+        args,
+        records,
+        analysis=analysis,
+        out_dir=out_dir,
+        add_barriers=True,
     )
     records.append(
         compare(
@@ -243,7 +542,7 @@ def task_fig4(args: argparse.Namespace) -> list[dict[str, object]]:
     )
     records.append(
         compare(
-            analysis / "bw_composite_runtime.csv",
+            packaged_analysis / "bw_composite_runtime.csv",
             ROOT / "local_artifact/results/fig4/bandwidth_monolithic_barriers.csv",
             out_dir / "canonical_bandwidth_comparison",
             "fig4_best_raw_bandwidth_vs_paper",
@@ -259,26 +558,46 @@ def task_fig4(args: argparse.Namespace) -> list[dict[str, object]]:
 def task_fig5(args: argparse.Namespace) -> list[dict[str, object]]:
     out_dir = args.scratch / "fig5"
     expected = ROOT / "data/output/llama7b/comp_100pct/sweeps/composed_runtime.csv"
-    actual = ROOT / "local_artifact/results/fig5/composed_runtime.csv"
-    return [
+    actual = out_dir / "out/composed_runtime.csv"
+    command: list[object] = [
+        "env",
+        f"ARTIFACT_PYTHON={PYTHON}",
+        "bash",
+        "pipeline/reproduce_fig5_from_nsys.sh",
+        "--work",
+        out_dir,
+        "--workers",
+        args.workers,
+    ]
+    if args.trace_root is not None:
+        command += ["--nsys-dir", args.trace_root / "fig5"]
+    records = [
+        run(command, timeout=3600),
         compare(
             expected,
             actual,
             out_dir / "comparison",
-            "fig5_best_recovered_composite_vs_paper",
-        )
+            "fig5_fresh_composite_vs_paper",
+        ),
     ]
+    return records
 
 
 def task_fig6_latency(args: argparse.Namespace) -> list[dict[str, object]]:
     out_dir = args.scratch / "fig6_latency"
     actual = out_dir / "composed_runtime.csv"
-    analysis = ROOT / "data/workspaces/llama7b_n32_spcl_20260407/analysis"
+    records: list[dict[str, object]] = []
+    analysis = analysis_input(
+        args,
+        records,
+        trace_subdir="fig6/llama",
+        packaged=ROOT / "data/workspaces/llama7b_n32_spcl_20260407/analysis",
+    )
     expected = (
         ROOT
         / "data/workspaces/llama7b_n32_spcl_20260407/output/comp/sweeps/composed_runtime.csv"
     )
-    records = [
+    records.append(
         run(
             composite_command(
                 analysis,
@@ -295,7 +614,7 @@ def task_fig6_latency(args: argparse.Namespace) -> list[dict[str, object]]:
                 ],
             )
         )
-    ]
+    )
     records.append(
         compare(
             expected,
@@ -310,13 +629,19 @@ def task_fig6_latency(args: argparse.Namespace) -> list[dict[str, object]]:
 def task_fig6_bandwidth(args: argparse.Namespace) -> list[dict[str, object]]:
     out_dir = args.scratch / "fig6_bandwidth"
     actual = out_dir / "bandwidth_sensitivity.csv"
-    analysis = ROOT / "data/workspaces/llama7b_n32_spcl_20260407/analysis"
+    records: list[dict[str, object]] = []
+    analysis = analysis_input(
+        args,
+        records,
+        trace_subdir="fig6/llama",
+        packaged=ROOT / "data/workspaces/llama7b_n32_spcl_20260407/analysis",
+    )
     expected = (
         ROOT
         / "data/workspaces/llama7b_n32_spcl_20260407/output/"
         "bw_sensitivity_l4us_composition_exact_goal/bandwidth_sensitivity.csv"
     )
-    records = [
+    records.append(
         run(
             [
                 PYTHON,
@@ -348,7 +673,7 @@ def task_fig6_bandwidth(args: argparse.Namespace) -> list[dict[str, object]]:
                 "4",
             ]
         )
-    ]
+    )
     records.append(
         compare(
             expected,
@@ -453,6 +778,20 @@ def task_grok4096_bandwidth(args: argparse.Namespace) -> list[dict[str, object]]
     return records
 
 
+def task_plots(args: argparse.Namespace) -> list[dict[str, object]]:
+    return [
+        run(
+            [
+                PYTHON,
+                "scripts/plot_full_run.py",
+                "--scratch",
+                args.scratch,
+            ],
+            timeout=900,
+        )
+    ]
+
+
 TASKS = {
     "core": task_core,
     "demo": task_demo,
@@ -463,6 +802,7 @@ TASKS = {
     "fig6-bandwidth": task_fig6_bandwidth,
     "grok4096-latency": task_grok4096_latency,
     "grok4096-bandwidth": task_grok4096_bandwidth,
+    "plots": task_plots,
 }
 
 
@@ -472,11 +812,14 @@ def main() -> int:
     parser.add_argument("--scratch", required=True, type=Path)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--grok-analysis-dir", type=Path)
+    parser.add_argument("--trace-root", type=Path)
     args = parser.parse_args()
     if args.workers < 1:
         parser.error("--workers must be positive")
     args.scratch = args.scratch.resolve()
     args.scratch.mkdir(parents=True, exist_ok=True)
+    if args.trace_root is not None:
+        args.trace_root = args.trace_root.resolve()
 
     started = time.time()
     status = "ok"
@@ -491,6 +834,15 @@ def main() -> int:
         manifest = {
             "task": args.task,
             "status": status,
+            "input_stage": (
+                "nsys"
+                if args.task == "fig5"
+                or (
+                    args.trace_root is not None
+                    and args.task in {"fig3", "fig4", "fig6-latency", "fig6-bandwidth"}
+                )
+                else "trace-derived inputs"
+            ),
             "started_unix": started,
             "ended_unix": time.time(),
             "python": str(PYTHON),

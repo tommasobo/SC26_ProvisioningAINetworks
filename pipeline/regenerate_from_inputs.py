@@ -115,8 +115,8 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--allow-goal-fallback", action="store_true",
                     help="Allow GOAL-only FIFO matching if LogGOPSim sidecar "
                          "generation fails or emits an empty file. This is not "
-                         "universally correct; the public prebuilt vLLM "
-                         "Llama70B N2 GOAL is a known counterexample.")
+                         "universally correct and should be used only for "
+                         "compatible traces.")
     ap.add_argument("--npkit-simple", type=Path, default=None,
                     help="Override NPKit simple calibration JSON for SQLite input.")
     ap.add_argument("--npkit-ll", type=Path, default=None,
@@ -187,6 +187,7 @@ def main() -> int:
                 sys.executable, str(HERE / "run_nccl_generator.py"),
                 "--sqlite-dir", str(sqlite_dir),
                 "--out-dir", str(analysis_dir),
+                "--nics-per-node", str(args.nics_per_node),
             ]
             if args.npkit_simple is not None:
                 cmd += ["--npkit-simple", str(args.npkit_simple.resolve())]
