@@ -1,0 +1,5 @@
+# Optional Tier C dependencies for regenerating GOAL from raw nsys traces.
+# The default figure path only needs requirements.txt.
+numba>=0.56
+dask[dataframe]>=2022.0
+tqdm>=4.64

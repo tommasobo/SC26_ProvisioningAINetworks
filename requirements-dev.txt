@@ -1,0 +1,2 @@
+-r requirements-solver.txt
+pytest>=8

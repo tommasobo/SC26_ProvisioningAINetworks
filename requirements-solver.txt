@@ -1,0 +1,9 @@
+-r requirements.txt
+gurobipy>=10.0
+networkx>=2.8
+ortools>=9.8
+psutil>=5.9
+python-igraph>=0.10
+scipy>=1.10
+seaborn>=0.12
+tqdm>=4.64

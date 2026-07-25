@@ -1,0 +1,2 @@
+config,n_gpus,n_collectives,n_unique_sigs,composition_t0_ms,lambda,hw_ms,cold_solve_time_s,warm_solve_time_s,lp_vars_total,peak_rss_mb
+N512,2048,209,16,7554.101562,11242.0,8824.132669,3430.848509788513,14.406473875045776,84463632,305.875
