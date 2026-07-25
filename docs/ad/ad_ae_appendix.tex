@@ -87,18 +87,20 @@ The quick workflow should produce nine PDF files under
 \texttt{figures/}. The full workflow should also produce result CSV
 files, logs, and task summaries in the selected scratch directory. The
 generated curves should follow the paper results.
+The sensitivity plots support $C_1$, the compositional analysis supports
+$C_2$, and the provisioning plots support $C_3$.
 
 Execution traces are inputs to the artifact. The workflow does not launch
 model training or trace collection.
 
 \arttime
 
-Allow 15--30 minutes for installation. The quick workflow takes about
-one minute. Allow up to eight hours for the full workflow, depending on
-the machine, solver license availability, and worker count. Most
-individual analysis tasks should be allowed up to one hour. The optional
-Grok 4k latency and bandwidth analysis should be allowed approximately
-3 to 5 days.
+Allow 30 minutes for artifact setup. Execution takes about 1 minute for
+the quick workflow and up to 480 minutes for the full workflow, depending
+on the machine, solver license availability, and worker count. Allow
+60 minutes for most individual numerical tasks and 15 minutes for final
+plot generation and inspection. The optional Grok 4k latency and bandwidth
+analysis should be allowed approximately 4,320--7,200 minutes.
 
 \artin
 
@@ -167,6 +169,9 @@ Run the full workflow with a scratch directory:
 
 The downloader selects all registered Figure 3--6 trace sets by default.
 The optional 4,096-GPU Grok trace set is not downloaded.
+The main task dependency is trace download (T1), NSYS export and
+communication-input generation (T2), numerical sweeps (T3), and final
+plotting (T4), with T1 $\rightarrow$ T2 $\rightarrow$ T3 $\rightarrow$ T4.
 
 On Alps, submit the analysis through Slurm:
 
@@ -187,7 +192,9 @@ enabling it, confirm that the selected partition provides at least
 
 The quick workflow writes the final PDFs under \texttt{figures/}. The
 full workflow writes one summary per task together with result CSV files
-and logs in the selected scratch directory.
+and logs in the selected scratch directory. The plotting stage converts the
+latency and bandwidth sweeps into the sensitivity and provisioning figures
+used to assess $C_1$--$C_3$.
 
 \newartifact
 
@@ -202,12 +209,14 @@ The trace downloader should prepare the complete standard Figure 3--6 input
 tree and record the downloaded files. The optional Figure 3--6 selector is
 needed only for a smaller test. The 4,096-GPU Grok trace set is excluded from
 the standard download. The prepared inputs pass through the trace-processing
-and numerical analysis stages of Artifact $A_1$.
+and numerical analysis stages of Artifact $A_1$. This establishes the trace
+inputs used to evaluate $C_1$ and $C_2$.
 
 \arttime
 
-Allow several hours for downloading and processing the complete trace set.
-The exact time depends on storage and network performance.
+Allow 15 minutes for setup, 120--240 minutes for the complete standard
+download, and less than 1 minute for final manifest inspection. The exact
+transfer time depends on storage and network performance.
 
 \artin
 
@@ -246,7 +255,10 @@ Download the registered trace inputs:
 The default includes all registered Figure 3--6 traces except the
 4,096-GPU Grok set. The script creates the directory layout expected by
 \texttt{reproduce\_full.sh}, resumes partial transfers, and checks recorded
-file sizes and hashes.
+file sizes and hashes. Its tasks are remote listing and space checking (T1),
+transfer or resume (T2), verification and trace-root materialization (T3),
+and manifest writing (T4), with T1 $\rightarrow$ T2 $\rightarrow$ T3
+$\rightarrow$ T4.
 
 \artout
 
@@ -299,7 +311,9 @@ sensitivity sweeps for Figures 3--6, and writes fresh numerical results to
 scratch. It then passes those CSV files to the paper-style plotters. The
 generated PDFs use the same axes, labels, typography, and dimensions as the
 paper figures. The trace root adds NSYS export, SQLite conversion, and
-communication-schedule generation before the numerical tasks.
+communication-schedule generation before the numerical tasks. The dependency
+chain is trace preparation, input generation, numerical analysis, and
+plotting; each stage consumes the output of the preceding stage.
 
 On a Slurm system, use the command from the AD section. The numerical
 tasks are submitted independently. Their job identifiers are written to
@@ -315,6 +329,8 @@ Confirm that every task manifest reports \texttt{status: ok} and that
 Figures 1 and 3--10 are present under the scratch directory's
 \texttt{figures/} subdirectory. The CSV files in scratch are the numerical
 inputs used by the final plotting step.
+Inspect the generated PDFs for the same latency, bandwidth, jitter, and
+provisioning trends reported in the paper.
 
 \arteval{2}
 
@@ -347,6 +363,7 @@ Use the Slurm option from the AD section when running on a cluster.
 
 Confirm that the trace download manifest, SQLite exports, GOAL schedules,
 analysis metadata, result CSV files, plots, manifests, and task logs were
-created in the selected scratch directories.
+created in the selected scratch directories. This trace-to-plot chain
+provides the input-level evaluation for $C_1$ and $C_2$.
 
 \end{document}
