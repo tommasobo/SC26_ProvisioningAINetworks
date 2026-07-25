@@ -106,6 +106,4 @@ partition's memory and wall-time limits before submission.
 - `results/reproduced/` and `local_artifact/results/` contain the selected
   numerical results.
 - `local_artifact/manifests/` records input and output identities.
-- `docs/comparison/SC26_paper_vs_artifact.pdf` places each paper plot above
-  the corresponding artifact result.
 - `docs/ad/` contains the combined AD/AE source and PDF.
