@@ -32,7 +32,7 @@ Options:
 The default run never executes Grok 4096-GPU experiments. Those tasks require
 both --expensive_run and an explicit --grok-analysis-dir. The complete Grok
 latency and bandwidth analysis should be run on a large-memory node with at
-least 512 GB of RAM and may require approximately 3 to 5 days.
+least 1 TB of RAM and may require approximately 3 to 5 days.
 EOF
 }
 
@@ -92,7 +92,7 @@ fi
 if [[ "$EXPENSIVE" -eq 1 ]]; then
     cat >&2 <<'EOF'
 warning: Grok 4096-GPU analysis is a multi-day workload.
-         Allocate at least 512 GB RAM and approximately 3 to 5 days.
+         Allocate at least 1 TB RAM and approximately 3 to 5 days.
 EOF
 fi
 
@@ -142,13 +142,13 @@ else
     grok_latency_job=""
     for task in "${tasks[@]}"; do
         time_limit="01:00:00"
-        memory="96G"
+        memory="128G"
         if [[ "$task" == grok4096-latency ]]; then
             time_limit="1-00:00:00"
-            memory="512G"
+            memory="1024G"
         elif [[ "$task" == grok4096-bandwidth ]]; then
             time_limit="4-00:00:00"
-            memory="512G"
+            memory="1024G"
         fi
         export_spec="ALL,ARTIFACT_ROOT=$ROOT,ARTIFACT_TASK=$task"
         export_spec+=",ARTIFACT_SCRATCH=$SCRATCH_DIR,ARTIFACT_WORKERS=$WORKERS"

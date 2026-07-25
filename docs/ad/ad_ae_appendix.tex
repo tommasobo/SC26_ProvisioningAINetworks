@@ -5,6 +5,7 @@
 \usepackage{booktabs}
 \usepackage{tagging}
 \usepackage{sc26repro}
+\usepackage[colorlinks=true,urlcolor=blue,linkcolor=black]{hyperref}
 
 % The next two lines MUST stay commented for final submission.
 %\usetag{explanation}
@@ -44,10 +45,10 @@ The evaluation uses two artifacts:
 
 \begin{description}
 \item[$A_1$] Code, input data, scripts, and results:
-\url{https://github.com/tommasobo/SC26_ProvisioningAINetworks},
-branch \texttt{artifact\_freeze}.
+\href{https://github.com/tommasobo/SC26_ProvisioningAINetworks}{GitHub repository},
+branch \texttt{main}.
 \item[$A_2$] Public execution traces:
-\url{http://storage2.spcl.ethz.ch/traces/ai/}.
+\href{http://storage2.spcl.ethz.ch/traces/ai/}{SPCL public trace repository}.
 \end{description}
 
 \begin{center}
@@ -64,7 +65,7 @@ $A_2$ & $C_1,C_2$ & Table II, Figs.\ 3--6 \\
 
 The requested badges are Artifacts Available, Artifacts
 Evaluated-Functional, and Results Reproduced. A persistent identifier
-will be provided with the submission.
+will be provided before the freezing date (Stage 3, 25 AUG 2026).
 
 \section{Artifact Identification}
 
@@ -83,9 +84,7 @@ stages for Figures 3--6.
 The quick workflow should produce nine PDF files under
 \texttt{figures/}. The full workflow should also produce result CSV
 files, logs, and task summaries in the selected scratch directory. The
-generated curves should follow the paper results. Detailed numerical
-comparisons are provided in
-\texttt{docs/REPRODUCTION\_REPORT.md}.
+generated curves should follow the paper results.
 
 The artifact assumes that execution traces have already been collected.
 It does not launch model training or trace collection.
@@ -105,25 +104,27 @@ Grok 4k latency and bandwidth analysis should be allowed approximately
 
 The quick workflow needs one CPU core, 2 GB of RAM, and about 100 MB of
 free space. For the full workflow, we recommend at least 4 CPU cores,
-32 GB of RAM, and a scratch filesystem. No GPU is required. The optional
-Grok 4k analysis should use a large-memory node with at least 512 GB of
-RAM and sufficient scratch space.
+128 GB of RAM, and a scratch filesystem. No GPU is required. The optional
+4,096-GPU Grok 4k analysis should use a large-memory node with at least
+1 TB of RAM and sufficient scratch space.
 
 \artinpart{Software}
 
 Python 3.10 or newer is required. Python packages are listed in
 \texttt{requirements.txt}; full verification also uses
 \texttt{requirements-dev.txt}. The full analysis requires Gurobi and a
-valid license. The LogGOPSim example additionally uses \texttt{g++},
-\texttt{gengetopt}, and \texttt{re2c}. Slurm is optional.
+valid license. Academics can obtain a
+\href{https://www.gurobi.com/academia/academic-program-and-licenses/}{free Gurobi license}.
+The LogGOPSim example additionally uses \texttt{g++}, \texttt{gengetopt},
+and \texttt{re2c}. Slurm is optional.
 
 \artinpart{Datasets / Inputs}
 
 The repository contains the numerical and processed inputs needed by the
 default workflows. Large trace and intermediate files should be kept on
 a scratch filesystem. Public traces are available from
-\url{http://storage2.spcl.ethz.ch/traces/ai/}. Input identities are
-recorded under \texttt{local\_artifact/manifests/}.
+\href{http://storage2.spcl.ethz.ch/traces/ai/}{the SPCL public trace repository}.
+Input identities are recorded under \texttt{local\_artifact/manifests/}.
 
 \artinpart{Installation and Deployment}
 
@@ -131,7 +132,7 @@ recorded under \texttt{local\_artifact/manifests/}.
 git clone https://github.com/tommasobo/\
 SC26_ProvisioningAINetworks.git
 cd SC26_ProvisioningAINetworks
-git checkout artifact_freeze
+git checkout main
 python3.11 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 \end{verbatim}
@@ -165,18 +166,16 @@ On Alps, submit the analysis through Slurm:
   --workers 4
 \end{verbatim}
 
-The optional Grok 4k analysis is enabled only with
+The optional 4,096-GPU Grok 4k analysis is enabled only with
 \texttt{--expensive\_run} and an explicit N1024 input directory. Before
 enabling it, confirm that the selected partition provides at least
-512 GB of RAM and a multi-day wall-time limit.
+1 TB of RAM and a multi-day wall-time limit.
 
 \artout
 
 The quick workflow writes the final PDFs under \texttt{figures/}. The
 full workflow writes one summary per task together with result CSV files
-and logs in the selected scratch directory. Compare the produced files
-with the values in \texttt{docs/REPRODUCTION\_REPORT.md}. The visual
-comparison is in
+and logs in the selected scratch directory. The visual comparison is in
 \texttt{docs/comparison/SC26\_paper\_vs\_artifact.pdf}.
 
 \newartifact
@@ -211,8 +210,8 @@ tools, and LogGOPSim. NSYS is needed only when exporting a new report.
 \artinpart{Datasets / Inputs}
 
 The public traces are available at
-\url{http://storage2.spcl.ethz.ch/traces/ai/}. Filenames and SHA-256
-hashes used by this artifact are recorded under
+\href{http://storage2.spcl.ethz.ch/traces/ai/}{the SPCL public trace repository}.
+Filenames and SHA-256 hashes used by this artifact are recorded under
 \texttt{local\_artifact/manifests/}.
 
 \artinpart{Installation and Deployment}
@@ -242,7 +241,7 @@ values can be compared with the committed manifest and reference output.
 
 \artin
 
-Clone branch \texttt{artifact\_freeze}, create the Python environment,
+Clone branch \texttt{main}, create the Python environment,
 and install \texttt{requirements.txt}. For full validation, install
 \texttt{requirements-dev.txt}, verify the Gurobi license, and choose a
 scratch directory. On a cluster, use a compute allocation or the Slurm
@@ -266,8 +265,7 @@ provided reference values.
 
 Confirm that the nine expected PDF files exist under \texttt{figures/}.
 For a full run, inspect \texttt{summary.json}, the task summaries, and the
-result CSV files in scratch. Use
-\texttt{docs/REPRODUCTION\_REPORT.md} for the expected numerical values.
+result CSV files in scratch.
 
 \arteval{2}
 

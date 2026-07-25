@@ -21,14 +21,15 @@ Python 3.10 or newer is required:
 ```bash
 git clone https://github.com/tommasobo/SC26_ProvisioningAINetworks.git
 cd SC26_ProvisioningAINetworks
-git checkout artifact_freeze
+git checkout main
 python3.11 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 ```
 
 For the full workflow, also install `requirements-dev.txt`. The analysis
-stages require a working Gurobi installation and license. The LogGOPSim
-example additionally requires `g++`, `gengetopt`, and `re2c`.
+stages require a working Gurobi installation and license. Academics can
+obtain a [free Gurobi license](https://www.gurobi.com/academia/academic-program-and-licenses/).
+The LogGOPSim example additionally requires `g++`, `gengetopt`, and `re2c`.
 
 ## Quick reproduction
 
@@ -63,7 +64,8 @@ Use a scratch directory with sufficient free space:
 Allow up to eight hours, depending on the machine, solver license
 availability, and selected worker count. Most individual analysis tasks
 should be allowed up to one hour. The script writes result CSV files, logs,
-and task summaries below the selected scratch directory.
+and task summaries below the selected scratch directory. Plan for at least
+4 CPU cores and 128 GB of RAM.
 
 ## Alps and Slurm
 
@@ -82,8 +84,9 @@ Independent tasks are submitted separately. Submitted job IDs are written to
 
 ## Optional large run
 
-The Grok 4k analysis is not part of the default workflow. Enable it only when
-enough memory, compute time, and scratch space are available:
+The Grok 4k analysis covers the 4,096-GPU workload and is not part of the
+default workflow. Enable it only when enough memory, compute time, and scratch
+space are available:
 
 ```bash
 ./reproduce_full.sh --slurm --expensive_run \
@@ -92,7 +95,7 @@ enough memory, compute time, and scratch space are available:
   --scratch /scratch/path/to/output
 ```
 
-Plan for at least 512 GB of RAM and allow approximately 3 to 5 days for the
+Plan for at least 1 TB of RAM and allow approximately 3 to 5 days for the
 complete latency and bandwidth analysis. Actual requirements depend on the
 solver configuration and available parallelism. Check the selected
 partition's memory and wall-time limits before submission.
@@ -103,10 +106,6 @@ partition's memory and wall-time limits before submission.
 - `results/reproduced/` and `local_artifact/results/` contain the selected
   numerical results.
 - `local_artifact/manifests/` records input and output identities.
-- `docs/REPRODUCTION_REPORT.md` contains the detailed numerical comparison.
 - `docs/comparison/SC26_paper_vs_artifact.pdf` places each paper plot above
   the corresponding artifact result.
 - `docs/ad/` contains the combined AD/AE source and PDF.
-
-The full numerical results, provenance, and known limitations are recorded in
-`docs/REPRODUCTION_REPORT.md`.
