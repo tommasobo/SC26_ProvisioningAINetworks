@@ -1,8 +1,9 @@
 # Provisioning Networks for AI Supercomputers
 
 This repository contains the artifact for reproducing the computational
-figures in the paper. It assumes that execution traces have already been
-collected.
+figures in the paper. Execution traces are treated as inputs: small trace
+sets may be kept with the artifact, while larger trace sets should be
+downloaded from the public repository to a scratch filesystem.
 
 Repository: <https://github.com/tommasobo/SC26_ProvisioningAINetworks>
 
@@ -12,8 +13,9 @@ Two workflows are provided:
 
 - `reproduce_quick.sh` generates Figures 1 and 3 to 10 from the supplied
   inputs. Figure 2 is a method diagram.
-- `reproduce_full.sh` freshly solves Figures 3 to 6 from trace-derived
-  inputs and passes the generated CSV files to the paper-style plotters.
+- `reproduce_full.sh` runs the numerical analysis for Figures 3 to 6 and
+  passes the generated CSV files to the paper-style plotters. When raw NSYS
+  reports are supplied, it first performs trace export and input generation.
 
 Large intermediate files should be stored on a scratch filesystem.
 
@@ -74,18 +76,23 @@ task summaries, and the final paper-style plots below the selected scratch
 directory. The final PDFs are written to `<scratch>/figures/`. Plan for at
 least 4 CPU cores and 128 GB of RAM.
 
-When the original NSYS reports are available, add
-`--trace-root /path/to/traces`. The directory contains `fig3/ch1`,
-`fig3/auto`, `fig4`, `fig5`, and `fig6/llama`, with the corresponding
-`.nsys-rep` files in each directory. This enables the trace export and
-metadata-generation stages before the numerical analysis. Figure 5 can also
-be exercised directly from the public trace repository:
+For a trace-to-plot run, prepare the required NSYS reports and add a trace
+root:
 
 ```bash
-pipeline/reproduce_fig5_from_nsys.sh \
-  --work /path/to/scratch/fig5 \
+./reproduce_full.sh \
+  --scratch /path/to/scratch/provisioning_artifact \
+  --trace-root /path/to/scratch/raw_traces \
   --workers 4
 ```
+
+The trace root contains `fig3/ch1`, `fig3/auto`, `fig4`, `fig5`, and
+`fig6/llama`, with the corresponding `.nsys-rep` files in each directory.
+Small trace sets can be copied from the artifact when provided. Larger trace
+sets should be downloaded from the public trace repository into scratch.
+Supplying `--trace-root` enables NSYS export, SQLite conversion,
+communication-schedule generation, numerical analysis, and plotting through
+the same entry point.
 
 ## Alps and Slurm
 

@@ -76,8 +76,10 @@ will be provided before the freezing date (Stage 3, 25 AUG 2026).
 Artifact $A_1$ contains the analysis implementation, plotting data,
 reproduction scripts, verification manifests, and final plots. The
 quick workflow generates Figures 1 and 3--10. Figure 2 is a method
-diagram. The full workflow freshly solves Figures 3--6 from trace-derived
-inputs and passes the generated CSV files to the paper-style plotters.
+diagram. The full workflow runs the numerical analysis for Figures 3--6
+and passes the generated CSV files to the paper-style plotters. When raw
+NSYS reports are supplied, it first performs trace export, SQLite
+conversion, and analysis-input generation.
 
 \artexp
 
@@ -86,8 +88,8 @@ The quick workflow should produce nine PDF files under
 files, logs, and task summaries in the selected scratch directory. The
 generated curves should follow the paper results.
 
-The artifact assumes that execution traces have already been collected.
-It does not launch model training or trace collection.
+Execution traces are inputs to the artifact. The workflow does not launch
+model training or trace collection.
 
 \arttime
 
@@ -123,10 +125,9 @@ and \texttt{re2c}. Slurm is optional.
 
 \artinpart{Datasets / Inputs}
 
-The repository contains the numerical and processed inputs needed by the
-default workflows. Large trace and intermediate files should be kept on
-a scratch filesystem. Public traces are available from
-\url{http://storage2.spcl.ethz.ch/traces/ai/}.
+Small trace inputs may be supplied with the artifact. Larger trace sets and
+intermediate files should be kept on a scratch filesystem. Public traces are
+available from \url{http://storage2.spcl.ethz.ch/traces/ai/}.
 Input identities are recorded under \texttt{local\_artifact/manifests/}.
 
 \artinpart{Installation and Deployment}
@@ -184,14 +185,15 @@ and logs in the selected scratch directory.
 
 \artrel
 
-Artifact $A_2$ contains the execution traces used to build communication
-graphs and exercise the analysis pipeline for Figures 3--6.
+Artifact $A_2$ contains the execution traces used as inputs to the
+trace-to-plot workflow for Figures 3--6.
 
 \artexp
 
-A selected trace should download with the recorded hash and pass through
-the trace-processing and simulation stages. The repository includes the
-input identities and reference results used by the final workflow.
+A selected trace set, supplied with the artifact or downloaded from the
+public repository, should pass through the trace-processing and numerical
+analysis stages. The repository records the input identities used by the
+workflow.
 
 \arttime
 
@@ -219,9 +221,9 @@ Filenames and SHA-256 hashes used by this artifact are recorded under
 
 \artinpart{Installation and Deployment}
 
-Install Artifact $A_1$, select one trace recorded in the manifests, and
-download it to scratch. Do not store large trace files in the repository
-or the home directory.
+Install Artifact $A_1$ and prepare the selected trace set. Small trace sets
+may be supplied with the artifact; download larger trace sets to scratch.
+Do not store large traces in the home directory.
 
 \artcomp
 
@@ -271,15 +273,16 @@ Run the main numerical workflow with:
   --workers 4
 \end{verbatim}
 
-The full workflow starts from the trace-derived collective and topology
-inputs. It builds the analysis problems, runs the solver and sensitivity
-sweeps for Figures 3--6, and writes fresh numerical results to scratch.
-It then passes those CSV files to the paper-style plotters. The generated
-PDFs use the same axes, labels, typography, and dimensions as the paper
-figures.
+The full workflow builds the analysis problems, runs the solver and
+sensitivity sweeps for Figures 3--6, and writes fresh numerical results to
+scratch. It then passes those CSV files to the paper-style plotters. The
+generated PDFs use the same axes, labels, typography, and dimensions as the
+paper figures.
 
-When raw NSYS reports are available, place them in the directory layout
-described in the repository README and add the trace root:
+For a trace-to-plot run, place the raw NSYS reports in the directory layout
+described in the repository README and add the trace root. Small trace sets
+may be supplied with the artifact; larger sets are available from Artifact
+$A_2$ and should be downloaded to scratch.
 
 \begin{verbatim}
 ./reproduce_full.sh \
@@ -311,8 +314,9 @@ inputs used by the final plotting step.
 
 \artin
 
-Install Artifact $A_1$ and prepare the selected raw NSYS reports using
-the directory layout described in the repository README. Keep the traces
+Install Artifact $A_1$ and prepare the selected raw NSYS reports using the
+directory layout described in the repository README. Use a supplied small
+trace set or download a larger set from Artifact $A_2$. Keep large traces
 and all intermediate files in scratch.
 
 \artcomp
