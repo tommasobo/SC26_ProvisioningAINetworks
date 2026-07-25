@@ -311,31 +311,30 @@ inputs used by the final plotting step.
 
 \artin
 
-Install Artifact $A_1$ and select one raw NSYS trace set listed in
-\texttt{local\_artifact/manifests/}. Keep the trace and intermediate
-files in scratch.
+Install Artifact $A_1$ and prepare the selected raw NSYS reports using
+the directory layout described in the repository README. Keep the traces
+and all intermediate files in scratch.
 
 \artcomp
 
-Run the public Figure 5 trace workflow:
+Run the general raw-trace workflow:
 
 \begin{verbatim}
-pipeline/reproduce_fig5_from_nsys.sh \
-  --work /scratch/$USER/provisioning_fig5 \
+./reproduce_full.sh \
+  --scratch /scratch/$USER/provisioning_artifact \
+  --trace-root /scratch/$USER/raw_traces \
   --workers 4
 \end{verbatim}
 
-The script downloads the selected NSYS reports, exports them to SQLite,
-constructs the GOAL schedule and analysis metadata, runs the solver, and
-passes the newly generated result CSV to the corresponding plotter.
-
-This exercises the path from a raw execution trace to a numerical result
-and a paper-style plot. A single moderate trace is sufficient and should
-be allowed up to one hour.
+The workflow exports the NSYS reports to SQLite, constructs the GOAL
+schedules and analysis metadata, runs the numerical tasks, and passes the
+newly generated result CSV files to the paper-style plotting scripts.
+Use the Slurm option from the AD section when running on a cluster.
 
 \artout
 
-Confirm that the SQLite export, GOAL schedule, analysis metadata, result
-CSV, plot, and task log were created in the selected scratch directory.
+Confirm that the SQLite exports, GOAL schedules, analysis metadata,
+result CSV files, plots, manifests, and task logs were created in the
+selected scratch directory.
 
 \end{document}
